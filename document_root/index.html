@@ -41,14 +41,38 @@ come first in the head; any other head content must come *after* these tags -->
       <p><b>sslip.io</b> combines a wildcard DNS matched with a valid wildcard
       SSL certificate and key to provide trusted SSL connections.</p> <h2>How it
       works</h2> <p class="lead">Your server's fully-qualified domain name
-      (FQDN) will be a mash-up of your server's IP address and the
-      <b>sslip.io</b> domain. Here are some examples:</p> <table class="sslip">
+      (FQDN) is a mash-up of your server's IP address and the <b>sslip.io</b>
+      domain. Here are some examples:</p> <table class="sslip">
       <tr><th>FQDN</th><th>Resolves to this<br />IP Address</th></tr> <tr><td><a
       href="https://52-0-56-137.sslip.io/">52-0-56-137.sslip.io</a></td><td>52.0.56.137</td></tr>
       <tr><td>127-0-0-1.sslip.io</td><td>127.0.0.1</td></tr>
       <tr><td>www-10-1-1-2.sslip.io</td><td>10.1.1.2</td></tr>
       <tr><td>console-192-168-0-1.sslip.io</td><td>192.168.0.1</td></tr>
-      </table>
+      </table><br />
+
+      <p class="lead">Install the SSL key and certificate on your webserver.</p>
+
+      <p>Download the SSL key (<a href="https://gist.githubusercontent.com/cunnie/b8e12cd45a8777cffc4e/raw/dc167a6cc1dca5a80943723c9434bef859b79176/sslip.io.key.pem">sslip.io.key.pem</a>) and wildcard SSL certificate chain (<a href="https://gist.githubusercontent.com/cunnie/b8e12cd45a8777cffc4e/raw/dc167a6cc1dca5a80943723c9434bef859b79176/sslip.io.chained.crt.pem">sslip.io.chained.crt.pem</a>) from GitHub.</p>
+
+<p>Configure your webserver. Set the name to sslip.io subdomain and point to the certificate. Here is a sample <i>nginx.conf</i> snippet:</p>
+
+<pre>
+server {
+  server_name 52-0-56-137.sslip.io;
+  listen              443 ssl;
+  ssl_certificate     /usr/local/etc/nginx/ssl/sslip.io.chained.crt.pem;
+  ssl_certificate_key /usr/local/etc/nginx/ssl/sslip.io.key.pem;
+</pre>
+
+<p class="lead">Technical limitation: All FQDNs <i>must</i>
+      be a one-level deep subdomain on the sslip.io domain for proper SSL
+      validation.</p> <p>For example: www.127-0-0-1.sslip.io will not work, but
+      www-127-0-0-1.sslip.io will. This is a <a
+      href="http://stackoverflow.com/questions/26744696/ssl-multilevel-subdomain-wildcard">limitation
+      of the wildcard SSL certificate</a>, not a limitation of the sslip.io DNS
+      server; e.g. when queried with the hostname
+      "sf.ca.usa.172-16-1.2.sslip.io", the DNS server will return an IP address
+      of 172.16.1.12).</p>
 
       </div>
 
@@ -63,4 +87,4 @@ come first in the head; any other head content must come *after* these tags -->
   IE10 viewport hack for Surface/desktop Windows 8 bug --> <script
   src="https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script>
 
-</body> </html> 
+</body> </html>
