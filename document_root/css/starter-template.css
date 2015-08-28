@@ -5,3 +5,7 @@ body {
   padding: 40px 15px;
   text-align: left;
 }
+table.sslip {
+  border-spacing: 10px 2px;
+  border-collapse: separate;
+}
