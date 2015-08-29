@@ -59,20 +59,24 @@ come first in the head; any other head content must come *after* these tags -->
       <h1>sslip.io</h1>
       <h3>Turn your red lock into a green lock!</h3>
       <br />
-      <div class="col-sm-5"><img src="img/red_lock.png" height="71" /></div>
-      <div class="col-sm-1"><p /></div>
-      <div class="col-sm-5"><img src="img/green_lock.png" height="71" /></div>
+      <div class="col-sm-5">
+        <img src="img/red_lock.png" height="71" />
+      </div>
+      <div class="col-sm-1">
+        <p />
+      </div>
+      <div class="col-sm-5">
+        <img src="img/green_lock.png" height="71" />
+      </div>
       <div class="col-sm-1"></div>
       <div class="row"></div>
       <h3>What is it?</h3>
-      <p><b>sslip.io</b> is a special DNS domain (sslip.io) that maps crafted hostnames
-to IP addresses (e.g. <i>192-168-0-1.sslip.io</i> maps to IP address <i>192.168.0.1</i>). Combined
-with a valid wildcard SSL certificate, it provides trusted SSL connections to your webserver,
-your docker registry, etc.... All in a matter of seconds.</p>
+      <p><b>sslip.io</b> is a special DNS domain (sslip.io) that maps crafted hostnames to IP addresses (e.g. <i>192-168-0-1.sslip.io</i> maps to IP address <i>192.168.0.1</i>). Combined with a valid wildcard SSL certificate, it provides trusted SSL connections
+        to your webserver, your docker registry, etc.... All in a matter of seconds.</p>
       <h3>How do I use it?
       </h3>
       <p class="lead">First, use your server's IP address to determine its sslip.io hostname.</p>
-<p>Your server's sslip.io is a mash-up of your server's IP address and the <b>sslip.io</b> domain. Here are some examples:</p>
+      <p>Your server's sslip.io is a mash-up of your server's IP address and the <b>sslip.io</b> domain. Here are some examples:</p>
       <table class="sslip">
         <tr>
           <th>Server's IP Address</th>
@@ -97,9 +101,7 @@ your docker registry, etc.... All in a matter of seconds.</p>
       </table>
       <br />
 
-<p style="font-style: italic;">Note that in the last two examples we prepended additional
-information to the hostname, i.e. "www-" and "console-", respectively. This allows sslip.io
-to work with <a href="https://en.wikipedia.org/wiki/Virtual_hosting#Name-based">name-based
+      <p style="font-style: italic;">Note that in the last two examples we prepended additional information to the hostname, i.e. "www-" and "console-", respectively. This allows sslip.io to work with <a href="https://en.wikipedia.org/wiki/Virtual_hosting#Name-based">name-based
 virtual hosting</a>.</p>
 
       <p class="lead">Second, download sslip.io's SSL certificate and key from GitHub</p>
@@ -111,12 +113,14 @@ virtual hosting</a>.</p>
       <p>Configure your webserver. Set the server name to sslip.io hostname, and configure the SSL portion to use the key and certificate downloaded from GitHub. Here is a sample from sslip.io's webserver's <i>nginx.conf</i> (modified for clarity):</p>
       <pre>
 server {
-  server_name         52-0-56-137.sslip.io;
-  listen              443 ssl;
-  ssl_certificate     /etc/ssl/sslip.io.chained.crt.pem;
+  server_name 52-0-56-137.sslip.io;
+  listen 443 ssl;
+  ssl_certificate /etc/ssl/sslip.io.chained.crt.pem;
   ssl_certificate_key /etc/ssl/sslip.io.key.pem;
       </pre>
-      <div class="row"><p /></div>
+      <div class="row">
+        <p />
+      </div>
       <div class="row">&copy; 2015 Brian Cunnie, Pivotal Software</div>
     </div>
   </div>
@@ -136,14 +140,20 @@ server {
   <script src="https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script>
   <!-- Google Analytics -->
   <script>
-    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0];
+      a.async = 1;
+      a.src = g;
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
 
     ga('create', 'UA-43107212-2', 'auto');
     ga('send', 'pageview');
-
   </script>
 </body>
 
