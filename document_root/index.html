@@ -59,16 +59,16 @@ come first in the head; any other head content must come *after* these tags -->
       <h1>sslip.io</h1>
       <h3>Turn your red lock into a green lock!</h3>
       <br />
-      <div class="col-sm-6"><img src="img/red_lock.png" height="71" /></div>
-      <div class="col-sm-6"><img src="img/green_lock.png" height="71" /></div>
-      <div class="col-sm-12">
-      <p>&nbsp;</p>
-      </div>
+      <div class="col-sm-5"><img src="img/red_lock.png" height="71" /></div>
+      <div class="col-sm-1"><p /></div>
+      <div class="col-sm-5"><img src="img/green_lock.png" height="71" /></div>
+      <div class="col-sm-1"></div>
+      <div class="row"></div>
       <h3>What is it?</h3>
       <p><b>sslip.io</b> is a special DNS domain (sslip.io) that maps crafted hostnames
 to IP addresses (e.g. <i>192-168-0-1.sslip.io</i> maps to IP address <i>192.168.0.1</i>). Combined
 with a valid wildcard SSL certificate, it provides trusted SSL connections to your webserver,
-your docker registry, etc....</p>
+your docker registry, etc.... All in a matter of seconds.</p>
       <h3>How do I use it?
       </h3>
       <p class="lead">First, use your server's IP address to determine its sslip.io hostname.</p>
@@ -116,8 +116,9 @@ server {
   ssl_certificate     /etc/ssl/sslip.io.chained.crt.pem;
   ssl_certificate_key /etc/ssl/sslip.io.key.pem;
       </pre>
+      <div class="row"><p /></div>
+      <div class="row">&copy; 2015 Brian Cunnie, Pivotal Software</div>
     </div>
-
   </div>
   <!-- /.container -->
 
