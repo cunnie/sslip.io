@@ -45,8 +45,8 @@ come first in the head; any other head content must come *after* these tags -->
       <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <li class="active"><a href="#">Home</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#contact">Contact</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="about.html">About</a></li>
         </ul>
       </div>
       <!--/.nav-collapse -->
@@ -59,59 +59,63 @@ come first in the head; any other head content must come *after* these tags -->
       <h1>sslip.io</h1>
       <h3>Turn your red lock into a green lock!</h3>
       <br />
-      <div class="col-sm-6"><img src="img/red_lock.png" height="180" /></div>
-      <div class="col-sm-6"><img src="img/green_lock.png" height="180" /></div>
-      <p>&nbsp;<p> <!-- Oh the shame -->
-      <p class="lead">Free wildcard DNS and Valid SSL Certificates for Everyone.</p>
-      <p><b>sslip.io</b> combines a wildcard DNS matched with a valid wildcard SSL certificate and key to provide trusted SSL connections.</p>
-      <h2>How it works
-      </h2>
-      <p class="lead">Your server's fully-qualified domain name (FQDN) is a mash-up of your server's IP address and the <b>sslip.io</b> domain. Here are some examples:</p>
+      <div class="col-sm-6"><img src="img/red_lock.png" height="71" /></div>
+      <div class="col-sm-6"><img src="img/green_lock.png" height="71" /></div>
+      <div class="col-sm-12">
+      <p>&nbsp;</p>
+      </div>
+      <h3>What is it?</h3>
+      <p><b>sslip.io</b> is a special DNS domain (sslip.io) that maps crafted hostnames
+to IP addresses (e.g. <i>192-168-0-1.sslip.io</i> maps to IP address <i>192.168.0.1</i>). Combined
+with a valid wildcard SSL certificate, it provides trusted SSL connections to your webserver,
+your docker registry, etc....</p>
+      <h3>How do I use it?
+      </h3>
+      <p class="lead">First, use your server's IP address to determine its sslip.io hostname.</p>
+<p>Your server's sslip.io is a mash-up of your server's IP address and the <b>sslip.io</b> domain. Here are some examples:</p>
       <table class="sslip">
         <tr>
-          <th>FQDN</th>
-          <th>Resolves to this
-            <br />IP Address</th>
+          <th>Server's IP Address</th>
+          <th>sslip.io Hostname</th>
         </tr>
         <tr>
-          <td><a href="https://52-0-56-137.sslip.io/">52-0-56-137.sslip.io</a></td>
           <td>52.0.56.137</td>
+          <td><a href="https://52-0-56-137.sslip.io/">52-0-56-137.sslip.io</a></td>
         </tr>
         <tr>
-          <td>127-0-0-1.sslip.io</td>
           <td>127.0.0.1</td>
+          <td>127-0-0-1.sslip.io</td>
         </tr>
         <tr>
-          <td>www-10-1-1-2.sslip.io</td>
           <td>10.1.1.2</td>
+          <td>www-10-1-1-2.sslip.io</td>
         </tr>
         <tr>
-          <td>console-192-168-0-1.sslip.io</td>
           <td>192.168.0.1</td>
+          <td>console-192-168-0-1.sslip.io</td>
         </tr>
       </table>
       <br />
 
-      <p class="lead">Install the SSL key and certificate on your webserver.</p>
+<p style="font-style: italic;">Note that in the last two examples we prepended additional
+information to the hostname, i.e. "www-" and "console-", respectively. This allows sslip.io
+to work with <a href="https://en.wikipedia.org/wiki/Virtual_hosting#Name-based">name-based
+virtual hosting</a>.</p>
 
+      <p class="lead">Second, download sslip.io's SSL certificate and key from GitHub</p>
       <p>Download the SSL key (<a href="https://gist.githubusercontent.com/cunnie/b8e12cd45a8777cffc4e/raw/dc167a6cc1dca5a80943723c9434bef859b79176/sslip.io.key.pem">sslip.io.key.pem</a>) and wildcard SSL certificate chain (<a href="https://gist.githubusercontent.com/cunnie/b8e12cd45a8777cffc4e/raw/dc167a6cc1dca5a80943723c9434bef859b79176/sslip.io.chained.crt.pem">sslip.io.chained.crt.pem</a>)
         from GitHub.</p>
+      <p class="lead">Third, configure webserver with your sslip.io hostname, SSL certificate, and SSL key</p>
 
-      <p>Configure your webserver. Set the name to sslip.io subdomain and point to the certificate. Here is a sample <i>nginx.conf</i> snippet:</p>
+
+      <p>Configure your webserver. Set the server name to sslip.io hostname, and configure the SSL portion to use the key and certificate downloaded from GitHub. Here is a sample from sslip.io's webserver's <i>nginx.conf</i> (modified for clarity):</p>
       <pre>
 server {
-  server_name 52-0-56-137.sslip.io;
+  server_name         52-0-56-137.sslip.io;
   listen              443 ssl;
   ssl_certificate     /etc/ssl/sslip.io.chained.crt.pem;
   ssl_certificate_key /etc/ssl/sslip.io.key.pem;
-}
       </pre>
-      <p class="lead">
-        Technical limitation: All FQDNs <i>must</i> be a one-level deep subdomain on the sslip.io domain for proper SSL validation.
-      </p>
-      <p>For example: www.127-0-0-1.sslip.io will not work, but www-127-0-0-1.sslip.io will. This is a <a href="http://stackoverflow.com/questions/26744696/ssl-multilevel-subdomain-wildcard">limitation
-      of the wildcard SSL certificate</a>, not a limitation of the sslip.io DNS server; e.g. when queried with the hostname "sf.ca.usa.172-16-1.2.sslip.io", the DNS server will return an IP address of 172.16.1.12).</p>
-
     </div>
 
   </div>
