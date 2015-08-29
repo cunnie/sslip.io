@@ -107,15 +107,15 @@ virtual hosting</a>.</p>
       <p class="lead">Second, download sslip.io's SSL certificate and key from GitHub</p>
       <p>Download the SSL key (<a href="https://gist.githubusercontent.com/cunnie/b8e12cd45a8777cffc4e/raw/dc167a6cc1dca5a80943723c9434bef859b79176/sslip.io.key.pem">sslip.io.key.pem</a>) and wildcard SSL certificate chain (<a href="https://gist.githubusercontent.com/cunnie/b8e12cd45a8777cffc4e/raw/dc167a6cc1dca5a80943723c9434bef859b79176/sslip.io.chained.crt.pem">sslip.io.chained.crt.pem</a>)
         from GitHub.</p>
-      <p class="lead">Third, configure webserver with your sslip.io hostname, SSL certificate, and SSL key</p>
+      <p class="lead">Third, configure the webserver with your sslip.io hostname, SSL certificate, and SSL key</p>
 
 
       <p>Configure your webserver. Set the server name to sslip.io hostname, and configure the SSL portion to use the key and certificate downloaded from GitHub. Here is a sample from sslip.io's webserver's <i>nginx.conf</i> (modified for clarity):</p>
       <pre>
 server {
-  server_name 52-0-56-137.sslip.io;
-  listen 443 ssl;
-  ssl_certificate /etc/ssl/sslip.io.chained.crt.pem;
+  server_name         52-0-56-137.sslip.io;
+  listen              443 ssl;
+  ssl_certificate     /etc/ssl/sslip.io.chained.crt.pem;
   ssl_certificate_key /etc/ssl/sslip.io.key.pem;
       </pre>
       <div class="row">
