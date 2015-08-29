@@ -75,8 +75,10 @@ come first in the head; any other head content must come *after* these tags -->
       <h3>What is it?</h3>
       <p><b>sslip.io</b> is a special DNS domain that maps crafted hostnames
         to IP addresses (e.g. <i>192-168-0-1.sslip.io</i> resolves to <i>192.168.0.1</i>).
-        Combined with a valid wildcard SSL certificate, it provides trusted SSL connections
-        to your webserver, your docker registry, etc.... All in a matter of seconds.</p>
+        Combined with a valid sslip.io wildcard SSL certificate installed on your server, it allows
+        your server to present a valid SSL certificate when browsed to using the
+        crafted sslip.io hostname. It works for your webserver, your docker registry, etc....
+        All in a matter of seconds.</p>
       <h3>How do I use it?
       </h3>
       <p class="lead">First, find your server's IP address to determine its sslip.io hostname</p>
@@ -124,7 +126,7 @@ server {
   ssl_certificate     /etc/ssl/sslip.io.chained.crt.pem;
   ssl_certificate_key /etc/ssl/sslip.io.key.pem;
       </pre>
-      <p class="lead">Finally, restart your webserver and browse to its sslip.io address</p>
+      <p class="lead">Finally, restart your webserver and browse to its sslip.io address via HTTPS</p>
       <p>Admire the beautiful green lock in your browser's address bar.<p>
       <div class="row">
         <p></p>
