@@ -72,35 +72,41 @@ come first in the head; any other head content must come *after* these tags -->
       <div class="row"></div>
       <p></p>
       <p>Note that the "root" certificate is "AddTrust's External CA Root", which issued a certificate to the "COMODO RSA Certification Authority", which in turn issued a certificate to the "COMODO RSA Domain Validation Secure Server CA" which in turn issued
-        our certificate, "*.sslip.io".
-        <p class="lead">My webserver wants a certificate and an "intermediate certificate chain"&mdash;where do I get that?</p>
-        <p>Certain web servers (e.g. <a href="http://www.tenable.com">Tenable's</a>
-          <a href="http://www.tenable.com/products/nessus-vulnerability-scanner">Nessus</a> scanner) prefer to split the chained certificate file (which has three concatenated certificates) into two files: one file containing a single certificate for
-          the server itself (e.g. the "*.sslip.io" certificate), and a second file containing the intermediate certificate authorities (e.g. the two COMODO certificate authorities).
-          <p>You can split the chained certificate file by hand, or you can download them, pre-split, from GitHub:
-          </p>
-          <ul>
-            <li>the server
-              <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.crt.pem"></a>certificate ("*.sslip.io")</li>
-            <li>the intermedicate certificate
-              <a href=""></a>chain (the COMODO CAs)</li>
-          </ul>
-          certificates (certificates of the Intermediate Certificate Authorities), they prefer for those certificates to be placed in a separate file. You can find the
-          <a href="intermediate certificate chain">isolated</a> which can consist of one</p>
-        <p class="lead">Why can't I use dots in my hostname? xip.io lets me use dots.</p>
-        <p class="lead">Do I have to use the sslip.io domain? I'd rather have a valid cert for my domain.</p>
-        <p>If you want valid SSL certificate, and you don't want to use the sslip.io domain, then you'll need to purchase a certificate for your domain. We purchased ours from
-          <a href="https://www.cheapsslshop.com">Cheap SSL Shop</a>, but use a vendor with whom you're comfortable.
-        </p>
-        <p class="lead"></p>
-        <p class="lead">What does the certificate chain look like?</p>
-        <p class="lead">Do you have support for IPv6-style addresses?</p>
-        <p class="lead">Why did you choose a 4096-bit key instead of a 2048-bit key?</p>
-        <p class="lead">Where do I report bugs? I think I found one.</p>
-        <div class="row">
-          <p></p>
-        </div>
-        <p>&copy; 2015 Brian Cunnie, Pivotal Software</p>
+        our certificate, "*.sslip.io".</p>
+      <p class="lead">My webserver wants a certificate and an "intermediate certificate chain"&mdash;where do I get that?</p>
+      <p>Certain web servers (e.g. <a href="http://www.tenable.com">Tenable's</a>
+        <a href="http://www.tenable.com/products/nessus-vulnerability-scanner">Nessus</a> scanner) prefer to split the chained certificate file (which has three concatenated certificates) into two files: one file containing a single certificate for the
+        server itself (e.g. the "*.sslip.io" certificate), and a second file containing the intermediate certificate authorities (e.g. the two COMODO certificate authorities).</p>
+      <p>You can split the chained certificate file by hand, or you can download them, pre-split, from GitHub:
+      </p>
+      <ul>
+        <li>the server
+          <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.crt.pem">certificate</a> ("*.sslip.io")</li>
+        <li>the intermedicate certificate
+          <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/intermediate-ca.crt.pem">chain</a> (the COMODO CAs)</li>
+      </ul>
+      <p class="lead">Why don't you include "AddTrust External CA Root"'s root certificate in your chain?</p>
+      <p>Certain people consider it bad taste to include the root certificate in the .pem chain. Really. And the root certificate doesn't need to be there: it's already installed in the system (and sometimes in the browser).
+      </p>
+      <p class="lead">Why can't I use dots in my hostname? xip.io lets me use dots.</p>
+      <p class="lead">Do I have to use the sslip.io domain? I'd rather have a valid cert for my domain.</p>
+      <p>If you want valid SSL certificate, and you don't want to use the sslip.io domain, then you'll need to purchase a certificate for your domain. We purchased ours from
+        <a href="https://www.cheapsslshop.com">Cheap SSL Shop</a>, but use a vendor with whom you're comfortable.
+      </p>
+      <p class="lead"></p>
+      <p class="lead">Do you have support for IPv6-style addresses?</p>
+      <p>Not yet, but if there's enough demand for it, we might try implementing it.</p>
+      <p class="lead">Why did you choose a 4096-bit key instead of a 2048-bit key?</p>
+      <p>We couldn't help ourselves&mdash;when it comes to keys, longer is better. In retrospect there were flaws in our thinking: certain hardware devices, e.g. YubiKeys, only support keys of length 2048 bits or less. Also, there was no technical value
+        in making a long key&mdash;it's publicly available on GitHub, so a zero-bit key would have been equally secure.</p>
+      <p class="lead">Where do I report bugs? I think I found one.</p>
+      <p>Open an issue on <a href="https://github.com/cunnie/sslip.io/issues">GitHub</a>; we're tracking our issues there.</p>
+      <p class="lead">There's a typo/mistake on the sslip.io website.</p>
+      <p>Thanks! We love <a href="https://github.com/cunnie/sslip.io/pulls">pull requests</a>.</p>
+      <div class="row">
+        <p></p>
+      </div>
+      <p>&copy; 2015 Brian Cunnie, Pivotal Software</p>
     </div>
   </div>
   <!-- /.container -->
