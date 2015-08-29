@@ -5,9 +5,10 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- The above 3 meta tags *must*
-come first in the head; any other head content must come *after* these tags -->
+  <meta name="viewport" content="width=device-width,
+initial-scale=1">
+  <!-- The above 3 meta tags *must* come first in the head; any
+other head content must come *after* these tags -->
 
   <title>sslip.io FAQ</title>
   <meta name="description" content="sslip.io">
@@ -37,14 +38,14 @@ come first in the head; any other head content must come *after* these tags -->
     <div class="container">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle
-    collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-          <span class="sr-only">Toggle navigation
-          </span>
+  collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation </span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button> <a class="navbar-brand" href="/">sslip.io</a> </div>
-      <div id="navbar" class="collapse navbar-collapse">
+      <div id="navbar" class="collapse
+  navbar-collapse">
         <ul class="nav navbar-nav">
           <li><a href="/">Home</a></li>
           <li class="active"><a href="faq.html">FAQ</a></li>
@@ -64,35 +65,33 @@ come first in the head; any other head content must come *after* these tags -->
       <p class="lead">Can I use this certificate on my commerce website?</p>
       <p>Although there's no technical reason why you couldn't use the sslip.io SSL key and certificate for your commerce web, we <i>strongly</i> recommend against it: the key is publicly available; your traffic isn't secure. sslip.io's primary purpose is
         to assist developers who need to test against valid SSL certs, not to safeguard content.</p>
-      <p class="lead">What is the sslip.io certificate chain?</p>
+      <p class="lead">What is the sslip.io certificate chain?
+      </p>
       <p>The sslip.io certificate chain looks like the following:</p>
       <div class="col-sm-12">
-        <img src="img/cert_chain.png" height="206" />
-      </div>
+        <img src="img/cert_chain.png" height="206" /> </div>
       <div class="row"></div>
       <p></p>
       <p>Note that the "root" certificate is "AddTrust's External CA Root", which issued a certificate to the "COMODO RSA Certification Authority", which in turn issued a certificate to the "COMODO RSA Domain Validation Secure Server CA" which in turn issued
         our certificate, "*.sslip.io".</p>
-      <p class="lead">My webserver wants a certificate and an "intermediate certificate chain"&mdash;where do I get that?</p>
-      <p>Certain web servers (e.g. <a href="http://www.tenable.com">Tenable's</a>
-        <a href="http://www.tenable.com/products/nessus-vulnerability-scanner">Nessus</a> scanner) prefer to split the chained certificate file (which has three concatenated certificates) into two files: one file containing a single certificate for the
-        server itself (e.g. the "*.sslip.io" certificate), and a second file containing the intermediate certificate authorities (e.g. the two COMODO certificate authorities).</p>
+      <p class="lead">My webserver wants a certificate and an "intermediate certificate chain"&mdash;where do I get that?
+      </p>
+      <p>Certain web servers (e.g. <a href="http://www.tenable.com">Tenable's</a> <a href="http://www.tenable.com/products/nessus-vulnerability-scanner">Nessus</a> scanner) prefer to split the chained certificate file (which has three concatenated certificates)
+        into two files: one file containing a single certificate for the server itself (e.g. the "*.sslip.io" certificate), and a second file containing the intermediate certificate authorities (e.g. the two COMODO certificate authorities).</p>
       <p>You can split the chained certificate file by hand, or you can download them, pre-split, from GitHub:
       </p>
       <ul>
-        <li>the server
-          <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.crt.pem">certificate</a> ("*.sslip.io")</li>
-        <li>the intermedicate certificate
-          <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/intermediate-ca.crt.pem">chain</a> (the COMODO CAs)</li>
+        <li>the server <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.crt.pem">certificate</a> ("*.sslip.io")
+        </li>
+        <li>the intermedicate certificate <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/intermediate-ca.crt.pem">chain</a> (the COMODO CAs)</li>
       </ul>
       <p class="lead">Why don't you include "AddTrust External CA Root"'s root certificate in your chain?</p>
-      <p>Certain people consider it bad taste to include the root certificate in the .pem chain. Really. And the root certificate doesn't need to be there: it's already installed in the system (and sometimes in the browser).
+      <p>Certain people consider it bad taste to include the root certificate in the .pem chain. Really. And the root certificate doesn't need to be there: it's already installed in the system (and sometimes in the browser). </p>
+      <p class="lead">Why can't I use dots in my hostname? xip.io lets me use dots.
       </p>
-      <p class="lead">Why can't I use dots in my hostname? xip.io lets me use dots.</p>
       <p class="lead">Do I have to use the sslip.io domain? I'd rather have a valid cert for my domain.</p>
-      <p>If you want valid SSL certificate, and you don't want to use the sslip.io domain, then you'll need to purchase a certificate for your domain. We purchased ours from
-        <a href="https://www.cheapsslshop.com">Cheap SSL Shop</a>, but use a vendor with whom you're comfortable.
-      </p>
+      <p>If you want valid SSL certificate, and you don't want to use the sslip.io domain, then you'll need to purchase a certificate for your domain. We purchased ours from <a href="https://www.cheapsslshop.com">Cheap SSL Shop</a>, but use a vendor with
+        whom you're comfortable. </p>
       <p class="lead"></p>
       <p class="lead">Do you have support for IPv6-style addresses?</p>
       <p>Not yet, but if there's enough demand for it, we might try implementing it.</p>
@@ -101,12 +100,14 @@ come first in the head; any other head content must come *after* these tags -->
         in making a long key&mdash;it's publicly available on GitHub, so a zero-bit key would have been equally secure.</p>
       <p class="lead">Where do I report bugs? I think I found one.</p>
       <p>Open an issue on <a href="https://github.com/cunnie/sslip.io/issues">GitHub</a>; we're tracking our issues there.</p>
-      <p class="lead">There's a typo/mistake on the sslip.io website.</p>
+      <p class="lead">There's a typo/mistake on the sslip.io website.
+      </p>
       <p>Thanks! We love <a href="https://github.com/cunnie/sslip.io/pulls">pull requests</a>.</p>
       <div class="row">
         <p></p>
       </div>
-      <p>&copy; 2015 Brian Cunnie, Pivotal Software</p>
+      <p>&copy; 2015 Brian Cunnie, Pivotal Software
+      </p>
     </div>
   </div>
   <!-- /.container -->
@@ -123,19 +124,21 @@ come first in the head; any other head content must come *after* these tags -->
   <!--
   IE10 viewport hack for Surface/desktop Windows 8 bug -->
   <script src="https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script>
-  <!-- Google Analytics -->
+  <!--
+  Google Analytics -->
   <script>
     (function(i, s, o, g, r, a, m) {
       i['GoogleAnalyticsObject'] = r;
       i[r] = i[r] || function() {
         (i[r].q = i[r].q || []).push(arguments)
       }, i[r].l = 1 * new Date();
-      a = s.createElement(o),
-        m = s.getElementsByTagName(o)[0];
+      a = s.createElement(o), m =
+        s.getElementsByTagName(o)[0];
       a.async = 1;
       a.src = g;
       m.parentNode.insertBefore(a, m)
-    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+    })(window, document, 'script',
+      '//www.google-analytics.com/analytics.js', 'ga');
 
     ga('create', 'UA-43107212-2', 'auto');
     ga('send', 'pageview');
