@@ -77,7 +77,7 @@ come first in the head; any other head content must come *after* these tags -->
         to your webserver, your docker registry, etc.... All in a matter of seconds.</p>
       <h3>How do I use it?
       </h3>
-      <p class="lead">First, use your server's IP address to determine its sslip.io hostname.</p>
+      <p class="lead">First, find your server's IP address to determine its sslip.io hostname.</p>
       <p>Your server's sslip.io is a mash-up of your server's IP address and the <b>sslip.io</b> domain. Here are some examples:</p>
       <table class="sslip">
         <tr>
@@ -114,8 +114,6 @@ curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.k
 curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.chained.crt.pem
       </pre>
       <p class="lead">Third, configure the webserver with your sslip.io hostname, SSL certificate, and SSL key</p>
-
-
       <p>Configure your webserver. Set the server name to sslip.io hostname, and configure the SSL portion to use the key and certificate downloaded from GitHub. Here is a sample from sslip.io's webserver's <i>nginx.conf</i> (modified for clarity):</p>
       <pre>
 server {
@@ -124,6 +122,8 @@ server {
   ssl_certificate     /etc/ssl/sslip.io.chained.crt.pem;
   ssl_certificate_key /etc/ssl/sslip.io.key.pem;
       </pre>
+      <p class="lead">Finally, restart your webserver and browse to its sslip.io address</p>
+      <p>Admire the beautiful green lock in your browser's address bar.<p>
       <div class="row">
         <p></p>
       </div>
