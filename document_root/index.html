@@ -106,7 +106,11 @@ virtual hosting</a>.</p>
 
       <p class="lead">Second, download sslip.io's SSL certificate and key from GitHub</p>
       <p>Download the SSL key (<a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.key.pem">sslip.io.key.pem</a>) and wildcard SSL certificate chain (<a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.chained.crt.pem">sslip.io.chained.crt.pem</a>)
-        from GitHub.</p>
+        from GitHub. You may use <i>curl</i> if you prefer the command line:</p>
+      <pre>
+curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.key.pem
+curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.chained.crt.pem
+      </pre>
       <p class="lead">Third, configure the webserver with your sslip.io hostname, SSL certificate, and SSL key</p>
 
 
