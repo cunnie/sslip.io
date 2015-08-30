@@ -73,12 +73,18 @@ come first in the head; any other head content must come *after* these tags -->
       <div class="col-sm-1"></div>
       <div class="row"></div>
       <h3>What is it?</h3>
-      <p><b>sslip.io</b> is a special DNS domain that maps crafted hostnames
-        to IP addresses (e.g. <i>192-168-0-1.sslip.io</i> resolves to <i>192.168.0.1</i>).
-        Combined with a valid sslip.io wildcard SSL certificate installed on your server, it allows
-        your server to present a valid SSL certificate when browsed to using the
-        crafted sslip.io hostname. It works for your webserver, your docker registry, etc....
-        All in a matter of seconds.</p>
+      <p><b>sslip.io</b> is a means for developers to test against valid SSL certificates
+        without the bother of purchasing them.  Two components make this possible:</p>
+      <ol>
+      <li>a special DNS backend that maps crafted hostnames to IP addresses
+        (e.g. <i>192-168-0-1.sslip.io</i> resolves to <i>192.168.0.1</i>) (similar to xip.io)</li>
+      <li>a wildcard SSL certificate for *.sslip.io and the corresponding key, both downloadable
+        from GitHub</li>
+      </ol>
+      <p>A developer can install the certificate and key on the
+        server, configure the server's name to its sslip.io fully-qualified domain name,
+	(e.g. <i>52-0-56-137.sslip.io</i>), and then browse to the server via HTTPS using the
+	sslip.io FQDN. All in a matter of seconds.</p>
       <h3>How do I use it?
       </h3>
       <p class="lead">First, find your server's IP address to determine its sslip.io hostname</p>
