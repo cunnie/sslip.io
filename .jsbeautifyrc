@@ -1,0 +1,10 @@
+{
+ "html": {
+   "unformatted": ["a", "sub", "sup", "b", "i", "u", "pre"],
+   "wrap_line_length": 60,
+   "wrap_attributes": "auto",
+   "beautifyEntireFileOnSave": true,
+//   "preserve_newlines": false,
+   "indent_size": 2
+ }
+}
