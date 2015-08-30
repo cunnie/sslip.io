@@ -75,12 +75,12 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
         <li>a wildcard SSL certificate for *.sslip.io and the corresponding
           key, both downloadable from GitHub</li>
       </ol>
-      <p>A developer can install the certificate and key on the
-        server, modify the server's configuration and restart
-        the daemon, at which point anyone can browse the server
-        using the sslip.io hostname (e.g. <i>52-0-56-137.sslip.io</i>)
-        via HTTPS and receive a valid SSL connection (green lock).
-        All in a matter of seconds. </p>
+      <p>Install the certificate and key on the
+        server, modify the server's configuration to use the certificate and key,  and restart
+        the daemon. After that, browse the server
+        using the sslip.io hostname via HTTPS (e.g.
+        <a href="https://52-0-56-137.sslip.io">https://52-0-56-137.sslip.io</a>)
+        and receive a valid SSL connection (green lock), all in a matter of seconds. </p>
       <h3>How do I use it? </h3>
       <p class="lead">First, find your server's IP address to determine its sslip.io
         hostname</p>
@@ -93,28 +93,23 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
           <th>sslip.io Hostname</th>
         </tr>
         <tr>
-          <td>52.0.56.137</td>
-          <td><a href="https://52-0-56-137.sslip.io/">52-0-56-137.sslip.io</a></td>
-        </tr>
-        <tr>
           <td>127.0.0.1</td>
           <td>127-0-0-1.sslip.io</td>
         </tr>
         <tr>
-          <td>10.1.1.2</td>
-          <td>www-10-1-1-2.sslip.io</td>
+          <td>192.168.1.80</td>
+          <td>192-168-1-80.sslip.io</td>
         </tr>
         <tr>
-          <td>172.16.0.1</td>
-          <td>console-172-16-0-1.sslip.io</td>
+          <td>172.16.0.80</td>
+          <td>172-16-0-80.sslip.io</td>
+        </tr>
+        <tr>
+          <td>52.0.56.137</td>
+          <td><a href="https://52-0-56-137.sslip.io/">52-0-56-137.sslip.io</a></td>
         </tr>
       </table>
       <br />
-      <p style="font-style:
-italic;">Note that in the last two examples we prepended additional
-        information to the hostname, i.e. "www-" and "console-",
-        respectively. This allows sslip.io to work with <a href="https://en.wikipedia.org/wiki/Virtual_hosting#Name-based">name-based
-virtual hosting</a>.</p>
       <p class="lead">Second, download sslip.io's SSL certificate and key from
         GitHub</p>
       <p>Download the SSL key (<a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.key.pem">sslip.io.key.pem</a>)

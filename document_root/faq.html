@@ -84,63 +84,81 @@ other head content must come *after* these tags -->
         wildcard SSL certificate, but "www.sf.ca.us.10.9.9.142.sslip.io"
         will not. This is a technical limitation of wildcard
         certs and the manner in which browsers treat them (read
-        more <a href="http://security.stackexchange.com/questions/10538/what-certificates-are-needed-for-multi-level-subdomains">here</a>).
-        This restricts sslip.io's usage model. For example, it
+        more <a href="http://security.stackexchange.com/questions/10538/what-certificates-are-needed-for-multi-level-subdomains">here</a>).</p>
+      <p>This restricts sslip.io's usage model. For example, it
         won't work properly with Cloud Foundry's app domain or
-        system domain.
-        <p class="lead">Can you make the hostnames easier to remember? I'm being
-          force to memorize IP addresses.</p>
-        <p>Unfortunately, no. We appreciate that "52-0-56-137.sslip.io"
-          is not an easy-to-remember hostname, whereas something
-          along the lines of "aws-server.sslip.io" would be much
-          simpler, but we don't see an easy solution&mdash;we
-          need to be able to extract the IP address from the
-          hostname in order for our DNS nameserver to reply with
-          the proper address when queried.</p>
-        <p class="lead">Do you have support for IPv6-style addresses?</p>
-        <p>Not yet, but if there's enough demand for it we might
-          try implementing it.</p>
-        <p class="lead">Why did you choose a 4096-bit key instead of a 2048-bit
-          key?</p>
-        <p>We couldn't help ourselves&mdash;when it comes to keys,
-          longer is better. In retrospect there were flaws in
-          our thinking: certain hardware devices, e.g. YubiKeys,
-          only support keys of length 2048 bits or less. Also,
-          there was no technical value in making a long key&mdash;it's
-          publicly available on GitHub, so a zero-bit key would
-          have been equally secure.</p>
-        <p class="lead">Do I have to use the sslip.io domain? I'd rather have
-          a valid cert for my domain.</p>
-        <p>If you want valid SSL certificate, and you don't want
-          to use the sslip.io domain, then you'll need to purchase
-          a certificate for your domain. We purchased ours from
-          <a href="https://www.cheapsslshop.com">Cheap SSL Shop</a>,
-          but use a vendor with whom you're comfortable. </p>
-        <p class="lead">What is the sslip.io certificate chain? </p>
-        <p>The sslip.io certificate chain is the series of certificates,
-          each signing the next, with a root certificate at the
-          top. It looks like the following:</p>
-        <div class="col-sm-12">
-          <img src="img/cert_chain.png" height="206" /> </div>
-        <div class="row"></div>
+        system domain.</p>
+      <p class="lead">Does sslip.io work with name-based virtual hosting? We
+        have multiple projects but only one webserver.</p>
+
+      <p> sslip.io interoperates quite well with <a href="https://en.wikipedia.org/wiki/Virtual_hosting#Name-based">https://en.wikipedia.org/wiki/Virtual_hosting#Name-based</a>.
+        You can prepend identifying information to the sslip.io
+        hostname without jeopardizing the address resolution, and then use
+        those hostnames to distinguish the content being served.
+        For example, let's assume that your webserver's IP address
+        is 10.9.9.30, and that you have three projects you're
+        working on (Apple, Google, and Facebook). You would use
+        the following three sslip.io hostnames: </p>
+
+      <ul>
+        <li>apple-10-9-9-30.xip.io</li>
+        <li>facebook-10-9-9-30.xip.io</li>
+        <li>google-10-9-9-30.xip.io</li>
+      </ul>
+      <p class="lead">Can you make the hostnames easier to remember? I'm being
+        force to memorize IP addresses.</p>
+      <p>Unfortunately, no. We appreciate that "52-0-56-137.sslip.io"
+        is not an easy-to-remember hostname, whereas something
+        along the lines of "aws-server.sslip.io" would be much
+        simpler, but we don't see an easy solution&mdash;we need
+        to be able to extract the IP address from the hostname
+        in order for our DNS nameserver to reply with the proper
+        address when queried.</p>
+      <p class="lead">Do you have support for IPv6-style addresses?</p>
+      <p>Not yet, but if there's enough demand for it we might try
+        implementing it.</p>
+      <p class="lead">Why did you choose a 4096-bit key instead of a 2048-bit
+        key?
+      </p>
+      <p>We couldn't help ourselves&mdash;when it comes to keys,
+        longer is better. In retrospect there were flaws in our
+        thinking: certain hardware devices, e.g. YubiKeys, only
+        support keys of length 2048 bits or less. Also, there
+        was no technical value in making a long key&mdash;it's
+        publicly available on GitHub, so a zero-bit key would
+        have been equally secure.</p>
+      <p class="lead">Do I have to use the sslip.io domain? I'd rather have a
+        valid cert for my domain.</p>
+      <p>If you want valid SSL certificate, and you don't want to
+        use the sslip.io domain, then you'll need to purchase
+        a certificate for your domain. We purchased ours from
+        <a href="https://www.cheapsslshop.com">Cheap SSL Shop</a>,
+        but use a vendor with whom you're comfortable. </p>
+      <p class="lead">What is the sslip.io certificate chain? </p>
+      <p>The sslip.io certificate chain is the series of certificates,
+        each signing the next, with a root certificate at the
+        top. It looks like the following:</p>
+      <div class="col-sm-12">
+        <img src="img/cert_chain.png" height="206" /> </div>
+      <div class="row"></div>
+      <p></p>
+      <p>Note that the "root" certificate is "AddTrust's External
+        CA Root", which issued a certificate to the "COMODO RSA
+        Certification Authority", which in turn issued a certificate
+        to the "COMODO RSA Domain Validation Secure Server CA"
+        which in turn issued our certificate, "*.sslip.io".
+      </p>
+      <p class="lead">How is "sslip.io" pronounced?</p>
+      <p>ESS-ESS-ELL-EYE-PEE-DOT-EYE-OH</p>
+      <p class="lead">Where do I report bugs? I think I found one.</p>
+      <p>Open an issue on <a href="https://github.com/cunnie/sslip.io/issues">GitHub</a>;
+        we're tracking our issues there.</p>
+      <p class="lead">There's a typo/mistake on the sslip.io website. </p>
+      <p>Thanks! We love <a href="https://github.com/cunnie/sslip.io/pulls">pull requests</a>.</p>
+      <div class="row">
         <p></p>
-        <p>Note that the "root" certificate is "AddTrust's External
-          CA Root", which issued a certificate to the "COMODO
-          RSA Certification Authority", which in turn issued
-          a certificate to the "COMODO RSA Domain Validation
-          Secure Server CA" which in turn issued our certificate,
-          "*.sslip.io".</p>
-        <p class="lead">How is "sslip.io" pronounced?</p>
-        <p>ESS-ESS-ELL-EYE-PEE-DOT-EYE-OH</p>
-        <p class="lead">Where do I report bugs? I think I found one.</p>
-        <p>Open an issue on <a href="https://github.com/cunnie/sslip.io/issues">GitHub</a>;
-          we're tracking our issues there.</p>
-        <p class="lead">There's a typo/mistake on the sslip.io website. </p>
-        <p>Thanks! We love <a href="https://github.com/cunnie/sslip.io/pulls">pull requests</a>.</p>
-        <div class="row">
-          <p></p>
-        </div>
-        <p>&copy; 2015 Brian Cunnie, Pivotal Software </p>
+      </div>
+      <p>&copy; 2015 Brian Cunnie, Pivotal Software </p>
     </div>
   </div>
   <!-- /.container -->
