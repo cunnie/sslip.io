@@ -60,12 +60,13 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
         <span class="sr-only">Error:</span>
         2015-09-12: <b>This service is no longer available</b>.
         The original certificate for the sslip.io domain has
-        been revoked and a new one issued on the condition
-        that the private key not be published. Pivotal Software
-        employees may request a copy of the key. For those who
-        wish to deploy their own version of sslip.io, follow
-        <a style="color:red;" href="https://github.com/cloudfoundry-community/xip-release#deploying-a-custom-version-of-xip-to-amazon-aws">
-          these</a> instructions.
+        been revoked and a new one issued on the condition that
+        the private key not be published. <i>Pivotal Software employees
+        may access the key via <a style="color:#800;" href="https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">Google Drive</a></i>.
+        If you're interested in deploying a custom version of
+        sslip.io, follow
+        <a style="color:#800;" href="https://github.com/cloudfoundry-community/xip-release#deploying-a-custom-version-of-xip-to-amazon-aws">
+          these instructions</a>.
       </div>
       <br />
       <div class="col-sm-5">
@@ -151,7 +152,8 @@ SSLCertificateFile "/etc/ssl/sslip.io.chained.crt.pem"
 SLCertificateKeyFile "/etc/ssl/sslip.io.key.pem"</pre>
       <p class="lead">Finally, restart your webserver and browse to its sslip.io
         address via HTTPS</p>
-      <p>Browse to your webserver's sslip.io hostname, e.g. <a href="https://52-0-56-137.sslip.io" style="a:link {color: red; }">https://52-0-56-137.sslip.io</a>        (assuming that 52.0.56.137 is the IP address of your
+      <p>Browse to your webserver's sslip.io hostname, e.g. <a href="https://52-0-56-137.sslip.io">https://52-0-56-137.sslip.io</a>
+        (assuming that 52.0.56.137 is the IP address of your
         webserver, which it isn't because that's the IP address
         of <i>our</i> webserver). Admire the beautiful green
         lock in your browser's address bar.</p>
