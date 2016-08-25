@@ -1,0 +1,24 @@
+# pipeline for Concourse CI for sslip.io
+# DNS Checks
+groups:
+- name: sslip.io
+  jobs:
+  - check-dns
+
+
+jobs:
+- name: check-dns
+  file:
+  plan:
+  - {get: sslip.io,   trigger: true}
+  - task: check-dns
+    file: sslip.io/ci/tasks/check-dns.yml
+    params:
+      DOMAIN: sslip.io
+
+resources:
+- name: sslip.io
+  type: git
+  source:
+    uri: https://github.com/cunnie/sslip.io
+    branch: master
