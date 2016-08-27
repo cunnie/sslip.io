@@ -1,0 +1,60 @@
+# pipeline for Concourse CI for sslip.io
+# DNS Checks
+groups:
+- name: badges
+  jobs:
+  - passing
+  - failing
+  - unknown
+  - aborted
+  - errored
+
+
+jobs:
+- name: passing
+  plan:
+  - task: passing
+    config:
+      platform: linux
+      image: "docker:///fedora"
+      tags: [ "micro" ]
+      run:
+        path: true
+- name: failing
+  plan:
+  - task: failing
+    config:
+      platform: linux
+      image: "docker:///fedora"
+      tags: [ "micro" ]
+      run:
+        path: false
+- name: unknown
+  plan:
+  - task: unknown
+    config:
+      platform: linux
+      image: "docker:///fedora"
+      tags: [ "micro" ]
+      run:
+        path: sleep
+        args: ["864000"]
+- name: aborted
+  plan:
+  - task: aborted
+    config:
+      platform: linux
+      image: "docker:///fedora"
+      tags: [ "micro" ]
+      run:
+        path: sleep
+        args: ["864000"]
+- name: errored
+  plan:
+  - task: errored
+    config:
+      platform: linux
+      image: "docker:///fedora"
+      tags: [ "micro" ]
+      run:
+        path: non-existent
