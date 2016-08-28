@@ -12,6 +12,7 @@ groups:
 
 jobs:
 - name: passing
+  # `true` always passes
   plan:
   - task: passing
     config:
@@ -21,6 +22,7 @@ jobs:
       run:
         path: true
 - name: failing
+  # `false` always fails
   plan:
   - task: failing
     config:
@@ -30,6 +32,7 @@ jobs:
       run:
         path: false
 - name: unknown
+  # never run this job and it will always be "unknown"
   plan:
   - task: unknown
     config:
@@ -40,6 +43,7 @@ jobs:
         path: sleep
         args: ["864000"]
 - name: aborted
+  # run this job and then abort it. You'll have ten days to abort it.
   plan:
   - task: aborted
     config:
@@ -50,6 +54,7 @@ jobs:
         path: sleep
         args: ["864000"]
 - name: errored
+  # Concourse will error if it can't find the `non-existent` executable
   plan:
   - task: errored
     config:
