@@ -1,0 +1,39 @@
+# fly -t nono sp -p simple -c pipeline-simple.yml
+groups:
+- name: simple
+  jobs:
+  - unit
+  - integration
+
+jobs:
+- name: unit
+  plan:
+  - get: src
+    trigger: true
+  - task: unit
+    config:
+      platform: linux
+      image: "docker:///fedora"
+      tags: [ "micro" ]
+      run:
+        path: false
+
+- name: integration
+  plan:
+  - get: src
+    trigger: true
+    passed: [unit]
+  - task: integration
+    config:
+      platform: linux
+      image: "docker:///fedora"
+      tags: [ "micro" ]
+      run:
+        path: true
+
+resources:
+- name: src
+  type: git
+  source:
+    uri: https://github.com/cunnie/sslip.io
+    branch: master

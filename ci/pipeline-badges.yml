@@ -1,5 +1,5 @@
 # pipeline for Concourse CI for sslip.io
-# DNS Checks
+# fly -t nono sp -p badges -c pipeline-badges.yml
 groups:
 - name: badges
   jobs:
