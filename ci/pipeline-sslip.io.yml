@@ -1,5 +1,6 @@
 # pipeline for Concourse CI for sslip.io
-# DNS Checks
+# fly -t nono sp -p sslip.io -c pipeline-sslip.io.yml
+# fly -t nono expose-pipeline -p sslip.io
 groups:
 - name: sslip.io
   jobs:
@@ -8,7 +9,6 @@ groups:
 
 jobs:
 - name: check-dns
-  file:
   plan:
   - {get: sslip.io,   trigger: true}
   - task: check-dns

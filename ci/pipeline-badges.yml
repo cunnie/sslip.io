@@ -1,5 +1,6 @@
-# pipeline for Concourse CI for sslip.io
+# pipeline for Concourse CI for badges
 # fly -t nono sp -p badges -c pipeline-badges.yml
+# fly -t nono expose-pipeline -p badges
 groups:
 - name: badges
   jobs:
