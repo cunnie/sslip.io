@@ -1,4 +1,5 @@
 # fly -t nono sp -p simple -c pipeline-simple.yml
+# fly -t nono expose-pipeline -p simple
 groups:
 - name: simple
   jobs:
