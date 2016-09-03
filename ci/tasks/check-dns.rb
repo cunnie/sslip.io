@@ -16,7 +16,7 @@ def get_whois_nameservers(domain)
   nameservers
 end
 
-exit_code=0 # assume successful exit
+num_failures=0 # assume successful exit
 
 check_domain(domain)
 puts "[PASS] #{domain} basic check ('DOMAIN' variable set & not empty)"
@@ -26,15 +26,15 @@ whois_nameservers = get_whois_nameservers(domain)
 puts "[PASS] #{domain} has whois entry with nameservers #{whois_nameservers.join(", ")}"
 
 whois_nameservers.each do |whois_nameserver|
-  dig = `dig +short ns sslip.io #{whois_nameserver}`
+  dig = `dig +short ns sslip.io @#{whois_nameserver}`
 	dig_nameservers = dig.split(/\n+/)
   if ( whois_nameservers.sort == dig_nameservers.sort )
     puts "[PASS] #{whois_nameserver}'s NS records match whois"
   else
     puts "[FAIL] #{whois_nameserver}'s NS records do NOT match whois: #{dig_nameservers.join(", ")}"
-    exit_code=5
+    num_failures=(( num_failures + 1 ))
   end
   #p "#{whois_nameserver}: #{nameservers}"
 end
 
-exit(exit_code)
+exit(num_failures)
