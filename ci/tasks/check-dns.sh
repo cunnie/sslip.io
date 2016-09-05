@@ -1,3 +1,3 @@
-#!/bin/bash -x -e
+#!/bin/bash -xe
 
 rspec --format documentation --color spec
