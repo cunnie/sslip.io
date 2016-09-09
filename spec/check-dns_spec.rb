@@ -52,5 +52,11 @@ describe domain do
     it "resolves #{a.join("-")}.sslip.io to #{a.join(".")}" do
       expect(`dig +short #{a.join("-") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
     end
+
+    a = [ rand(256), rand(256), rand(256), rand(256) ]
+    b = [ ('a'..'z').to_a, ('0'..'9').to_a ].flatten.shuffle[0,8].join
+    it "resolves #{b}.#{a.join("-")}.sslip.io to #{a.join(".")}" do
+      expect(`dig +short #{b}.#{a.join("-") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
+    end
   end
 end
