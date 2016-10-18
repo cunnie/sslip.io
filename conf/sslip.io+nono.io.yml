@@ -229,7 +229,7 @@ pdns_pipe: |
   done
 pdns_pipe_conf: |
   # Increment this timestamp when the contents of the file change.
-  XIP_TIMESTAMP="2016090200"
+  XIP_TIMESTAMP="2016101800"
 
   # The top-level domain for which the name server is authoritative.
   # CHANGEME: change "sslip.io" to your domain
@@ -247,7 +247,7 @@ pdns_pipe_conf: |
   # CHANGEME: change this to match your NS records; one of these IP addresses
   # should match the jobs(xip).networks.static_ips listed above
   XIP_NS_ADDRESSES=( "52.0.56.137" "78.47.249.19" )
-  XIP_NS=( "ns-aws.nono.io" "ns-gce.nono.io" "ns-he.nono.io" )
+  XIP_NS=( "ns-aws.nono.io" "ns-azure.nono.io" "ns-gce.nono.io" )
 
   # These are the MX records for your domain.  IF YOU'RE NOT SURE,
   # don't set it at at all (comment it out)--it defaults to no
