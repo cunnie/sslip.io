@@ -20,7 +20,7 @@ pdns_pipe: |
   shopt -s nocasematch
 
   # Increment this timestamp when the contents of the file change.
-  XIP_TIMESTAMP="2016102200"
+  XIP_TIMESTAMP="2016102201"
 
   # The top-level domain for which the name server is authoritative.
   # CHANGEME: change "sslip.io" to your domain
