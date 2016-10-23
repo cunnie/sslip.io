@@ -16,15 +16,25 @@ pdns_conf: |
   pipe-second-command=/var/vcap/jobs/pdns/bin/pipe /var/vcap/jobs/pdns/etc/pipe.conf
 pdns_pipe: |
   #!/usr/bin/env bash
+  #
+  # Originally written by Sam Stephenson for xip.io
   set -e
   shopt -s nocasematch
 
+  # Configuration
+  #
   # Increment this timestamp when the contents of the file change.
-  XIP_TIMESTAMP="2016102201"
+  XIP_TIMESTAMP="2016102202"
 
   # The top-level domain for which the name server is authoritative.
   # CHANGEME: change "sslip.io" to your domain
   XIP_DOMAIN="sslip.io"
+
+  # How long responses should be cached, in seconds.
+  XIP_TTL=300
+
+  # SOA record
+  XIP_SOA="briancunnie.gmail.com ns-he.nono.io $XIP_TIMESTAMP $XIP_TTL $XIP_TTL $XIP_TTL $XIP_TTL"
 
   # The public IP addresses (e.g. for the web site) of the top-level domain.
   # `A` queries for the top-level domain will return this list of addresses.
@@ -44,17 +54,10 @@ pdns_pipe: |
   # don't set it at at all (comment it out)--it defaults to no
   # MX records.
   # XIP_MX_RECORDS=(
-    # "10"  "mx.zoho.com"
-    # "20"  "mx2.zoho.com"
+  #   "10"  "mx.zoho.com"
+  #   "20"  "mx2.zoho.com"
   # )
-
-  # How long responses should be cached, in seconds.
-  XIP_TTL=300
-  #
-  # Configuration
-  #
   XIP_MX_RECORDS=( )
-  XIP_TTL=300
 
   if [ -a "$1" ]; then
     source "$1"
@@ -105,46 +108,27 @@ pdns_pipe: |
     printf "[xip-pdns:$$] %s\n" "$@" >&2
   }
 
+
   #
   # xip.io domain helpers
   #
-  XIP_DOMAIN_PATTERN="(^|\.)${XIP_DOMAIN//./\.}\$"
-  NS_SUBDOMAIN_PATTERN="^ns-([0-9]+)\$"
-  IP_SUBDOMAIN_PATTERN="(^|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))\$"
-  DASHED_IP_SUBDOMAIN_PATTERN="(^|-|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))\$"
-  BASE36_SUBDOMAIN_PATTERN="(^|\.)([a-z0-9]{1,7})\$"
+  IP_PATTERN="(^|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))"
+  DASHED_IP_PATTERN="(^|-|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))"
 
   qtype_is() {
     [ "$QTYPE" = "$1" ] || [ "$QTYPE" = "ANY" ]
-  }
-
-  qname_matches_domain() {
-    [[ "$QNAME" =~ $XIP_DOMAIN_PATTERN ]]
   }
 
   qname_is_root_domain() {
     [ "$QNAME" = "$XIP_DOMAIN" ]
   }
 
-  extract_subdomain_from_qname() {
-    SUBDOMAIN="${QNAME:0:${#QNAME}-${#XIP_DOMAIN}}"
-    SUBDOMAIN="${SUBDOMAIN%.}"
-  }
-
-  subdomain_is_ns() {
-    [[ "$SUBDOMAIN" =~ $NS_SUBDOMAIN_PATTERN ]]
-  }
-
   subdomain_is_ip() {
-    [[ "$SUBDOMAIN" =~ $IP_SUBDOMAIN_PATTERN ]]
+    [[ "$QNAME" =~ $IP_PATTERN ]]
   }
 
   subdomain_is_dashed_ip() {
-    [[ "$SUBDOMAIN" =~ $DASHED_IP_SUBDOMAIN_PATTERN ]]
-  }
-
-  subdomain_is_base36() {
-    [[ "$SUBDOMAIN" =~ $BASE36_SUBDOMAIN_PATTERN ]]
+    [[ "$QNAME" =~ $DASHED_IP_PATTERN ]]
   }
 
   resolve_ns_subdomain() {
@@ -153,23 +137,17 @@ pdns_pipe: |
   }
 
   resolve_ip_subdomain() {
-    [[ "$SUBDOMAIN" =~ $IP_SUBDOMAIN_PATTERN ]] || true
+    [[ "$QNAME" =~ $IP_PATTERN ]] || true
     echo "${BASH_REMATCH[2]}"
   }
 
   resolve_dashed_ip_subdomain() {
-    [[ "$SUBDOMAIN" =~ $DASHED_IP_SUBDOMAIN_PATTERN ]] || true
+    [[ "$QNAME" =~ $DASHED_IP_PATTERN ]] || true
     echo "${BASH_REMATCH[2]//-/.}"
   }
 
-  resolve_base36_subdomain() {
-    [[ "$SUBDOMAIN" =~ $BASE36_SUBDOMAIN_PATTERN ]] || true
-    local ip=$(( 36#${BASH_REMATCH[2]} ))
-    printf "%d.%d.%d.%d" $(( ip&0xFF )) $(( (ip>>8)&0xFF )) $(( (ip>>16)&0xFF )) $(( (ip>>24)&0xFF ))
-  }
-
   answer_soa_query() {
-    send_answer "SOA" "admin.$XIP_DOMAIN ns-1.$XIP_DOMAIN $XIP_TIMESTAMP $XIP_TTL $XIP_TTL $XIP_TTL $XIP_TTL"
+    send_answer "SOA" "$XIP_SOA"
   }
 
   answer_ns_query() {
@@ -203,6 +181,7 @@ pdns_pipe: |
     fi
   }
 
+
   #
   # PowerDNS pipe backend implementation
   #
@@ -213,38 +192,20 @@ pdns_pipe: |
   while read_query; do
     log "Query: type=$TYPE qname=$QNAME qclass=$QCLASS qtype=$QTYPE id=$ID ip=$IP"
 
-    if qname_matches_domain; then
-      if qname_is_root_domain; then
-        if qtype_is "SOA"; then
-          answer_soa_query
-        fi
-
-        if qtype_is "NS"; then
-          answer_ns_query
-        fi
-
-        if qtype_is "A"; then
-          answer_root_a_query
-        fi
-
-        if qtype_is "MX"; then
-          answer_mx_query
-        fi
-
-      elif qtype_is "A"; then
-        extract_subdomain_from_qname
-
-        if subdomain_is_ns; then
-          answer_subdomain_a_query_for ns
-
-        elif subdomain_is_dashed_ip; then
+    if qtype_is "SOA"; then
+      answer_soa_query
+    elif qtype_is "NS"; then
+      answer_ns_query
+    elif qtype_is "MX"; then
+      answer_mx_query
+    elif qtype_is "A"; then
+      if [ $QNAME == $XIP_DOMAIN ]; then
+        answer_root_a_query
+      else
+        if subdomain_is_dashed_ip; then
           answer_subdomain_a_query_for dashed_ip
-
         elif subdomain_is_ip; then
           answer_subdomain_a_query_for ip
-
-        elif subdomain_is_base36; then
-          answer_subdomain_a_query_for base36
         fi
       fi
     fi
