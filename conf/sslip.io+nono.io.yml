@@ -112,8 +112,8 @@ pdns_pipe: |
   #
   # xip.io domain helpers
   #
-  IP_PATTERN="(^|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))"
-  DASHED_IP_PATTERN="(^|-|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))"
+  IP_PATTERN="(^|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))($|\.)"
+  DASHED_IP_PATTERN="(^|-|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))($|-|\.)"
 
   qtype_is() {
     [ "$QTYPE" = "$1" ] || [ "$QTYPE" = "ANY" ]
@@ -194,11 +194,14 @@ pdns_pipe: |
 
     if qtype_is "SOA"; then
       answer_soa_query
-    elif qtype_is "NS"; then
+    fi
+    if qtype_is "NS"; then
       answer_ns_query
-    elif qtype_is "MX"; then
+    fi
+    if qtype_is "MX"; then
       answer_mx_query
-    elif qtype_is "A"; then
+    fi
+    if qtype_is "A"; then
       if [ $QNAME == $XIP_DOMAIN ]; then
         answer_root_a_query
       else
