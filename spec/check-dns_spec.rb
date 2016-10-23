@@ -1,3 +1,7 @@
+#!/usr/bin/env ruby
+#
+# DOMAIN=sslip.io rspec --format documentation --color spec
+#
 # Admittedly it's overkill to use rspec to run a set of assertions
 # against a DNS server -- a simple shell script would have been
 # shorter and more understandable. We are using rspec merely to
@@ -17,6 +21,8 @@ domain = ENV['DOMAIN'] || 'example.com'
 whois_nameservers = get_whois_nameservers(domain)
 
 describe domain do
+  soa = nil
+
   context "when evaluating $DOMAIN (\"#{domain}\") environment variable" do
     let (:domain) { ENV['DOMAIN'] }
     it 'is set' do
@@ -57,6 +63,12 @@ describe domain do
     b = [ ('a'..'z').to_a, ('0'..'9').to_a ].flatten.shuffle[0,8].join
     it "resolves #{b}.#{a.join("-")}.sslip.io to #{a.join(".")}" do
       expect(`dig +short #{b}.#{a.join("-") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
+    end
+
+    a = [ rand(256), rand(256), rand(256), rand(256) ]
+    b = [ ('a'..'z').to_a, ('0'..'9').to_a ].flatten.shuffle[0,8].join
+    it "resolves #{a.join("-")}.#{b} to #{a.join(".")}" do
+      expect(`dig +short #{a.join("-") + "." + b} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
     end
   end
 end
