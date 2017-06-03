@@ -14,6 +14,9 @@ pdns_conf: |
   slave=yes
   bind-first-config=/var/vcap/jobs/pdns/etc/named.conf
   pipe-second-command=/var/vcap/jobs/pdns/bin/pipe /var/vcap/jobs/pdns/etc/pipe.conf
+  # fixes `Fatal error: Unable to acquire TCPv6 socket: Address family not supported by protocol`
+  # undo when deployed with IPv6
+  local-ipv6=
 pdns_pipe: |
   #!/usr/bin/env bash
   #
