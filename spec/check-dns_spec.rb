@@ -11,7 +11,7 @@ def get_whois_nameservers(domain)
   soa = nil
   whois_lines = whois_output.split(/\n+/)
   nameserver_lines = whois_lines.select { |line| line =~ /^Name Server:/ }
-  nameservers = nameserver_lines.map { |line| line.split.last }
+  nameservers = nameserver_lines.map { |line| line.split.last.downcase }
   # whois records don't have trail '.'; NS records do; add trailing '.'
   nameservers.map { |ns| ns << '.' }
   nameservers
