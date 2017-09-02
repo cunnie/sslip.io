@@ -115,8 +115,11 @@ pdns_pipe: |
   #
   # xip.io domain helpers
   #
-  IP_PATTERN="(^|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))($|\.)"
-  DASHED_IP_PATTERN="(^|-|\.)(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))($|-|\.)"
+  # note we insert "x{0}" to separate the double parentheses "((" to
+  # avoid BOSH interpolation getting confused and thinking it needs to insert
+  # a variable.
+  IP_PATTERN="(^|\.)(x{0}(x{0}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))($|\.)"
+  DASHED_IP_PATTERN="(^|-|\.)(x{0}(x{0}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)-){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))($|-|\.)"
 
   qtype_is() {
     [ "$QTYPE" = "$1" ] || [ "$QTYPE" = "ANY" ]
