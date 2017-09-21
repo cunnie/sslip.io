@@ -38,7 +38,8 @@ describe domain do
   end
 
   whois_nameservers.each do |whois_nameserver|
-    it "nameserver #{whois_nameserver}'s NS records match whois's #{whois_nameservers}" do
+    it "nameserver #{whois_nameserver}'s NS records match whois's #{whois_nameservers}, " +
+      "`dig +short ns sslip.io @#{whois_nameserver}`" do
       dig_nameservers = `dig +short ns sslip.io @#{whois_nameserver}`.split(/\n+/)
       expect(dig_nameservers.sort).to eq(whois_nameservers.sort)
     end

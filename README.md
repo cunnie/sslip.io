@@ -14,7 +14,7 @@ Refer to the website ([sslip.io](https://sslip.io)) for more information.
 - `spec/` contains the RSpec files for test driven development (TDD).
   To run the tests:
 ```bash
-DOMAIN=sslip.io rspec spec/
+DOMAIN=sslip.io rspec --format documentation --color spec
 ```
 - `conf/sslip.io+nono.io.yml` contains the
   [PowerDNS](https://www.powerdns.com/)'s [pipe
