@@ -85,8 +85,8 @@ describe domain do
       expect(`dig +short AAAA 2001-4860-4860--8888.sslip.io @#{whois_nameserver}`.chomp).to eq("2001:4860:4860::8888")
     end
 
-    it "resolves 2001-4860-4860--8888.sslip.io' to eq 2001:4860:4860::8888)}" do
-      expect(`dig +short AAAA 2001-4860-4860--8888.sslip.io @#{whois_nameserver}`.chomp).to eq("2001:4860:4860::8888")
+    it "resolves 2601-646-100-69f0--24.sslip.io' to eq 2601:646:100:69f0::24)}" do
+      expect(`dig +short AAAA 2601-646-100-69f0--24.sslip.io @#{whois_nameserver}`.chomp).to eq("2601:646:100:69f0::24")
     end
   end
 end
