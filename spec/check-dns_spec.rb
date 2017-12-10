@@ -71,5 +71,22 @@ describe domain do
     it "resolves #{a.join("-")}.#{b} to #{a.join(".")}" do
       expect(`dig +short #{a.join("-") + "." + b} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
     end
+
+    # don't begin the hostname with a double-dash -- `dig` mistakes it for an argument
+    it "resolves api.--.sslip.io' to eq ::)}" do
+      expect(`dig +short AAAA api.--.sslip.io @#{whois_nameserver}`.chomp).to eq("::")
+    end
+
+    it "resolves localhost.--1.sslip.io' to eq ::1)}" do
+      expect(`dig +short AAAA localhost.api.--1.sslip.io @#{whois_nameserver}`.chomp).to eq("::1")
+    end
+
+    it "resolves 2001-4860-4860--8888.sslip.io' to eq 2001:4860:4860::8888)}" do
+      expect(`dig +short AAAA 2001-4860-4860--8888.sslip.io @#{whois_nameserver}`.chomp).to eq("2001:4860:4860::8888")
+    end
+
+    it "resolves 2001-4860-4860--8888.sslip.io' to eq 2001:4860:4860::8888)}" do
+      expect(`dig +short AAAA 2001-4860-4860--8888.sslip.io @#{whois_nameserver}`.chomp).to eq("2001:4860:4860::8888")
+    end
   end
 end
