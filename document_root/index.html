@@ -43,8 +43,10 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <li class="active"><a href="/">Home</a></li>
+          <!--
           <li><a href="faq.html">FAQ</a></li>
           <li><a href="about.html">About</a></li>
+          -->
         </ul>
       </div>
       <!--/.nav-collapse -->
@@ -52,115 +54,108 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
   </nav>
   <div class="container">
     <div class="starter-template">
-      <h1>sslip.io</h1>
-      <h4><i><b></b></i></h4>
-      <h3>Turn your red lock into a green lock!</h3>
-      <div class="alert alert-danger" role="alert">
-        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        2015-09-12: <b>This service is no longer available</b>.
-        The original certificate for the sslip.io domain has
-        been revoked and a new one issued on the condition that
-        the private key not be published. <i>Pivotal Software employees
-        may access the key via <a style="color:#800;" href="https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">Google Drive</a></i>.
-        If you're interested in deploying a custom version of
-        sslip.io, follow
-        <a style="color:#800;" href="https://github.com/cloudfoundry-community/xip-release#deploying-a-custom-version-of-xip-to-amazon-aws">
-          these instructions</a>.
-      </div>
-      <br />
-      <div class="col-sm-5">
-        <img src="img/red_lock.png" height="71" /> </div>
-      <div class="col-sm-1">
-        <p></p>
-      </div>
-      <div class="col-sm-5">
-        <img src="img/green_lock.png" height="71" /> </div>
-      <div class="col-sm-1"></div>
-      <div class="row"></div>
-      <h3>What is it?</h3>
-      <p><b>sslip.io</b> is a means for developers to test against
-        valid SSL certificates without the bother of purchasing
-        them. Two components make this possible:</p>
-      <ol>
-        <li>a special DNS backend that maps crafted hostnames to
-          IP addresses (e.g. <i>192-168-0-1.sslip.io</i> resolves
-          to <i>192.168.0.1</i>) (similar to xip.io)</li>
-        <li>a wildcard SSL certificate for *.sslip.io and the corresponding
-          key, both downloadable from GitHub</li>
-      </ol>
-      <p>Install the certificate and key on the server, modify the
-        server's configuration to use the certificate and key,
-        and restart the daemon. After that, browse the server
-        using the sslip.io hostname via HTTPS (e.g.
-        <a href="https://52-0-56-137.sslip.io">https://52-0-56-137.sslip.io</a>)
-        and receive a valid SSL connection (green lock), all
-        in a matter of seconds. </p>
-      <h3>How do I use it? </h3>
-      <p class="lead">First, find your server's IP address to determine its sslip.io
-        hostname
-      </p>
-      <p>Your server's sslip.io hostname is a mash-up of your server's
-        IP address and the <b>sslip.io</b> domain. Here are some
-        examples:
-      </p>
-      <table class="sslip">
-        <tr>
-          <th>Server's IP Address</th>
-          <th>sslip.io Hostname</th>
-        </tr>
-        <tr>
-          <td>127.0.0.1</td>
-          <td>127-0-0-1.sslip.io</td>
-        </tr>
-        <tr>
-          <td>192.168.1.80</td>
-          <td>192-168-1-80.sslip.io</td>
-        </tr>
-        <tr>
-          <td>172.16.0.80</td>
-          <td>172-16-0-80.sslip.io</td>
-        </tr>
-        <tr>
-          <td>52.0.56.137</td>
-          <td><a href="https://52-0-56-137.sslip.io/">52-0-56-137.sslip.io</a></td>
-        </tr>
+      <h3 id="sslip.io">sslip.io</h3>
+      <p>Operational Status: <a href="https://ci.nono.io/?groups=sslip.io"><img src="https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/check-dns/badge" alt="ci.nono.io" /></a> <sup><a href="#status" class="alert-link">[Status]</a></sup></p>
+      <p><em>sslip.io</em> is a DNS (<a href="https://en.wikipedia.org/wiki/Domain_Name_System">Domain Name System</a>) service that, when queried with a hostname with an embedded IP address, returns that IP Address. It was inspired by and uses much of the code of <a href="http://xip.io">xip.io</a>, which was created by <a href="https://github.com/sstephenson">Sam Stephenson</a></p>
+      <p>Here are some examples:</p>
+      <table class="table">
+      <thead>
+      <tr class="header">
+      <th>hostname</th>
+      <th>IP Address</th>
+      <th>Notes</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="odd">
+      <td>192.168.0.1.sslip.io</td>
+      <td>192.168.0.1</td>
+      <td>dot separators</td>
+      </tr>
+      <tr class="even">
+      <td>192-168-0-1.sslip.io</td>
+      <td>192.168.0.1</td>
+      <td>dash separators</td>
+      </tr>
+      <tr class="odd">
+      <td>www.192.168.0.1.sslip.io</td>
+      <td>192.168.0.1</td>
+      <td>subdomain</td>
+      </tr>
+      <tr class="even">
+      <td>www.192-168-0-1.sslip.io</td>
+      <td>192.168.0.1</td>
+      <td></td>
+      </tr>
+      <tr class="odd">
+      <td>www-192-168-0-1.sslip.io</td>
+      <td>192.168.0.1</td>
+      <td>embedded</td>
+      </tr>
+      <tr class="even">
+      <td>–1.sslip.io</td>
+      <td>::1</td>
+      <td>IPv6 — always use dashes</td>
+      </tr>
+      <tr class="odd">
+      <td>2607-f8b0-400a-800–200e.sslip.io</td>
+      <td>2607:f8b0:400a:800::200e</td>
+      <td>IPv6</td>
+      </tr>
+      </tbody>
       </table>
-      <br />
-      <p class="lead">Second, download sslip.io's SSL certificate and key from
-        GitHub
-      </p>
-      <p>Download the SSL key (<a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.key.pem">sslip.io.key.pem</a>)
-        and wildcard SSL certificate chain (<a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.chained.crt.pem">sslip.io.chained.crt.pem</a>)
-        from GitHub. You may use <i>curl</i> if you prefer the
-        command line:</p> <pre>
-curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.key.pem
-curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.chained.crt.pem</pre>
-      <p class="lead">Third, configure the webserver with the SSL certificate
-        &amp; key</p>
-      <p>Configure the server's configuration file's SSL portion
-        to use the SSL certificate &amp; key downloaded from
-        GitHub. Here is a sample from sslip.io's webserver's
-        <i>nginx.conf</i> (modified for clarity):</p> <pre>
-server {
-  listen              443 ssl;
-  ssl_certificate     /etc/ssl/sslip.io.chained.crt.pem;
-  ssl_certificate_key /etc/ssl/sslip.io.key.pem;</pre>
-      <p>Here's a similar configuration for Apache 2.4's <i>httpd-ssl.conf</i>:</p><pre>
-Listen 443
-SSLCertificateFile "/etc/ssl/sslip.io.chained.crt.pem"
-SSLCertificateKeyFile "/etc/ssl/sslip.io.key.pem"</pre>
-      <p class="lead">Finally, restart your webserver and browse to its sslip.io
-        address via HTTPS</p>
-      <p>Browse to your webserver's sslip.io hostname, e.g. <a href="https://52-0-56-137.sslip.io">https://52-0-56-137.sslip.io</a>
-        (assuming that 52.0.56.137 is the IP address of your
-        webserver, which it isn't because that's the IP address
-        of <i>our</i> webserver). Admire the beautiful green
-        lock in your browser's address bar.</p>
-      <div class="row">
-        <p></p>
+      <h3 id="branding">BRANDING</h3>
+      <p>sslip.io can be used to brand your own site (you don’t need to use the sslip.io domain). For example, say you own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To accomplish this, you’d need to set the following four DNS servers as NS records for the subdomain “xip.example.com”</p>
+      <table class="table">
+      <thead>
+      <tr class="header">
+      <th>hostname</th>
+      <th>IP address</th>
+      <th>Location</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="odd">
+      <td><code>ns-aws.nono.io.</code></td>
+      <td>52.0.56.137</td>
+      <td>USA</td>
+      </tr>
+      <tr class="even">
+      <td><code>ns-gce.nono.io.</code></td>
+      <td>104.155.144.4</td>
+      <td>USA</td>
+      </tr>
+      <tr class="odd">
+      <td><code>ns-azure.nono.io.</code></td>
+      <td>52.187.42.158</td>
+      <td>Singapore</td>
+      </tr>
+      <tr class="even">
+      <td><code>ns-he.nono.io.</code></td>
+      <td>78.46.204.247</td>
+      <td>Germany</td>
+      </tr>
+      </tbody>
+      </table>
+      <p>Let’s test it from the command line using <code>dig</code>:</p>
+      <pre><code>dig +short 169-254-169-254.xip.example.com @ns-gce.nono.io.</code></pre>
+      <p>Yields, hopefully: <sup><a href="#timeout" class="alert-link">[connection timed out]</a></sup></p>
+      <pre><code>169.254.169.254</code></pre>
+      <h4 id="tls-transport-layer-security">TLS (Transport Layer Security)</h4>
+      <p>If you have a wildcard certificate for your sslip.io-style subdomain, you may install it on your machines for TLS-verified connections.</p>
+      <div class="alert alert-warning" data-role="alert">
+      <p>When using a TLS wildcard certificate in conjunction with your branded sslip.io style subdomain, you must <b>use dashes not dots</b> as separators. For example, if you have the TLS certificate for <i>*.xip.example.com</i>, you could browse to https://https://52-0-56-137.xip.example.com/ but not https://52.0.56.137.xip.example.com/.</p>
       </div>
-      <p>&copy; 2015 Brian Cunnie, Pivotal Software</p>
+      <p>For a real-world example of a TLS wildcard cert and sslip.io domain, browse <a href="https://52-0-56-137.sslip.io" class="uri">https://52-0-56-137.sslip.io</a>.</p>
+      <p>Pivotal employees can download the sslip.io TLS private key <a href="https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">here</a>.</p>
+      <hr />
+      <h4 id="footnotes">Footnotes</h4>
+      <p><a name="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s more often an indication that when the servers were last checked (currently every six hours), the CI (continuous integration) <a href="https://ci.nono.io/teams/main/pipelines/sslip.io">server</a> had difficulty reaching one of the four sslip.io nameservers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed out]</a></sup></p>
+      <p><a name="timeout"><sup>[connection timed out]</sup></a></p>
+      <p>DNS runs over <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a> which has no guaranteed delivery, and it’s not uncommon for the packets to get lost in transmission. DNS clients are programmed to seamlessly query a different server when that happens. That’s why DNS, by fiat, requires at least two nameservers (for redundancy). From <a href="https://tools.ietf.org/html/rfc1034">IETF (Internet Engineering Task Force) RFC (Request for Comment) 1034</a>:</p>
+      <blockquote>
+      <p>A given zone will be available from several name servers to insure its availability in spite of host or communication link failure. By administrative fiat, we require every zone to be available on at least two servers, and many zones have more redundancy than that.</p>
+      </blockquote>
     </div>
   </div>
   <!-- /.container -->
