@@ -156,12 +156,12 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       "https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">here</a>.</p>
       <hr>
       <h4 id="footnotes">Footnotes</h4>
-      <p><a name="status" id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is
+      <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is
       failing. It’s more often an indication that when the servers were last checked (currently every six hours), the
       CI (continuous integration) <a href="https://ci.nono.io/teams/main/pipelines/sslip.io">server</a> had difficulty
       reaching one of the four sslip.io nameservers. That’s normal. <sup><a href="#timeout" class=
       "alert-link">[connection timed out]</a></sup></p>
-      <p><a name="timeout" id="timeout"><sup>[connection timed out]</sup></a></p>
+      <p><a id="timeout"><sup>[connection timed out]</sup></a></p>
       <p>DNS runs over <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a> which has no guaranteed
       delivery, and it’s not uncommon for the packets to get lost in transmission. DNS clients are programmed to
       seamlessly query a different server when that happens. That’s why DNS, by fiat, requires at least two nameservers
