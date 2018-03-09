@@ -18,8 +18,10 @@ jobs:
   - task: passing
     config:
       platform: linux
-      image: "docker:///fedora"
-      tags: [ "micro" ]
+      image_resource:
+        type: docker-image
+        source:
+          repository: fedora
       run:
         path: true
 - name: failing
@@ -28,8 +30,10 @@ jobs:
   - task: failing
     config:
       platform: linux
-      image: "docker:///fedora"
-      tags: [ "micro" ]
+      image_resource:
+        type: docker-image
+        source:
+          repository: fedora
       run:
         path: false
 - name: unknown
@@ -38,8 +42,10 @@ jobs:
   - task: unknown
     config:
       platform: linux
-      image: "docker:///fedora"
-      tags: [ "micro" ]
+      image_resource:
+        type: docker-image
+        source:
+          repository: fedora
       run:
         path: sleep
         args: ["864000"]
@@ -49,8 +55,10 @@ jobs:
   - task: aborted
     config:
       platform: linux
-      image: "docker:///fedora"
-      tags: [ "micro" ]
+      image_resource:
+        type: docker-image
+        source:
+          repository: fedora
       run:
         path: sleep
         args: ["864000"]
@@ -60,7 +68,9 @@ jobs:
   - task: errored
     config:
       platform: linux
-      image: "docker:///fedora"
-      tags: [ "micro" ]
+      image_resource:
+        type: docker-image
+        source:
+          repository: fedora
       run:
         path: non-existent

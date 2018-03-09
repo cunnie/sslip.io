@@ -14,10 +14,12 @@ jobs:
   - task: unit
     config:
       platform: linux
-      image: "docker:///fedora"
-      tags: [ "micro" ]
+      image_resource:
+        type: docker-image
+        source:
+          repository: fedora
       run:
-        path: false
+        path: true
 
 - name: integration
   plan:
@@ -27,10 +29,12 @@ jobs:
   - task: integration
     config:
       platform: linux
-      image: "docker:///fedora"
-      tags: [ "micro" ]
+      image_resource:
+        type: docker-image
+        source:
+          repository: fedora
       run:
-        path: true
+        path: false
 
 resources:
 - name: src
