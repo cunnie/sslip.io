@@ -1,6 +1,8 @@
 # pipeline for Concourse CI for badges
+#
 # fly -t nono sp -p badges -c pipeline-badges.yml
 # fly -t nono expose-pipeline -p badges
+# fly -t nono unpause-pipeline -p badges
 groups:
 - name: badges
   jobs:

@@ -1,6 +1,8 @@
 # pipeline for Concourse CI for sslip.io
+#
 # fly -t nono sp -p sslip.io -c pipeline-sslip.io.yml
 # fly -t nono expose-pipeline -p sslip.io
+# fly -t nono unpause-pipeline -p sslip.io
 groups:
 - name: sslip.io
   jobs:
