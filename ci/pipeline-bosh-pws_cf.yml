@@ -67,7 +67,7 @@ jobs:
   - get: cf-sli-s3
   - get: app-asset
   - get: cloudops-ci
-- name: deploy-pws-diego-cellblock-01
+- name: deploy-pws-diego-overflow-az2
   serial: true
   serial_groups:
   - app_eviction
@@ -79,6 +79,30 @@ jobs:
   - get: cf-sli-s3
   - get: app-asset
   - get: cloudops-ci
+- name: deploy-pws-diego-overflow-az4
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-isolation-cloudops
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-01
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-overflow-az2
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-02
   serial: true
   serial_groups:
@@ -86,7 +110,7 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
-    - deploy-pws-diego-cellblock-01
+    - deploy-pws-diego-overflow-az2
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -98,7 +122,7 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
-    - deploy-pws-diego-cellblock-02
+    - deploy-pws-diego-overflow-az2
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -111,7 +135,7 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
-    - deploy-pws-diego-cellblock-03
+    - deploy-pws-diego-overflow-az2
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -123,7 +147,23 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
+    - deploy-pws-diego-overflow-az2
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: delete-pws-diego-overflow-az2
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-01
+    - deploy-pws-diego-cellblock-02
+    - deploy-pws-diego-cellblock-03
     - deploy-pws-diego-cellblock-04
+    - deploy-pws-diego-cellblock-05
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -135,7 +175,8 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
-    - deploy-pws-diego-cellblock-05
+    - delete-pws-diego-overflow-az2
+    - deploy-pws-diego-overflow-az4
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -147,7 +188,8 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
-    - deploy-pws-diego-cellblock-06
+    - delete-pws-diego-overflow-az2
+    - deploy-pws-diego-overflow-az4
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -159,7 +201,8 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
-    - deploy-pws-diego-cellblock-07
+    - delete-pws-diego-overflow-az2
+    - deploy-pws-diego-overflow-az4
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -171,7 +214,8 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
-    - deploy-pws-diego-cellblock-08
+    - delete-pws-diego-overflow-az2
+    - deploy-pws-diego-overflow-az4
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -183,7 +227,24 @@ jobs:
   plan:
   - get: cf-deployment-cloudops
     passed:
+    - delete-pws-diego-overflow-az2
+    - deploy-pws-diego-overflow-az4
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: delete-pws-diego-overflow-az4
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-06
+    - deploy-pws-diego-cellblock-07
+    - deploy-pws-diego-cellblock-08
     - deploy-pws-diego-cellblock-09
+    - deploy-pws-diego-cellblock-10
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
@@ -213,7 +274,7 @@ jobs:
   - aggregate:
     - get: cf-deployment-cloudops
       passed:
-      - deploy-pws-diego-cellblock-10
+      - delete-pws-diego-overflow-az4
       trigger: true
     - get: prod-aws
       params:
