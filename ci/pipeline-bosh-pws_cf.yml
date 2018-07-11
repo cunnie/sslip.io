@@ -87,7 +87,6 @@ jobs:
   - get: cf-deployment-cloudops
     passed:
     - deploy-pws-diego-cellblock-01
-    - deploy-pws-pivotal-internal-apps
     trigger: true
   - get: cf-sli-s3
   - get: app-asset
