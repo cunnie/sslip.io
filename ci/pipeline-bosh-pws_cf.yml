@@ -53,8 +53,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-01
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -65,8 +63,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-02
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -77,8 +73,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-03
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -89,8 +83,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-04
   serial: true
-  serial_groups:
-  - app_eviction
   build_logs_to_retain: 1000
   plan:
   - get: cf-deployment-cloudops
@@ -102,8 +94,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-05
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -114,8 +104,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-06
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -127,8 +115,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-07
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -140,8 +126,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-08
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -153,8 +137,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-09
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -166,8 +148,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-cellblock-10
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -238,8 +218,6 @@ jobs:
       trigger: true
 - name: deploy-pws-diego-overflow-az2
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -250,8 +228,6 @@ jobs:
   - get: cloudops-ci
 - name: deploy-pws-diego-overflow-az4
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -262,8 +238,6 @@ jobs:
   - get: cloudops-ci
 - name: delete-pws-diego-overflow-az2
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
@@ -278,8 +252,6 @@ jobs:
   - get: cloudops-ci
 - name: delete-pws-diego-overflow-az4
   serial: true
-  serial_groups:
-  - app_eviction
   plan:
   - get: cf-deployment-cloudops
     passed:
