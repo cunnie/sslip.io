@@ -1,0 +1,252 @@
+# fly -t nono sp -p bosh:pws_cf -c pipeline-bosh-pws_cf.yml
+# fly -t nono expose-pipeline -p bosh:pws_cf
+# fly -t nono unpause-pipeline -p bosh:pws_cf
+
+groups: []
+
+resource_template: &resource_template
+  type: git
+  source:
+    uri: https://github.com/cunnie/docs.git
+
+task_template: &task_template
+  config:
+    platform: linux
+    image_resource:
+      type: docker-image
+      source:
+        repository: fedora
+    run:
+      path: true
+
+resources:
+# - name: cloudops-slack
+#   <<: *resource_template
+- name: clamav-pivnet-release
+  <<: *resource_template
+- name: pws-deployed-version
+  <<: *resource_template
+- name: cf-deployment-cloudops
+  <<: *resource_template
+- name: cf-sli-s3
+  <<: *resource_template
+- name: prod-configs
+  <<: *resource_template
+- name: cloudops-ci
+  <<: *resource_template
+- name: prod-aws
+  <<: *resource_template
+- name: app-asset
+  <<: *resource_template
+
+jobs:
+- name: upload-clamav-release
+  build_logs_to_retain: 1000
+  plan:
+  - get: cloudops-ci
+  - get: clamav-pivnet-release
+    trigger: true
+  - task: upload-release
+    <<: *task_template
+- name: dry-runs-and-build-msg
+  serial: true
+  build_logs_to_retain: 1000
+  plan:
+  - get: cloudops-ci
+  - get: cf-deployment-cloudops
+  - task: build-msg
+    <<: *task_template
+- name: deploy-pws-isolation-cloudops
+  serial: true
+  build_logs_to_retain: 1000
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-cf-cfapps-io2-donotuseapi
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-01
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-isolation-cloudops
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-02
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-01
+    - deploy-pws-pivotal-internal-apps
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-03
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-02
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-04
+  serial: true
+  serial_groups:
+  - app_eviction
+  build_logs_to_retain: 1000
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-03
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-05
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-04
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-06
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-05
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-07
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-06
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-08
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-07
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-09
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-08
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-10
+  serial: true
+  serial_groups:
+  - app_eviction
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-diego-cellblock-09
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-cf-cfapps-io2
+  serial: true
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - dry-runs-and-build-msg
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-cf-cfapps-io2-donotuseapi
+  serial: true
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-cf-cfapps-io2
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: update-statuspage-version
+  serial: true
+  plan:
+  - aggregate:
+    - get: cf-deployment-cloudops
+      passed:
+      - deploy-pws-diego-cellblock-10
+      trigger: true
+    - get: prod-aws
+      params:
+        submodules: none
+    - get: pws-deployed-version
+    - get: cloudops-ci
+  - task: update-statuspage
+    <<: *task_template
+- name: deploy-pws-pivotal-internal-apps
+  serial: true
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-isolation-cloudops
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: deploy-pws-diego-cellblock-windows
+  serial: true
+  plan:
+  - get: cf-deployment-cloudops
+    passed:
+    - deploy-pws-isolation-cloudops
+    trigger: true
+  - get: cf-sli-s3
+  - get: app-asset
+  - get: cloudops-ci
+- name: update-environment-configs
+  serial: true
+  plan:
+  - aggregate:
+    - get: cloudops-ci
+    - get: prod-configs
+      trigger: true
