@@ -27,7 +27,7 @@ pdns_pipe: |
   # Configuration
   #
   # Increment this timestamp when the contents of the file change.
-  XIP_TIMESTAMP="2018091200"
+  XIP_TIMESTAMP="2018092000"
 
   # The top-level domain for which the name server is authoritative.
   # CHANGEME: change "sslip.io" to your domain
@@ -46,13 +46,10 @@ pdns_pipe: |
   XIP_ROOT_ADDRESSES_AAAA=( "2a01:4f8:c17:b8f::2" )
 
   # The public IP addresses on which this xip-pdns server will run.
-  # `NS` queries for the top-level domain will return this list of addresses.
-  # Each entry maps to a 1-based subdomain of the format `ns-1`, `ns-2`, etc.
-  # `A` queries for these subdomains map to the corresponding addresses here.
-  # CHANGEME: change this to match your NS records; one of these IP addresses
-  # should match the jobs(xip).networks.static_ips listed above
-  XIP_NS_ADDRESSES=( "52.0.56.137"    "52.187.42.158"    "104.155.144.4"  "78.47.249.19" )
-  XIP_NS=(           "ns-aws.nono.io" "ns-azure.nono.io" "ns-gce.nono.io" "ns-he.nono.io" )
+  # `NS` queries for the top-level domain will return this list of servers.
+  # Note: [change from xip.io] The NS servers are in a different domain
+  # (i.e. nono.io) so the addresses don't need to be included.
+  XIP_NS=(           "ns-aws.nono.io" "ns-azure.nono.io" "ns-gce.nono.io" "ns-vultr.nono.io" )
 
   # These are the MX records for your domain.  IF YOU'RE NOT SURE,
   # don't set it at at all (comment it out)--it defaults to no
@@ -151,11 +148,6 @@ pdns_pipe: |
     [[ "$QNAME" =~ $DASHED_IPV6_PATTERN ]]
   }
 
-  resolve_ns_subdomain() {
-    local index="${SUBDOMAIN:3}"
-    echo "${XIP_NS_ADDRESSES[$index-1]}"
-  }
-
   resolve_ip_subdomain() {
     [[ "$QNAME" =~ $IP_PATTERN ]] || true
     echo "${BASH_REMATCH[2]}"
@@ -195,6 +187,14 @@ pdns_pipe: |
     for address in "${XIP_ROOT_ADDRESSES_AAAA[@]}"; do
       send_answer "AAAA" "$address"
     done
+  }
+
+  answer_localhost_a_query() {
+    send_answer "A" "127.0.0.1"
+  }
+
+  answer_localhost_aaaa_query() {
+    send_answer "AAAA" "::1"
   }
 
   answer_mx_query() {
@@ -256,7 +256,9 @@ pdns_pipe: |
       if [ $LC_QNAME == $XIP_DOMAIN ]; then
         answer_root_a_query
       else
-        if subdomain_is_dashed_ip; then
+        if [ $LC_QNAME == "localhost.$XIP_DOMAIN" ]; then
+          answer_localhost_a_query
+        elif subdomain_is_dashed_ip; then
           answer_subdomain_a_query_for dashed_ip
         elif subdomain_is_ip; then
           answer_subdomain_a_query_for ip
@@ -268,10 +270,10 @@ pdns_pipe: |
       LC_QNAME=$(echo $QNAME | tr 'A-Z' 'a-z')
       if [ $LC_QNAME == $XIP_DOMAIN ]; then
         answer_root_aaaa_query
-      else
-        if subdomain_is_dashed_ipv6; then
+      elif [ $LC_QNAME == "localhost.$XIP_DOMAIN" ]; then
+          answer_localhost_aaaa_query
+      elif subdomain_is_dashed_ipv6; then
           answer_subdomain_aaaa_query_for dashed_ipv6
-        fi
       fi
     fi
 
