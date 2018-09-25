@@ -7,8 +7,25 @@ groups:
 - name: sslip.io
   jobs:
   - check-dns
+  - unit
 
 jobs:
+- name: unit
+  public: true
+  plan:
+  - {get: cunnie-bin,   trigger: true}
+  - task: unit-tests
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: fedora
+      inputs:
+      - name: cunnie-bin
+      run:
+        dir: cunnie-bin
+        path: ./pdns_pipe_spec.sh
 - name: check-dns
   public: true
   plan:
@@ -25,6 +42,11 @@ resources:
   type: git
   source:
     uri: https://github.com/cunnie/sslip.io
+    branch: master
+- name: cunnie-bin
+  type: git
+  source:
+    uri: https://github.com/cunnie/bin
     branch: master
 
 - name: 6h
