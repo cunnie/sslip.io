@@ -68,6 +68,17 @@ pdns_pipe: |
     "protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"
   )
 
+  # These are the domains which we should not reply with any records
+  # at all. Normally this can be emtpy. The only purpose this variable
+  # serves is in the case of multiple PowerDNS backends, in this case
+  # the BIND backend. It shouldn't return any records for these domains,
+  # otherwise it can break CNAME/wildcard records for which the BIND
+  # backend is authoritative.
+  XIP_EXCLUDED_DOMAINS=(
+    "nono.io"
+    "nono.com"
+  )
+
   if [ -a "$1" ]; then
     source "$1"
   fi
@@ -238,6 +249,14 @@ pdns_pipe: |
 
   while read_query; do
     log "Query: type=$TYPE qname=$QNAME qclass=$QCLASS qtype=$QTYPE id=$ID ip=$IP"
+
+    for excluded_domain in "${XIP_EXCLUDED_DOMAINS[@]}"; do
+      if [[ $QNAME =~ $excluded_domain$ ]]; then
+        log "'$QNAME' matched '$excluded_domain'"
+        send_cmd "END"
+        continue 2
+      fi
+    done
 
     if qtype_is "SOA"; then
       answer_soa_query
