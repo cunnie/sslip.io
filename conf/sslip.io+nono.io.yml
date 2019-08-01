@@ -49,7 +49,7 @@ pdns_pipe: |
   # `NS` queries for the top-level domain will return this list of servers.
   # Note: [change from xip.io] The NS servers are in a different domain
   # (i.e. nono.io) so the addresses don't need to be included.
-  XIP_NS=(           "ns-aws.nono.io" "ns-azure.nono.io" "ns-gce.nono.io" "ns-vultr.nono.io" )
+  XIP_NS=(           "ns-aws.nono.io" "ns-azure.nono.io" "ns-gce.nono.io" )
 
   # These are the MX records for your domain.  IF YOU'RE NOT SURE,
   # don't set it at at all (comment it out)--it defaults to no
