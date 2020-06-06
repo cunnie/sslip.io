@@ -23,6 +23,8 @@ RUN dnf install -y pdns pdns-backend-pipe
 
 RUN dnf install -y iproute bind-utils neovim
 
+RUN dnf install -y procps-ng nmap-ncat net-tools lsof
+
 RUN curl -o /usr/local/sbin/pdns_pipe.sh -L https://raw.githubusercontent.com/cunnie/bin/master/pdns_pipe.sh
 
 RUN chmod 755 /usr/local/sbin/pdns_pipe.sh
