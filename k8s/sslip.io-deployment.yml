@@ -5,13 +5,13 @@ metadata:
 spec:
   template:
     metadata:
-      name: sslip.io-pod
+      name: sslip.io-pdns-pod
       labels:
-        app: sslip.io
+        app: sslip.io-pdns
     spec:
       containers:
       - name: sslip-container
-        image: cunnie/sslip.io
+        image: cunnie/sslip.io-pdns
         ports:
         - containerPort: 53
           protocol: TCP
@@ -19,4 +19,4 @@ spec:
           protocol: UDP
   selector:
     matchLabels:
-      app: sslip.io
+      app: sslip.io-pdns
