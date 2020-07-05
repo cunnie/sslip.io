@@ -1,4 +1,4 @@
-# sslip.io Dockerfile
+# sslip.io PowerDNS Dockerfile
 #
 # Dockerfile of a DNS server that responds to DNS
 # queries of hostnames with embedded IP addresses
@@ -8,22 +8,22 @@
 #
 # Typical start command:
 #
-#   docker run --rm -p 53:53 -p 53:53/udp cunnie/sslip.io
+#   docker run --rm -p 53:53 -p 53:53/udp cunnie/sslip.io-pdns
 #
 # To test from host:
 #
 #    dig +short 127.0.0.1.example.com @localhost
 #    127.0.0.1
 #
-FROM fedora AS sslip.io
+FROM fedora AS sslip.io-pdns
 
 LABEL maintainer="brian.cunnie@gmail.com"
-
-RUN dnf install -y pdns pdns-backend-pipe
 
 RUN dnf install -y iproute bind-utils neovim
 
 RUN dnf install -y procps-ng nmap-ncat net-tools lsof
+
+RUN dnf install -y pdns pdns-backend-pipe
 
 RUN curl -o /usr/local/sbin/pdns_pipe.sh -L https://raw.githubusercontent.com/cunnie/bin/master/pdns_pipe.sh
 
