@@ -23,4 +23,18 @@ spec:
           protocol: UDP
         resources:
           requests:
-            memory: 32Gi
+            memory: 32Mi
+        livenessProbe:
+          exec:
+            command:
+            - dig
+            - +short
+            - 127.0.0.1.sslip.io
+            - "@localhost"
+        readinessProbe:
+          exec:
+            command:
+            - dig
+            - +short
+            - 127.0.0.1.sslip.io
+            - "@localhost"
