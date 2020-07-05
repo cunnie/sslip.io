@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sslip.io
+spec:
+  template:
+    metadata:
+      name: sslip.io-pod
+      labels:
+        app: sslip.io
+    spec:
+      containers:
+      - name: sslip-container
+        image: cunnie/sslip.io
+        ports:
+        - containerPort: 53
+          protocol: TCP
+        - containerPort: 53
+          protocol: UDP
+  selector:
+    matchLabels:
+      app: sslip.io
