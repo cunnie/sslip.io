@@ -6,7 +6,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: sslip-io-nodeport-service # must be DNS-compliant
+  name: sslip-io-pdns-nodeport-service # must be DNS-compliant
 spec:
   type: NodePort
   ports:
@@ -16,4 +16,4 @@ spec:
     # targetPort: 53
     nodePort: 32767
   selector:
-    app: sslip.io
+    app: sslip.io-pdns
