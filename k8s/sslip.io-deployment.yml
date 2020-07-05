@@ -1,8 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sslip.io
+  name: sslip.io-pdns
 spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sslip.io-pdns
   template:
     metadata:
       name: sslip.io-pdns-pod
@@ -10,13 +14,13 @@ spec:
         app: sslip.io-pdns
     spec:
       containers:
-      - name: sslip-container
+      - name: sslip-pdns-container
         image: cunnie/sslip.io-pdns
         ports:
         - containerPort: 53
           protocol: TCP
         - containerPort: 53
           protocol: UDP
-  selector:
-    matchLabels:
-      app: sslip.io-pdns
+        resources:
+          requests:
+            memory: 32Gi
