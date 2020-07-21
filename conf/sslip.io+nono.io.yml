@@ -15,10 +15,10 @@ pdns_named_conf: |
       masters { 78.46.204.247; };
   };
 pdns_conf: |
-  launch=bind:first,pipe:second
+  launch=bind,pipe
   slave=yes
-  bind-first-config=/var/vcap/jobs/pdns/etc/named.conf
-  pipe-second-command=/var/vcap/jobs/pdns/bin/pipe /var/vcap/jobs/pdns/etc/pipe.conf
+  bind-config=/var/vcap/jobs/pdns/etc/named.conf
+  pipe-command=/var/vcap/jobs/pdns/bin/pipe /var/vcap/jobs/pdns/etc/pipe.conf
   # fixes `Fatal error: Unable to acquire TCPv6 socket: Address family not supported by protocol`
   # undo when deployed with IPv6
   local-ipv6=
