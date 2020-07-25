@@ -4,6 +4,11 @@ pdns_named_conf: |
       file "/var/vcap/jobs/pdns/etc/diarizer.com";
       masters { 78.46.204.247; };
   };
+  zone "foundry.fun" {
+    type slave;
+      file "/var/vcap/jobs/pdns/etc/foundry.fun";
+      masters { 78.46.204.247; };
+  };
   zone "nono.com" {
     type slave;
       file "/var/vcap/jobs/pdns/etc/nono.com";
