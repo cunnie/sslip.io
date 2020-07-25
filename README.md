@@ -8,7 +8,7 @@ and uses much of the code of [xip.io](http://xip.io/).
 
 Refer to the website ([sslip.io](https://sslip.io)) for more information.
 
-- `document_root/` contains the HTML content of the sslip.io website
+- `k8s/document_root/` contains the HTML content of the sslip.io website
 - `ci/` contains the [Concourse](https://concourse.ci/) continuous integration
   (CI) pipeline and task.
 - `spec/` contains the RSpec files for test driven development (TDD).
