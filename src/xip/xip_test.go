@@ -32,9 +32,7 @@ var _ = Describe("Xip", func() {
 		DescribeTable("when it does not match an IP address",
 			func(fqdn string) {
 				_, err := xip.NameToA(fqdn)
-				//ipv4Answer, err := xip.NameToA(fqdn)
 				Expect(err).To(MatchError(errors.New("ENOTFOUND")))
-				//Expect(ipv4Answer).To(Equal(dnsmessage.AResource{})) // is this important to test?
 			},
 			Entry("empty string", ""),
 			Entry("bare domain", "nono.io"),
@@ -42,6 +40,34 @@ var _ = Describe("Xip", func() {
 			Entry("www", "www.sslip.io"),
 			Entry("a lone number", "538.sslip.io"),
 			Entry("too big", "256.254.253.252"),
+		)
+	})
+	Describe("NameToAAAA()", func() {
+		DescribeTable("when it succeeds",
+			func(fqdn string, expectedAAAA dnsmessage.AAAAResource) {
+				ipv6Answer, err := xip.NameToAAAA(fqdn)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(ipv6Answer).To(Equal(expectedAAAA))
+			},
+			// dashes only
+			Entry("loopback", "--1", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
+			Entry("ff with domain", "fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
+			Entry("ff with domain and pre", "www.fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
+			Entry("ff with domain dashes", "1.www-fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0-1.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
+					)
+		DescribeTable("when it does not match an IP address",
+			func(fqdn string) {
+				_, err := xip.NameToAAAA(fqdn)
+				//ipv4Answer, err := xip.NameToA(fqdn)
+				Expect(err).To(MatchError(errors.New("ENOTFOUND")))
+				//Expect(ipv4Answer).To(Equal(dnsmessage.AAAAResource{})) // is this important to test?
+			},
+			Entry("empty string", ""),
+			Entry("bare domain", "nono.io"),
+			Entry("canonical domain", "sslip.io"),
+			Entry("www", "www.sslip.io"),
+			Entry("a 1 without double-dash", "-1"),
+			Entry("too big", "--g"),
 		)
 	})
 })
