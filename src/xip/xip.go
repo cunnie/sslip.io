@@ -1,8 +1,10 @@
 package xip
 
 import (
+	"encoding/json"
 	"errors"
 	"golang.org/x/net/dns/dnsmessage"
+	"log"
 	"net"
 	"regexp"
 	"strings"
@@ -11,6 +13,26 @@ import (
 // https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 var ipv4RE= regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 var ipv6RE= regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+
+func QueryResponse(query []byte) ([]byte, error) {
+	var m dnsmessage.Message
+
+	err := m.Unpack(query)
+	if err != nil {
+		return nil, err
+	}
+	for _, question := range m.Questions {
+		jsonQuestion, err := json.Marshal(question)
+		if err != nil {
+			return nil, err
+		}
+		answer, _ := NameToA(question.GoString())
+		jsonAnswer, err := json.Marshal(answer)
+		log.Println(jsonQuestion)
+		log.Println(jsonAnswer)
+	}
+	return []byte{0x0}, nil
+}
 
 func NameToA (fqdnString string) (dnsmessage.AResource, error) {
 	fqdn:=[]byte(fqdnString)
