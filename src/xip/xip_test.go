@@ -7,9 +7,95 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/dns/dnsmessage"
+	"math/rand"
 )
 
 var _ = Describe("Xip", func() {
+	var (
+		err      error
+		name     = "127.0.0.1.sslip.io."
+		nameData [255]byte
+		headerId uint16
+		query    = dnsmessage.Message{
+			Header: dnsmessage.Header{
+				ID:               headerId,
+				RecursionDesired: true,
+			},
+			Questions: []dnsmessage.Question{
+				{
+					Name:  dnsmessage.Name{Length: uint8(len(name)), Data: nameData},
+					Type:  dnsmessage.TypeA,
+					Class: dnsmessage.ClassINET,
+				},
+			},
+			Answers:     nil,
+			Authorities: nil,
+			Additionals: nil,
+		}
+		response = dnsmessage.Message{
+			Header: dnsmessage.Header{
+				ID:                 1636,
+				Response:           true,
+				OpCode:             0,
+				Authoritative:      true,
+				Truncated:          false,
+				RecursionDesired:   true,
+				RecursionAvailable: false,
+			},
+			Questions: []dnsmessage.Question{
+				{
+					Name:  dnsmessage.Name{Length: uint8(len(name)), Data: nameData},
+					Type:  dnsmessage.TypeA,
+					Class: dnsmessage.ClassINET,
+				},
+			},
+			Answers: []dnsmessage.Resource{
+				{
+					Header: dnsmessage.ResourceHeader{
+						Name: dnsmessage.Name{
+							Data:   [255]byte{97, 98, 99, 46},
+							Length: 4,
+						},
+					},
+					Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
+				},
+			},
+			Authorities: nil,
+			Additionals: nil,
+		}
+	)
+	Describe("QueryResponse()", func() {
+		BeforeEach(func() {
+			headerId = uint16(rand.Int31())
+		})
+		JustBeforeEach(func() {
+			// Initializing query.Questions _should_ be above, in the `var` section, but there's
+			// no readable way to initialize Data ([255]byte); `copy()`, however, is readable
+			copy(nameData[:], name)
+			query.Questions[0].Name = dnsmessage.Name{Length: uint8(len(name)), Data: nameData}
+			//
+			packedQuery, err := query.Pack()
+			Expect(err).To(Not(HaveOccurred()))
+			packedResponse, err := xip.QueryResponse(packedQuery)
+			Expect(err).To(Not(HaveOccurred()))
+			err = response.Unpack(packedResponse)
+			Expect(err).To(Not(HaveOccurred()))
+		})
+		When("The query is invalid", func() {
+			It("returns an error", func() {
+				_, err = xip.QueryResponse([]byte{})
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		It("should return the correct response", func() {
+			packedQuery, err := query.Pack()
+			Expect(err).To(Not(HaveOccurred()))
+			packedResponse, err := response.Pack()
+			Expect(err).To(Not(HaveOccurred()))
+			Expect(xip.QueryResponse(packedQuery)).To(Equal(packedResponse))
+		})
+	})
+
 	Describe("NameToA()", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedA dnsmessage.AResource) {
@@ -42,6 +128,7 @@ var _ = Describe("Xip", func() {
 			Entry("too big", "256.254.253.252"),
 		)
 	})
+
 	Describe("NameToAAAA()", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedAAAA dnsmessage.AAAAResource) {
@@ -54,7 +141,7 @@ var _ = Describe("Xip", func() {
 			Entry("ff with domain", "fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
 			Entry("ff with domain and pre", "www.fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
 			Entry("ff with domain dashes", "1.www-fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0-1.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
-					)
+		)
 		DescribeTable("when it does not match an IP address",
 			func(fqdn string) {
 				_, err := xip.NameToAAAA(fqdn)

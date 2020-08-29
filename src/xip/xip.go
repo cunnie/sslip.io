@@ -1,42 +1,57 @@
 package xip
 
 import (
-	"encoding/json"
 	"errors"
 	"golang.org/x/net/dns/dnsmessage"
-	"log"
 	"net"
 	"regexp"
 	"strings"
 )
 
 // https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
-var ipv4RE= regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
-var ipv6RE= regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+var ipv4RE = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+var ipv6RE = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 
-func QueryResponse(query []byte) ([]byte, error) {
-	var m dnsmessage.Message
+func QueryResponse(queryBytes []byte) ([]byte, error) {
+	var query dnsmessage.Message
 
-	err := m.Unpack(query)
+	err := query.Unpack(queryBytes)
 	if err != nil {
 		return nil, err
 	}
-	for _, question := range m.Questions {
-		jsonQuestion, err := json.Marshal(question)
-		if err != nil {
-			return nil, err
-		}
-		answer, _ := NameToA(question.GoString())
-		jsonAnswer, err := json.Marshal(answer)
-		log.Println(jsonQuestion)
-		log.Println(jsonAnswer)
+
+	//question := query.Questions[0]
+	//jsonQuestion, err := json.Marshal(question)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//_, _ := NameToA(question.GoString())
+	//jsonAnswer, err := json.Marshal(answer)
+	//log.Println(jsonQuestion)
+	//log.Println(jsonAnswer)
+
+	response := dnsmessage.Message{
+		Header: dnsmessage.Header{
+			ID:                 query.ID,
+			Response:           true,
+			OpCode:             0,
+			Authoritative:      true,
+			Truncated:          false,
+			RecursionDesired:   query.RecursionDesired,
+			RecursionAvailable: false,
+		},
+		Questions: query.Questions,
 	}
-	return []byte{0x0}, nil
+	responseBytes, err := response.Pack()
+	if err != nil {
+		return nil, err
+	}
+	return responseBytes, nil
 }
 
-func NameToA (fqdnString string) (dnsmessage.AResource, error) {
-	fqdn:=[]byte(fqdnString)
-	if ! ipv4RE.Match(fqdn) {
+func NameToA(fqdnString string) (dnsmessage.AResource, error) {
+	fqdn := []byte(fqdnString)
+	if !ipv4RE.Match(fqdn) {
 		return dnsmessage.AResource{}, errors.New("ENOTFOUND") // I can't help it; I love the old-style UNIX errors
 	}
 
@@ -47,9 +62,9 @@ func NameToA (fqdnString string) (dnsmessage.AResource, error) {
 	return dnsmessage.AResource{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}}, nil
 }
 
-func NameToAAAA (fqdnString string) (dnsmessage.AAAAResource, error) {
-	fqdn:=[]byte(fqdnString)
-	if ! ipv6RE.Match(fqdn) {
+func NameToAAAA(fqdnString string) (dnsmessage.AAAAResource, error) {
+	fqdn := []byte(fqdnString)
+	if !ipv6RE.Match(fqdn) {
 		return dnsmessage.AAAAResource{}, errors.New("ENOTFOUND") // I can't help it; I love the old-style UNIX errors
 	}
 
@@ -63,4 +78,3 @@ func NameToAAAA (fqdnString string) (dnsmessage.AAAAResource, error) {
 	}
 	return AAAAR, nil
 }
-
