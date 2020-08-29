@@ -12,11 +12,14 @@ import (
 
 var _ = Describe("Xip", func() {
 	var (
-		err      error
-		name     = "127.0.0.1.sslip.io."
-		nameData [255]byte
-		headerId uint16
-		query    = dnsmessage.Message{
+		err            error
+		name           = "127.0.0.1.sslip.io."
+		nameData       [255]byte
+		packedQuery    []byte
+		packedResponse []byte
+		response       dnsmessage.Message
+		headerId       uint16
+		query          = dnsmessage.Message{
 			Header: dnsmessage.Header{
 				ID:               headerId,
 				RecursionDesired: true,
@@ -32,7 +35,7 @@ var _ = Describe("Xip", func() {
 			Authorities: nil,
 			Additionals: nil,
 		}
-		response = dnsmessage.Message{
+		expectedResponse = dnsmessage.Message{
 			Header: dnsmessage.Header{
 				ID:                 1636,
 				Response:           true,
@@ -42,26 +45,20 @@ var _ = Describe("Xip", func() {
 				RecursionDesired:   true,
 				RecursionAvailable: false,
 			},
-			Questions: []dnsmessage.Question{
-				{
-					Name:  dnsmessage.Name{Length: uint8(len(name)), Data: nameData},
-					Type:  dnsmessage.TypeA,
-					Class: dnsmessage.ClassINET,
-				},
-			},
-			Answers: []dnsmessage.Resource{
-				{
-					Header: dnsmessage.ResourceHeader{
-						Name: dnsmessage.Name{
-							Data:   [255]byte{97, 98, 99, 46},
-							Length: 4,
-						},
-					},
-					Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
-				},
-			},
-			Authorities: nil,
-			Additionals: nil,
+			Answers: []dnsmessage.Resource{},
+			//Answers: []dnsmessage.Resource{
+			//	{
+			//		Header: dnsmessage.ResourceHeader{
+			//			Name: dnsmessage.Name{
+			//				Data:   [255]byte{97, 98, 99, 46},
+			//				Length: 4,
+			//			},
+			//		},
+			//		Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
+			//	},
+			//},
+			Authorities: []dnsmessage.Resource{},
+			Additionals: []dnsmessage.Resource{},
 		}
 	)
 	Describe("QueryResponse()", func() {
@@ -73,26 +70,29 @@ var _ = Describe("Xip", func() {
 			// no readable way to initialize Data ([255]byte); `copy()`, however, is readable
 			copy(nameData[:], name)
 			query.Questions[0].Name = dnsmessage.Name{Length: uint8(len(name)), Data: nameData}
+			query.ID = headerId
+			expectedResponse.ID = headerId
+			expectedResponse.Questions = query.Questions
+			//expectedResponse.Answers[0].Header.Name = query.Questions[0].Name
+			//expectedResponse.Answers[0].Header.Type = query.Questions[0].Type
+			//expectedResponse.Answers[0].Header.Class = query.Questions[0].Class
 			//
-			packedQuery, err := query.Pack()
+			packedQuery, err = query.Pack()
 			Expect(err).To(Not(HaveOccurred()))
-			packedResponse, err := xip.QueryResponse(packedQuery)
+			packedResponse, err = xip.QueryResponse(packedQuery)
 			Expect(err).To(Not(HaveOccurred()))
 			err = response.Unpack(packedResponse)
 			Expect(err).To(Not(HaveOccurred()))
 		})
-		When("The query is invalid", func() {
+		When("It cannot Unpack() the query", func() {
 			It("returns an error", func() {
 				_, err = xip.QueryResponse([]byte{})
 				Expect(err).To(HaveOccurred())
 			})
 		})
-		It("should return the correct response", func() {
-			packedQuery, err := query.Pack()
+		It("should return the correct expectedResponse", func() {
 			Expect(err).To(Not(HaveOccurred()))
-			packedResponse, err := response.Pack()
-			Expect(err).To(Not(HaveOccurred()))
-			Expect(xip.QueryResponse(packedQuery)).To(Equal(packedResponse))
+			Expect(response).To(Equal(expectedResponse))
 		})
 	})
 

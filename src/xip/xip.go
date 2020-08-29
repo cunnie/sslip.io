@@ -20,16 +20,6 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	//question := query.Questions[0]
-	//jsonQuestion, err := json.Marshal(question)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//_, _ := NameToA(question.GoString())
-	//jsonAnswer, err := json.Marshal(answer)
-	//log.Println(jsonQuestion)
-	//log.Println(jsonAnswer)
-
 	response := dnsmessage.Message{
 		Header: dnsmessage.Header{
 			ID:                 query.ID,
