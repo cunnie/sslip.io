@@ -96,6 +96,22 @@ var _ = Describe("Xip", func() {
 		})
 	})
 
+	Describe("responseHeader()", func() {
+		It("returns a header with the ID", func() {
+			query.ID = uint16(rand.Int31())
+			Expect(xip.ResponseHeader(query)).To(Equal(dnsmessage.Header{
+				ID:                 query.ID,
+				Response:           true,
+				OpCode:             0,
+				Authoritative:      true,
+				Truncated:          false,
+				RecursionDesired:   query.RecursionDesired,
+				RecursionAvailable: false,
+				RCode:              0,
+			}))
+		})
+	})
+
 	Describe("NameToA()", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedA dnsmessage.AResource) {

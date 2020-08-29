@@ -21,22 +21,27 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 	}
 
 	response := dnsmessage.Message{
-		Header: dnsmessage.Header{
-			ID:                 query.ID,
-			Response:           true,
-			OpCode:             0,
-			Authoritative:      true,
-			Truncated:          false,
-			RecursionDesired:   query.RecursionDesired,
-			RecursionAvailable: false,
-		},
+		Header:    ResponseHeader(query),
 		Questions: query.Questions,
 	}
 	responseBytes, err := response.Pack()
+	// I couldn't figure a way to test the error condition in Ginkgo
 	if err != nil {
 		return nil, err
 	}
 	return responseBytes, nil
+}
+
+func ResponseHeader(query dnsmessage.Message) dnsmessage.Header {
+	return dnsmessage.Header{
+		ID:                 query.ID,
+		Response:           true,
+		OpCode:             0,
+		Authoritative:      true,
+		Truncated:          false,
+		RecursionDesired:   query.RecursionDesired,
+		RecursionAvailable: false,
+	}
 }
 
 func NameToA(fqdnString string) (dnsmessage.AResource, error) {
