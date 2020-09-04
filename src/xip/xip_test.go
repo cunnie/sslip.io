@@ -87,7 +87,9 @@ var _ = Describe("Xip", func() {
 		When("It cannot Unpack() the query", func() {
 			It("returns an error", func() {
 				_, err = xip.QueryResponse([]byte{})
-				Expect(err).To(HaveOccurred())
+				// I suspect the following may be brittle, and I would have been
+				// better off with Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("unpacking header: id: insufficient data for base length type"))
 			})
 		})
 		It("should return the correct expectedResponse", func() {

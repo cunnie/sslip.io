@@ -1,3 +1,6 @@
+// Package xip provides functions to create a DNS server which, when queried
+// with a hostname with an embedded IP address, returns that IP Address.  It
+// was inspired by xip.io, which was created by Sam Stephenson
 package xip
 
 import (
@@ -12,6 +15,10 @@ import (
 var ipv4RE = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 var ipv6RE = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 
+// QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
+// DNS response It takes in the raw data to offload as much as possible from
+// main(). main() is hard to unit test, but functions like QueryResponse are
+// easy.
 func QueryResponse(queryBytes []byte) ([]byte, error) {
 	var query dnsmessage.Message
 
@@ -25,13 +32,18 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 		Questions: query.Questions,
 	}
 	responseBytes, err := response.Pack()
-	// I couldn't figure a way to test the error condition in Ginkgo
+	// I couldn't figure an easy way to test the error condition in Ginkgo. Sue me.
 	if err != nil {
 		return nil, err
 	}
 	return responseBytes, nil
 }
 
+// ResponseHeader returns a pre-fab DNS response header. Note that we're always
+// authoritative and therefore recursion is never available.  We're able to
+// "white label" domains by indiscriminately matching every query that comes
+// our way. Not being recursive has the added benefit of not worrying
+// being used as an amplifier in a DDOS attack
 func ResponseHeader(query dnsmessage.Message) dnsmessage.Header {
 	return dnsmessage.Header{
 		ID:                 query.ID,
