@@ -85,3 +85,26 @@ func NameToAAAA(fqdnString string) (dnsmessage.AAAAResource, error) {
 	}
 	return AAAAR, nil
 }
+
+func SOAResource(domain string) dnsmessage.SOAResource {
+	var domainArray [255]byte
+	copy(domainArray[:], domain)
+	hostmaster := "briancunnie@gmail.com"
+	var mboxArray [255]byte
+	copy(mboxArray[:], hostmaster)
+	return dnsmessage.SOAResource{
+		NS: dnsmessage.Name{
+			Data:   domainArray,
+			Length: uint8(len(domain)),
+		},
+		MBox: dnsmessage.Name{
+			Data:   mboxArray,
+			Length: uint8(len(hostmaster)),
+		},
+		Serial:  2020090400,
+		Refresh: 900,
+		Retry:   900,
+		Expire:  1800,
+		MinTTL:  300,
+	}
+}

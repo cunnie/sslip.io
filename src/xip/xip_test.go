@@ -14,7 +14,7 @@ var _ = Describe("Xip", func() {
 	var (
 		err            error
 		name           = "127.0.0.1.sslip.io."
-		nameData       [255]byte
+		nameArray      [255]byte
 		packedQuery    []byte
 		packedResponse []byte
 		response       dnsmessage.Message
@@ -26,7 +26,7 @@ var _ = Describe("Xip", func() {
 			},
 			Questions: []dnsmessage.Question{
 				{
-					Name:  dnsmessage.Name{Length: uint8(len(name)), Data: nameData},
+					Name:  dnsmessage.Name{Length: uint8(len(name)), Data: nameArray},
 					Type:  dnsmessage.TypeA,
 					Class: dnsmessage.ClassINET,
 				},
@@ -68,8 +68,8 @@ var _ = Describe("Xip", func() {
 		JustBeforeEach(func() {
 			// Initializing query.Questions _should_ be above, in the `var` section, but there's
 			// no readable way to initialize Data ([255]byte); `copy()`, however, is readable
-			copy(nameData[:], name)
-			query.Questions[0].Name = dnsmessage.Name{Length: uint8(len(name)), Data: nameData}
+			copy(nameArray[:], name)
+			query.Questions[0].Name = dnsmessage.Name{Length: uint8(len(name)), Data: nameArray}
 			query.ID = headerId
 			expectedResponse.ID = headerId
 			expectedResponse.Questions = query.Questions
