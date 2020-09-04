@@ -23,11 +23,11 @@ func main() {
 
 		go func() {
 			response, err := xip.QueryResponse(query)
-			if err != nil {
+			if err == nil {
 				log.Println(err.Error())
-				break
+			} else {
+				_, err = conn.WriteToUDP(response, addr)
 			}
-			_, err = conn.WriteToUDP(response, addr)
 		}()
 	}
 }
