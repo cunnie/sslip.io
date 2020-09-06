@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/cunnie/sslip.io/src/xip"
 	"log"
 	"net"
+
+	"github.com/cunnie/sslip.io/src/xip"
 )
 
 func main() {

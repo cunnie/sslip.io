@@ -2,12 +2,13 @@ package xip_test
 
 import (
 	"errors"
+	"math/rand"
+
 	"github.com/cunnie/sslip.io/src/xip"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/dns/dnsmessage"
-	"math/rand"
 )
 
 var _ = Describe("Xip", func() {
@@ -37,7 +38,7 @@ var _ = Describe("Xip", func() {
 		}
 		expectedResponse = dnsmessage.Message{
 			Header: dnsmessage.Header{
-				ID:                 1636,
+				ID:                 headerId,
 				Response:           true,
 				OpCode:             0,
 				Authoritative:      true,
@@ -45,19 +46,24 @@ var _ = Describe("Xip", func() {
 				RecursionDesired:   true,
 				RecursionAvailable: false,
 			},
-			Answers: []dnsmessage.Resource{},
-			//Answers: []dnsmessage.Resource{
+			Answers: []dnsmessage.Resource{
+				{
+					Header: dnsmessage.ResourceHeader{
+						Name:   query.Questions[0].Name,
+						Type:   dnsmessage.TypeA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    300,
+						Length: 4,
+					},
+					Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
+				},
+			},
+			Authorities: []dnsmessage.Resource{},
 			//	{
-			//		Header: dnsmessage.ResourceHeader{
-			//			Name: dnsmessage.Name{
-			//				Data:   [255]byte{97, 98, 99, 46},
-			//				Length: 4,
-			//			},
-			//		},
-			//		Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
+			//		Header: dnsmessage.ResourceHeader{},
+			//		Body:   xip.SOAResource(name),
 			//	},
 			//},
-			Authorities: []dnsmessage.Resource{},
 			Additionals: []dnsmessage.Resource{},
 		}
 	)
@@ -73,10 +79,7 @@ var _ = Describe("Xip", func() {
 			query.ID = headerId
 			expectedResponse.ID = headerId
 			expectedResponse.Questions = query.Questions
-			//expectedResponse.Answers[0].Header.Name = query.Questions[0].Name
-			//expectedResponse.Answers[0].Header.Type = query.Questions[0].Type
-			//expectedResponse.Answers[0].Header.Class = query.Questions[0].Class
-			//
+			expectedResponse.Answers[0].Header.Name = query.Questions[0].Name
 			packedQuery, err = query.Pack()
 			Expect(err).To(Not(HaveOccurred()))
 			packedResponse, err = xip.QueryResponse(packedQuery)
@@ -119,7 +122,7 @@ var _ = Describe("Xip", func() {
 			func(fqdn string, expectedA dnsmessage.AResource) {
 				ipv4Answer, err := xip.NameToA(fqdn)
 				Expect(err).To(Not(HaveOccurred()))
-				Expect(ipv4Answer).To(Equal(expectedA))
+				Expect(*ipv4Answer).To(Equal(expectedA))
 			},
 			// dots
 			Entry("loopback", "127.0.0.1", dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}}),
@@ -152,7 +155,7 @@ var _ = Describe("Xip", func() {
 			func(fqdn string, expectedAAAA dnsmessage.AAAAResource) {
 				ipv6Answer, err := xip.NameToAAAA(fqdn)
 				Expect(err).To(Not(HaveOccurred()))
-				Expect(ipv6Answer).To(Equal(expectedAAAA))
+				Expect(*ipv6Answer).To(Equal(expectedAAAA))
 			},
 			// dashes only
 			Entry("loopback", "--1", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),

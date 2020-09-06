@@ -5,10 +5,11 @@ package xip
 
 import (
 	"errors"
-	"golang.org/x/net/dns/dnsmessage"
 	"net"
 	"regexp"
 	"strings"
+
+	"golang.org/x/net/dns/dnsmessage"
 )
 
 // https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
@@ -31,6 +32,34 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 		Header:    ResponseHeader(query),
 		Questions: query.Questions,
 	}
+
+	for _, question := range query.Questions {
+		fqdn := string(question.Name.Data[:question.Name.Length])
+		switch question.Type {
+		case dnsmessage.TypeA:
+			{
+				nameToA, err := NameToA(fqdn)
+				if err != nil {
+					// note that this could be written more efficiently; however, I wrote it
+					// to accommodate 'if err != nil' codepath. My first version was 'if err == nil',
+					// and it flummoxed me.
+					response.Answers = append(response.Answers, dnsmessage.Resource{})
+				} else {
+					response.Answers = append(response.Answers, dnsmessage.Resource{
+						Header: dnsmessage.ResourceHeader{
+							Name:   question.Name,
+							Type:   dnsmessage.TypeA,
+							Class:  dnsmessage.ClassINET,
+							TTL:    300,
+							Length: 4, // A records are always 4 bytes
+						},
+						Body: nameToA,
+					})
+				}
+			}
+		}
+	}
+
 	responseBytes, err := response.Pack()
 	// I couldn't figure an easy way to test the error condition in Ginkgo. Sue me.
 	if err != nil {
@@ -56,23 +85,23 @@ func ResponseHeader(query dnsmessage.Message) dnsmessage.Header {
 	}
 }
 
-func NameToA(fqdnString string) (dnsmessage.AResource, error) {
+func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 	fqdn := []byte(fqdnString)
 	if !ipv4RE.Match(fqdn) {
-		return dnsmessage.AResource{}, errors.New("ENOTFOUND") // I can't help it; I love the old-style UNIX errors
+		return &dnsmessage.AResource{}, errors.New("ENOTFOUND") // I can't help it; I love the old-style UNIX errors
 	}
 
 	match := string(ipv4RE.FindSubmatch(fqdn)[2])
 	match = strings.Replace(match, "-", ".", -1)
 	ipv4address := net.ParseIP(match).To4()
 
-	return dnsmessage.AResource{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}}, nil
+	return &dnsmessage.AResource{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}}, nil
 }
 
-func NameToAAAA(fqdnString string) (dnsmessage.AAAAResource, error) {
+func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	fqdn := []byte(fqdnString)
 	if !ipv6RE.Match(fqdn) {
-		return dnsmessage.AAAAResource{}, errors.New("ENOTFOUND") // I can't help it; I love the old-style UNIX errors
+		return &dnsmessage.AAAAResource{}, errors.New("ENOTFOUND") // I can't help it; I love the old-style UNIX errors
 	}
 
 	match := string(ipv6RE.FindSubmatch(fqdn)[2])
@@ -83,16 +112,16 @@ func NameToAAAA(fqdnString string) (dnsmessage.AAAAResource, error) {
 	for i, _ := range ipv16address {
 		AAAAR.AAAA[i] = ipv16address[i]
 	}
-	return AAAAR, nil
+	return &AAAAR, nil
 }
 
-func SOAResource(domain string) dnsmessage.SOAResource {
+func SOAResource(domain string) *dnsmessage.SOAResource {
 	var domainArray [255]byte
 	copy(domainArray[:], domain)
 	hostmaster := "briancunnie@gmail.com"
 	var mboxArray [255]byte
 	copy(mboxArray[:], hostmaster)
-	return dnsmessage.SOAResource{
+	return &dnsmessage.SOAResource{
 		NS: dnsmessage.Name{
 			Data:   domainArray,
 			Length: uint8(len(domain)),
