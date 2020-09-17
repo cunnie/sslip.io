@@ -1,7 +1,6 @@
 package xip_test
 
 import (
-	"errors"
 	"math/rand"
 
 	"github.com/cunnie/sslip.io/src/xip"
@@ -99,12 +98,22 @@ var _ = Describe("Xip", func() {
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(response).To(Equal(expectedResponse))
 		})
+		When("There is A record cannot be found", func() {
+			BeforeEach(func() {
+				name = "not-an-ip.sslip.io."
+			})
+			It("returns the no answers, but returns an authoritative section", func() {
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(response.Answers).To(Equal([]dnsmessage.Resource{}))
+				Expect(response.Authorities).To(Equal(xip.SOAResource(name)))
+			})
+		})
 	})
 
-	Describe("responseHeader()", func() {
+	Describe("ResponseHeader()", func() {
 		It("returns a header with the ID", func() {
 			query.ID = uint16(rand.Int31())
-			Expect(xip.ResponseHeader(query)).To(Equal(dnsmessage.Header{
+			Expect(xip.ResponseHeader(query.Header)).To(Equal(dnsmessage.Header{
 				ID:                 query.ID,
 				Response:           true,
 				OpCode:             0,
@@ -139,7 +148,7 @@ var _ = Describe("Xip", func() {
 		DescribeTable("when it does not match an IP address",
 			func(fqdn string) {
 				_, err := xip.NameToA(fqdn)
-				Expect(err).To(MatchError(errors.New("ENOTFOUND")))
+				Expect(err).To(MatchError("record not found"))
 			},
 			Entry("empty string", ""),
 			Entry("bare domain", "nono.io"),
@@ -167,7 +176,7 @@ var _ = Describe("Xip", func() {
 			func(fqdn string) {
 				_, err := xip.NameToAAAA(fqdn)
 				//ipv4Answer, err := xip.NameToA(fqdn)
-				Expect(err).To(MatchError(errors.New("ENOTFOUND")))
+				Expect(err).To(MatchError("record not found"))
 				//Expect(ipv4Answer).To(Equal(dnsmessage.AAAAResource{})) // is this important to test?
 			},
 			Entry("empty string", ""),
