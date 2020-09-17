@@ -15,52 +15,77 @@ import (
 // https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 var ipv4RE = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 var ipv6RE = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+var ErrNotFound = errors.New("record not found")
 
 // QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
 // DNS response It takes in the raw data to offload as much as possible from
 // main(). main() is hard to unit test, but functions like QueryResponse are
 // easy.
 func QueryResponse(queryBytes []byte) ([]byte, error) {
-	var query dnsmessage.Message
+	var queryHeader dnsmessage.Header
+	var err error
+	var response []byte
 
-	err := query.Unpack(queryBytes)
-	if err != nil {
+	p := dnsmessage.Parser{}
+	if queryHeader, err = p.Start(queryBytes); err != nil {
 		return nil, err
 	}
 
-	response := dnsmessage.Message{
-		Header:    ResponseHeader(query),
-		Questions: query.Questions,
-	}
-
-	for _, question := range query.Questions {
-		fqdn := string(question.Name.Data[:question.Name.Length])
-		switch question.Type {
+	b := dnsmessage.NewBuilder(response, ResponseHeader(queryHeader))
+	b.EnableCompression()
+	for {
+		q, err := p.Question()
+		if err == dnsmessage.ErrSectionDone {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		switch q.Type {
 		case dnsmessage.TypeA:
 			{
-				nameToA, err := NameToA(fqdn)
+				nameToA, err := NameToA(q.Name.String())
 				if err != nil {
-					// note that this could be written more efficiently; however, I wrote it
-					// to accommodate 'if err != nil' codepath. My first version was 'if err == nil',
-					// and it flummoxed me.
-					response.Answers = append(response.Answers, dnsmessage.Resource{})
+					// There's only one possible error this can be: ErrNotFound. note that
+					// this could be written more efficiently; however, I wrote it to
+					// accommodate 'if err != nil' convention. My first version was 'if
+					// err == nil', and it flummoxed me.
+					err = b.StartAuthorities()
+					if err != nil {
+						return nil, err
+					}
+					err = b.SOAResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+						Length: 0,
+					}, SOAResource(q.Name.String()))
+					if err != nil {
+						return nil, err
+					}
 				} else {
-					response.Answers = append(response.Answers, dnsmessage.Resource{
-						Header: dnsmessage.ResourceHeader{
-							Name:   question.Name,
-							Type:   dnsmessage.TypeA,
-							Class:  dnsmessage.ClassINET,
-							TTL:    300,
-							Length: 4, // A records are always 4 bytes
-						},
-						Body: nameToA,
-					})
+					err = b.StartAnswers()
+					if err != nil {
+						return nil, err
+					}
+					err = b.AResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+						Length: 0,
+					}, *nameToA)
+					if err != nil {
+						panic(err.Error())
+						return nil, err
+					}
 				}
 			}
 		}
 	}
 
-	responseBytes, err := response.Pack()
+	responseBytes, err := b.Finish()
 	// I couldn't figure an easy way to test the error condition in Ginkgo. Sue me.
 	if err != nil {
 		return nil, err
@@ -71,9 +96,9 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 // ResponseHeader returns a pre-fab DNS response header. Note that we're always
 // authoritative and therefore recursion is never available.  We're able to
 // "white label" domains by indiscriminately matching every query that comes
-// our way. Not being recursive has the added benefit of not worrying
-// being used as an amplifier in a DDOS attack
-func ResponseHeader(query dnsmessage.Message) dnsmessage.Header {
+// our way. Not being recursive has the added benefit of not being usable as an
+// amplifier in a DDOS attack
+func ResponseHeader(query dnsmessage.Header) dnsmessage.Header {
 	return dnsmessage.Header{
 		ID:                 query.ID,
 		Response:           true,
@@ -85,10 +110,11 @@ func ResponseHeader(query dnsmessage.Message) dnsmessage.Header {
 	}
 }
 
+// NameToA returns either an AResource that matched the hostname or ErrNotFound
 func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 	fqdn := []byte(fqdnString)
 	if !ipv4RE.Match(fqdn) {
-		return &dnsmessage.AResource{}, errors.New("ENOTFOUND") // I can't help it; I love the old-style UNIX errors
+		return &dnsmessage.AResource{}, ErrNotFound
 	}
 
 	match := string(ipv4RE.FindSubmatch(fqdn)[2])
@@ -98,10 +124,12 @@ func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 	return &dnsmessage.AResource{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}}, nil
 }
 
+// NameToAAAA NameToA returns either an AAAAResource that matched the hostname
+// or ErrNotFound
 func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	fqdn := []byte(fqdnString)
 	if !ipv6RE.Match(fqdn) {
-		return &dnsmessage.AAAAResource{}, errors.New("ENOTFOUND") // I can't help it; I love the old-style UNIX errors
+		return &dnsmessage.AAAAResource{}, ErrNotFound
 	}
 
 	match := string(ipv6RE.FindSubmatch(fqdn)[2])
@@ -115,13 +143,14 @@ func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	return &AAAAR, nil
 }
 
-func SOAResource(domain string) *dnsmessage.SOAResource {
+// SOAResource returns the hard-coded SOA
+func SOAResource(domain string) dnsmessage.SOAResource {
 	var domainArray [255]byte
 	copy(domainArray[:], domain)
-	hostmaster := "briancunnie@gmail.com"
+	hostmaster := "briancunnie.gmail.com."
 	var mboxArray [255]byte
 	copy(mboxArray[:], hostmaster)
-	return &dnsmessage.SOAResource{
+	return dnsmessage.SOAResource{
 		NS: dnsmessage.Name{
 			Data:   domainArray,
 			Length: uint8(len(domain)),
