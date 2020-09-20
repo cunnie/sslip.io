@@ -12,79 +12,99 @@ import (
 
 var _ = Describe("Xip", func() {
 	var (
-		err            error
-		name           = "127.0.0.1.sslip.io."
-		nameArray      [255]byte
-		packedQuery    []byte
-		packedResponse []byte
-		response       dnsmessage.Message
-		headerId       uint16
-		query          = dnsmessage.Message{
-			Header: dnsmessage.Header{
-				ID:               headerId,
-				RecursionDesired: true,
-			},
-			Questions: []dnsmessage.Question{
-				{
-					Name:  dnsmessage.Name{Length: uint8(len(name)), Data: nameArray},
-					Type:  dnsmessage.TypeA,
-					Class: dnsmessage.ClassINET,
-				},
-			},
-			Answers:     nil,
-			Authorities: nil,
-			Additionals: nil,
-		}
-		expectedResponse = dnsmessage.Message{
-			Header: dnsmessage.Header{
-				ID:                 headerId,
-				Response:           true,
-				OpCode:             0,
-				Authoritative:      true,
-				Truncated:          false,
-				RecursionDesired:   true,
-				RecursionAvailable: false,
-			},
-			Answers: []dnsmessage.Resource{
-				{
-					Header: dnsmessage.ResourceHeader{
-						Name:   query.Questions[0].Name,
-						Type:   dnsmessage.TypeA,
-						Class:  dnsmessage.ClassINET,
-						TTL:    300,
-						Length: 4,
-					},
-					Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
-				},
-			},
-			Authorities: []dnsmessage.Resource{},
-			//	{
-			//		Header: dnsmessage.ResourceHeader{},
-			//		Body:   xip.SOAResource(name),
-			//	},
-			//},
-			Additionals: []dnsmessage.Resource{},
-		}
+		err              error
+		queryBuilder     dnsmessage.Builder
+		name             string
+		nameArray        [255]byte
+		packedQuery      []byte
+		packedResponse   []byte
+		response         dnsmessage.Message
+		expectedResponse dnsmessage.Message
+		headerId         uint16
+		question         dnsmessage.Question
 	)
 	Describe("QueryResponse()", func() {
 		BeforeEach(func() {
+			name = "127.0.0.1.sslip.io."
+			copy(nameArray[:], name)
+			// Set the query's header ID
 			headerId = uint16(rand.Int31())
+			question = dnsmessage.Question{
+				Name:  dnsmessage.Name{Length: uint8(len(name)), Data: nameArray},
+				Type:  dnsmessage.TypeA,
+				Class: dnsmessage.ClassINET,
+			}
+			expectedResponse = dnsmessage.Message{
+				Header: dnsmessage.Header{
+					ID:                 headerId,
+					Response:           true,
+					OpCode:             0,
+					Authoritative:      true,
+					Truncated:          false,
+					RecursionDesired:   true,
+					RecursionAvailable: false,
+				},
+				Answers: []dnsmessage.Resource{
+					{
+						Header: dnsmessage.ResourceHeader{
+							Name:   question.Name,
+							Type:   dnsmessage.TypeA,
+							Class:  dnsmessage.ClassINET,
+							TTL:    604800,
+							Length: 4,
+						},
+						Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
+					},
+				},
+				Authorities: []dnsmessage.Resource{},
+				Additionals: []dnsmessage.Resource{},
+			}
 		})
 		JustBeforeEach(func() {
+			// Warning: this JustBeforeEach is way too long; I know.
 			// Initializing query.Questions _should_ be above, in the `var` section, but there's
 			// no readable way to initialize Data ([255]byte); `copy()`, however, is readable
-			copy(nameArray[:], name)
-			query.Questions[0].Name = dnsmessage.Name{Length: uint8(len(name)), Data: nameArray}
-			query.ID = headerId
+
+			// Set up the DNS query
+			queryBuilder = dnsmessage.NewBuilder(nil, dnsmessage.Header{
+				ID:                 headerId,
+				Response:           false,
+				OpCode:             0,
+				Authoritative:      false,
+				Truncated:          false,
+				RecursionDesired:   true,
+				RecursionAvailable: false,
+				RCode:              0,
+			})
+			queryBuilder.EnableCompression()
+			question := dnsmessage.Question{
+				Name: dnsmessage.Name{
+					Data:   nameArray,
+					Length: uint8(len(name)),
+				},
+				Type:  dnsmessage.TypeA,
+				Class: dnsmessage.ClassINET,
+			}
+			err = queryBuilder.StartQuestions()
+			Expect(err).ToNot(HaveOccurred())
+			err = queryBuilder.Question(question)
+			Expect(err).ToNot(HaveOccurred())
+			packedQuery, err = queryBuilder.Finish()
+			Expect(err).ToNot(HaveOccurred())
+
+			var deleteMe dnsmessage.Message
+			err = deleteMe.Unpack(packedQuery)
+
+			// Put the finishing touches on the expected response
 			expectedResponse.ID = headerId
-			expectedResponse.Questions = query.Questions
-			expectedResponse.Answers[0].Header.Name = query.Questions[0].Name
-			packedQuery, err = query.Pack()
-			Expect(err).To(Not(HaveOccurred()))
+			expectedResponse.Questions = append(expectedResponse.Questions, question)
+			expectedResponse.Answers[0].Header.Name = question.Name
+
+			// The heart of the code: call QueryResponse()
 			packedResponse, err = xip.QueryResponse(packedQuery)
-			Expect(err).To(Not(HaveOccurred()))
+			Expect(err).ToNot(HaveOccurred())
 			err = response.Unpack(packedResponse)
-			Expect(err).To(Not(HaveOccurred()))
+			Expect(err).ToNot(HaveOccurred())
 		})
 		When("It cannot Unpack() the query", func() {
 			It("returns an error", func() {
@@ -95,31 +115,69 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		It("should return the correct expectedResponse", func() {
-			Expect(err).To(Not(HaveOccurred()))
+			Expect(err).ToNot(HaveOccurred())
+			// break the sections out to make debugging easier
+			Expect(response.Header).To(Equal(expectedResponse.Header))
+			Expect(response.Questions).To(Equal(expectedResponse.Questions))
+			Expect(response.Answers).To(Equal(expectedResponse.Answers))
+			Expect(response.Authorities).To(Equal(expectedResponse.Authorities))
+			Expect(response.Additionals).To(Equal(expectedResponse.Additionals))
+			// and now the whole enchilada
 			Expect(response).To(Equal(expectedResponse))
 		})
-		When("There is A record cannot be found", func() {
+		When("an A record cannot be found", func() {
 			BeforeEach(func() {
 				name = "not-an-ip.sslip.io."
+				copy(nameArray[:], name)
+				expectedSOA := xip.SOAResource(name)
+				expectedAuthority := dnsmessage.Resource{
+					Header: dnsmessage.ResourceHeader{
+						Name: dnsmessage.Name{
+							Data:   nameArray,
+							Length: uint8(len(name)),
+						},
+						Type:   dnsmessage.TypeSOA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800,
+						Length: 45,
+					},
+					Body: &expectedSOA,
+				}
+				expectedResponse.Authorities = append(expectedResponse.Authorities, expectedAuthority)
 			})
 			It("returns the no answers, but returns an authoritative section", func() {
-				Expect(err).To(Not(HaveOccurred()))
+				Expect(err).ToNot(HaveOccurred())
 				Expect(response.Answers).To(Equal([]dnsmessage.Resource{}))
-				Expect(response.Authorities).To(Equal(xip.SOAResource(name)))
+				// break test down for easier debugging
+				Expect(len(response.Answers)).To(Equal(0))
+				Expect(len(response.Authorities)).To(Equal(1))
+				Expect(response.Authorities[0].Header.Name).To(Equal(expectedResponse.Authorities[0].Header.Name))
+				Expect(response.Authorities[0].Header).To(Equal(expectedResponse.Authorities[0].Header))
+				Expect(response.Authorities[0].Body).To(Equal(expectedResponse.Authorities[0].Body))
+				Expect(response.Authorities[0]).To(Equal(expectedResponse.Authorities[0]))
 			})
 		})
 	})
 
 	Describe("ResponseHeader()", func() {
 		It("returns a header with the ID", func() {
-			query.ID = uint16(rand.Int31())
-			Expect(xip.ResponseHeader(query.Header)).To(Equal(dnsmessage.Header{
-				ID:                 query.ID,
+			headerId = uint16(rand.Int31())
+			Expect(xip.ResponseHeader(dnsmessage.Header{
+				ID:                 headerId,
+				Response:           false,
+				OpCode:             0,
+				Authoritative:      false,
+				Truncated:          false,
+				RecursionDesired:   false,
+				RecursionAvailable: false,
+				RCode:              0,
+			})).To(Equal(dnsmessage.Header{
+				ID:                 headerId, // taken from the query
 				Response:           true,
 				OpCode:             0,
 				Authoritative:      true,
 				Truncated:          false,
-				RecursionDesired:   query.RecursionDesired,
+				RecursionDesired:   false, // taken from the query
 				RecursionAvailable: false,
 				RCode:              0,
 			}))
@@ -130,7 +188,7 @@ var _ = Describe("Xip", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedA dnsmessage.AResource) {
 				ipv4Answer, err := xip.NameToA(fqdn)
-				Expect(err).To(Not(HaveOccurred()))
+				Expect(err).ToNot(HaveOccurred())
 				Expect(*ipv4Answer).To(Equal(expectedA))
 			},
 			// dots
@@ -163,7 +221,7 @@ var _ = Describe("Xip", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedAAAA dnsmessage.AAAAResource) {
 				ipv6Answer, err := xip.NameToAAAA(fqdn)
-				Expect(err).To(Not(HaveOccurred()))
+				Expect(err).ToNot(HaveOccurred())
 				Expect(*ipv6Answer).To(Equal(expectedAAAA))
 			},
 			// dashes only

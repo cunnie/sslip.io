@@ -25,20 +25,26 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 	var queryHeader dnsmessage.Header
 	var err error
 	var response []byte
+	var p dnsmessage.Parser
 
-	p := dnsmessage.Parser{}
 	if queryHeader, err = p.Start(queryBytes); err != nil {
 		return nil, err
 	}
 
 	b := dnsmessage.NewBuilder(response, ResponseHeader(queryHeader))
 	b.EnableCompression()
+	if err = b.StartQuestions(); err != nil {
+		return nil, err
+	}
 	for {
 		q, err := p.Question()
 		if err == dnsmessage.ErrSectionDone {
 			break
 		}
 		if err != nil {
+			return nil, err
+		}
+		if err = b.Question(q); err != nil {
 			return nil, err
 		}
 		switch q.Type {
@@ -73,7 +79,7 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 						Name:   q.Name,
 						Type:   dnsmessage.TypeA,
 						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 						Length: 0,
 					}, *nameToA)
 					if err != nil {
@@ -86,7 +92,7 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 	}
 
 	responseBytes, err := b.Finish()
-	// I couldn't figure an easy way to test the error condition in Ginkgo. Sue me.
+	// I couldn't figure an easy way to test the error condition in Ginkgo
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +143,7 @@ func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	ipv16address := net.ParseIP(match).To16()
 
 	AAAAR := dnsmessage.AAAAResource{}
-	for i, _ := range ipv16address {
+	for i := range ipv16address {
 		AAAAR.AAAA[i] = ipv16address[i]
 	}
 	return &AAAAR, nil
