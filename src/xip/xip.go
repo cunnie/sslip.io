@@ -77,11 +77,51 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 					}
 					err = b.AResource(dnsmessage.ResourceHeader{
 						Name:   q.Name,
-						Type:   dnsmessage.TypeA,
+						Type:   dnsmessage.TypeSOA,
 						Class:  dnsmessage.ClassINET,
 						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 						Length: 0,
 					}, *nameToA)
+					if err != nil {
+						panic(err.Error())
+						return nil, err
+					}
+				}
+			}
+		case dnsmessage.TypeAAAA:
+			{
+				nameToAAAA, err := NameToAAAA(q.Name.String())
+				if err != nil {
+					// There's only one possible error this can be: ErrNotFound. note that
+					// this could be written more efficiently; however, I wrote it to
+					// accommodate 'if err != nil' convention. My first version was 'if
+					// err == nil', and it flummoxed me.
+					err = b.StartAuthorities()
+					if err != nil {
+						return nil, err
+					}
+					err = b.SOAResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeSOA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+						Length: 0,
+					}, SOAResource(q.Name.String()))
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					err = b.StartAnswers()
+					if err != nil {
+						return nil, err
+					}
+					err = b.AAAAResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeAAAA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, *nameToAAAA)
 					if err != nil {
 						panic(err.Error())
 						return nil, err
