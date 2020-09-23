@@ -14,6 +14,7 @@ var _ = Describe("Xip", func() {
 	var (
 		err              error
 		queryBuilder     dnsmessage.Builder
+		queryType        dnsmessage.Type
 		name             string
 		nameArray        [255]byte
 		packedQuery      []byte
@@ -25,15 +26,8 @@ var _ = Describe("Xip", func() {
 	)
 	Describe("QueryResponse()", func() {
 		BeforeEach(func() {
-			name = "127.0.0.1.sslip.io."
-			copy(nameArray[:], name)
-			// Set the query's header ID
 			headerId = uint16(rand.Int31())
-			question = dnsmessage.Question{
-				Name:  dnsmessage.Name{Length: uint8(len(name)), Data: nameArray},
-				Type:  dnsmessage.TypeA,
-				Class: dnsmessage.ClassINET,
-			}
+
 			expectedResponse = dnsmessage.Message{
 				Header: dnsmessage.Header{
 					ID:                 headerId,
@@ -44,26 +38,12 @@ var _ = Describe("Xip", func() {
 					RecursionDesired:   true,
 					RecursionAvailable: false,
 				},
-				Answers: []dnsmessage.Resource{
-					{
-						Header: dnsmessage.ResourceHeader{
-							Name:   question.Name,
-							Type:   dnsmessage.TypeA,
-							Class:  dnsmessage.ClassINET,
-							TTL:    604800,
-							Length: 4,
-						},
-						Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
-					},
-				},
 				Authorities: []dnsmessage.Resource{},
 				Additionals: []dnsmessage.Resource{},
 			}
 		})
 		JustBeforeEach(func() {
-			// Warning: this JustBeforeEach is way too long; I know.
-			// Initializing query.Questions _should_ be above, in the `var` section, but there's
-			// no readable way to initialize Data ([255]byte); `copy()`, however, is readable
+			// This JustBeforeEach is way too long; I know.
 
 			// Set up the DNS query
 			queryBuilder = dnsmessage.NewBuilder(nil, dnsmessage.Header{
@@ -77,12 +57,12 @@ var _ = Describe("Xip", func() {
 				RCode:              0,
 			})
 			queryBuilder.EnableCompression()
-			question := dnsmessage.Question{
+			question = dnsmessage.Question{
 				Name: dnsmessage.Name{
 					Data:   nameArray,
 					Length: uint8(len(name)),
 				},
-				Type:  dnsmessage.TypeA,
+				Type:  queryType,
 				Class: dnsmessage.ClassINET,
 			}
 			err = queryBuilder.StartQuestions()
@@ -92,13 +72,9 @@ var _ = Describe("Xip", func() {
 			packedQuery, err = queryBuilder.Finish()
 			Expect(err).ToNot(HaveOccurred())
 
-			var deleteMe dnsmessage.Message
-			err = deleteMe.Unpack(packedQuery)
-
-			// Put the finishing touches on the expected response
+			// Do preliminary setup of the expected response
 			expectedResponse.ID = headerId
 			expectedResponse.Questions = append(expectedResponse.Questions, question)
-			expectedResponse.Answers[0].Header.Name = question.Name
 
 			// The heart of the code: call QueryResponse()
 			packedResponse, err = xip.QueryResponse(packedQuery)
@@ -106,7 +82,14 @@ var _ = Describe("Xip", func() {
 			err = response.Unpack(packedResponse)
 			Expect(err).ToNot(HaveOccurred())
 		})
-		When("It cannot Unpack() the query", func() {
+		When("it cannot Unpack() the query", func() {
+			BeforeEach(func() {
+				// This BeforeEach() serves no purpose other than preventing the JustBeforeEach() from complaining
+				name = "this-name-does-not-matter."
+				nameArray = [255]byte{} // zero-out the array otherwise tests will fail with leftovers from longer "name"s
+				copy(nameArray[:], name)
+				queryType = dnsmessage.TypeA
+			})
 			It("returns an error", func() {
 				_, err = xip.QueryResponse([]byte{})
 				// I suspect the following may be brittle, and I would have been
@@ -114,21 +97,79 @@ var _ = Describe("Xip", func() {
 				Expect(err).To(MatchError("unpacking header: id: insufficient data for base length type"))
 			})
 		})
-		It("should return the correct expectedResponse", func() {
-			Expect(err).ToNot(HaveOccurred())
-			// break the sections out to make debugging easier
-			Expect(response.Header).To(Equal(expectedResponse.Header))
-			Expect(response.Questions).To(Equal(expectedResponse.Questions))
-			Expect(response.Answers).To(Equal(expectedResponse.Answers))
-			Expect(response.Authorities).To(Equal(expectedResponse.Authorities))
-			Expect(response.Additionals).To(Equal(expectedResponse.Additionals))
-			// and now the whole enchilada
-			Expect(response).To(Equal(expectedResponse))
+		When("the A record can be found", func() {
+			BeforeEach(func() {
+				name = "127.0.0.1.sslip.io."
+				nameArray = [255]byte{} // zero-out the array otherwise tests will fail with leftovers from longer "name"s
+				copy(nameArray[:], name)
+				queryType = dnsmessage.TypeA
+
+				expectedResponse.Answers = append(expectedResponse.Answers, dnsmessage.Resource{
+					Header: dnsmessage.ResourceHeader{
+						Name: dnsmessage.Name{
+							Data:   nameArray,
+							Length: uint8(len(name)),
+						},
+						Type:   queryType,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800,
+						Length: 4,
+					},
+					Body: &dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}},
+				})
+			})
+			It("should return the correct expectedResponse", func() {
+				Expect(err).ToNot(HaveOccurred())
+				// break the sections out to make debugging easier
+				Expect(response.Header).To(Equal(expectedResponse.Header))
+				Expect(response.Questions).To(Equal(expectedResponse.Questions))
+				Expect(response.Answers).To(Equal(expectedResponse.Answers))
+				Expect(response.Authorities).To(Equal(expectedResponse.Authorities))
+				Expect(response.Additionals).To(Equal(expectedResponse.Additionals))
+				// and now the whole enchilada
+				Expect(response).To(Equal(expectedResponse))
+			})
 		})
-		When("an A record cannot be found", func() {
+		When("the AAAA record can be found", func() {
+			BeforeEach(func() {
+				name = "--1.sslip.io."
+				nameArray = [255]byte{} // zero-out the array otherwise tests will fail with leftovers from longer "name"s
+				copy(nameArray[:], name)
+				queryType = dnsmessage.TypeAAAA
+
+				expectedResponse.Answers = append(expectedResponse.Answers, dnsmessage.Resource{
+					Header: dnsmessage.ResourceHeader{
+						Name: dnsmessage.Name{
+							Data:   nameArray,
+							Length: uint8(len(name)),
+						},
+						Type:   queryType,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800,
+						Length: 16,
+					},
+					Body: &dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}},
+				})
+			})
+			It("should return the correct expectedResponse", func() {
+				Expect(err).ToNot(HaveOccurred())
+				// break the sections out to make debugging easier
+				Expect(response.Header).To(Equal(expectedResponse.Header))
+				Expect(response.Questions).To(Equal(expectedResponse.Questions))
+				Expect(response.Answers).To(Equal(expectedResponse.Answers))
+				Expect(response.Authorities).To(Equal(expectedResponse.Authorities))
+				Expect(response.Additionals).To(Equal(expectedResponse.Additionals))
+				// and now the whole enchilada
+				Expect(response).To(Equal(expectedResponse))
+			})
+		})
+		When("an A or an AAAA record cannot be found", func() {
 			BeforeEach(func() {
 				name = "not-an-ip.sslip.io."
+				nameArray = [255]byte{} // zero-out the array otherwise tests will fail with leftovers from longer "name"s
 				copy(nameArray[:], name)
+				queryType = dnsmessage.TypeA
+
 				expectedSOA := xip.SOAResource(name)
 				expectedAuthority := dnsmessage.Resource{
 					Header: dnsmessage.ResourceHeader{
@@ -147,7 +188,8 @@ var _ = Describe("Xip", func() {
 			})
 			It("returns the no answers, but returns an authoritative section", func() {
 				Expect(err).ToNot(HaveOccurred())
-				Expect(response.Answers).To(Equal([]dnsmessage.Resource{}))
+				Expect(len(response.Questions)).To(Equal(1))
+				Expect(response.Questions[0]).To(Equal(question))
 				// break test down for easier debugging
 				Expect(len(response.Answers)).To(Equal(0))
 				Expect(len(response.Authorities)).To(Equal(1))
@@ -155,6 +197,9 @@ var _ = Describe("Xip", func() {
 				Expect(response.Authorities[0].Header).To(Equal(expectedResponse.Authorities[0].Header))
 				Expect(response.Authorities[0].Body).To(Equal(expectedResponse.Authorities[0].Body))
 				Expect(response.Authorities[0]).To(Equal(expectedResponse.Authorities[0]))
+				// I've made a decision to not populate the Additionals section because it's too much work
+				// (And I don't think it's necessary)
+				Expect(len(response.Additionals)).To(Equal(0))
 			})
 		})
 	})
