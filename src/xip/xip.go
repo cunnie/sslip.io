@@ -17,6 +17,11 @@ var ipv4RE = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-
 var ipv6RE = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 var ErrNotFound = errors.New("record not found")
 
+const (
+	Hostmaster = "yoyo.nono.io."
+	MxHost     = "mail.protonmail.ch."
+)
+
 // QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
 // DNS response It takes in the raw data to offload as much as possible from
 // main(). main() is hard to unit test, but functions like QueryResponse are
@@ -193,9 +198,8 @@ func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 func SOAResource(domain string) dnsmessage.SOAResource {
 	var domainArray [255]byte
 	copy(domainArray[:], domain)
-	hostmaster := "briancunnie.gmail.com."
 	var mboxArray [255]byte
-	copy(mboxArray[:], hostmaster)
+	copy(mboxArray[:], Hostmaster)
 	return dnsmessage.SOAResource{
 		NS: dnsmessage.Name{
 			Data:   domainArray,
@@ -203,12 +207,25 @@ func SOAResource(domain string) dnsmessage.SOAResource {
 		},
 		MBox: dnsmessage.Name{
 			Data:   mboxArray,
-			Length: uint8(len(hostmaster)),
+			Length: uint8(len(Hostmaster)),
 		},
-		Serial:  2020090400,
+		Serial: 2020090400,
+		// I cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
 		Retry:   900,
 		Expire:  1800,
 		MinTTL:  300,
+	}
+}
+
+func MXResource() dnsmessage.MXResource {
+	var mxHostBytes [255]byte
+	copy(mxHostBytes[:], MxHost)
+	return dnsmessage.MXResource{
+		Pref: 0,
+		MX: dnsmessage.Name{
+			Data:   mxHostBytes,
+			Length: uint8(len(MxHost)),
+		},
 	}
 }
