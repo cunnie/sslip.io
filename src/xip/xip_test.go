@@ -180,7 +180,7 @@ var _ = Describe("Xip", func() {
 						Type:   dnsmessage.TypeSOA,
 						Class:  dnsmessage.ClassINET,
 						TTL:    604800,
-						Length: 45,
+						Length: 36,
 					},
 					Body: &expectedSOA,
 				}
@@ -226,6 +226,26 @@ var _ = Describe("Xip", func() {
 				RecursionAvailable: false,
 				RCode:              0,
 			}))
+		})
+	})
+
+	Describe("MXResource()", func() {
+		It("returns the generic MX resource", func() {
+			mx := xip.MXResource()
+			var mxHostBytes [255]byte
+			copy(mxHostBytes[:], xip.MxHost)
+			Expect(mx.MX.Data).To(Equal(mxHostBytes))
+		})
+	})
+
+	Describe("SOAResource()", func() {
+		const dnsLetters = "abcdefghijklmnopqrstuvwxyz0123456789-."
+		It("returns the SOA resource for the domain in question", func() {
+			domain := "example.com."
+			soa := xip.SOAResource(domain)
+			var domainBytes [255]byte
+			copy(domainBytes[:], domain)
+			Expect(soa.NS.Data).To(Equal(domainBytes))
 		})
 	})
 
