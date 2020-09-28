@@ -239,7 +239,6 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("SOAResource()", func() {
-		const dnsLetters = "abcdefghijklmnopqrstuvwxyz0123456789-."
 		It("returns the SOA resource for the domain in question", func() {
 			domain := "example.com."
 			soa := xip.SOAResource(domain)

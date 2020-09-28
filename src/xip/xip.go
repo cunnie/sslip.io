@@ -103,7 +103,6 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 					Length: 0,
 				}, *nameToA)
 				if err != nil {
-					panic(err.Error())
 					return err
 				}
 			}
@@ -143,9 +142,25 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 					Length: 0,
 				}, *nameToAAAA)
 				if err != nil {
-					panic(err.Error())
 					return err
 				}
+			}
+		}
+	case dnsmessage.TypeMX:
+		{
+			err := b.StartAnswers()
+			if err != nil {
+				return err
+			}
+			err = b.MXResource(dnsmessage.ResourceHeader{
+				Name:   q.Name,
+				Type:   dnsmessage.TypeMX,
+				Class:  dnsmessage.ClassINET,
+				TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+				Length: 0,
+			}, MXResource())
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -202,15 +217,27 @@ func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	return &AAAAR, nil
 }
 
+func MXResource() dnsmessage.MXResource {
+	var mxHostBytes [255]byte
+	copy(mxHostBytes[:], MxHost)
+	return dnsmessage.MXResource{
+		Pref: 0,
+		MX: dnsmessage.Name{
+			Data:   mxHostBytes,
+			Length: uint8(len(MxHost)),
+		},
+	}
+}
+
 // SOAResource returns the hard-coded SOA
 func SOAResource(domain string) dnsmessage.SOAResource {
-	var domainArray [255]byte
-	copy(domainArray[:], domain)
+	var domainBytes [255]byte
+	copy(domainBytes[:], domain)
 	var mboxArray [255]byte
 	copy(mboxArray[:], Hostmaster)
 	return dnsmessage.SOAResource{
 		NS: dnsmessage.Name{
-			Data:   domainArray,
+			Data:   domainBytes,
 			Length: uint8(len(domain)),
 		},
 		MBox: dnsmessage.Name{
@@ -223,17 +250,5 @@ func SOAResource(domain string) dnsmessage.SOAResource {
 		Retry:   900,
 		Expire:  1800,
 		MinTTL:  300,
-	}
-}
-
-func MXResource() dnsmessage.MXResource {
-	var mxHostBytes [255]byte
-	copy(mxHostBytes[:], MxHost)
-	return dnsmessage.MXResource{
-		Pref: 0,
-		MX: dnsmessage.Name{
-			Data:   mxHostBytes,
-			Length: uint8(len(MxHost)),
-		},
 	}
 }
