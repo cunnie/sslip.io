@@ -230,11 +230,22 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("MXResource()", func() {
-		It("returns the generic MX resource", func() {
+		It("returns the MX resource (go ProtonMail!)", func() {
 			mx := xip.MXResource()
 			var mxHostBytes [255]byte
 			copy(mxHostBytes[:], xip.MxHost)
 			Expect(mx.MX.Data).To(Equal(mxHostBytes))
+		})
+	})
+
+	Describe("NSResources()", func() {
+		It("returns the name servers", func() {
+			ns := xip.NSResources()
+			for i, nameServer := range xip.NameServers {
+				var nameServerBytes [255]byte
+				copy(nameServerBytes[:], nameServer)
+				Expect(ns[i].NS.Data).To(Equal(nameServerBytes))
+			}
 		})
 	})
 
