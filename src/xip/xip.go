@@ -12,20 +12,27 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
-var ipv4RE = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
-var ipv6RE = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
-var ErrNotFound = errors.New("record not found")
-
 const (
 	Hostmaster = "yoyo.nono.io."
 	MxHost     = "mail.protonmail.ch."
 )
 
+var (
+	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
+	ipv4RE      = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+	ipv6RE      = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+	ErrNotFound = errors.New("record not found")
+	NameServers = []string{
+		"ns-azure.nono.io.",
+		"ns-aws.nono.io.",
+		"ns-gce.nono.io.",
+	}
+)
+
 // QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
 // DNS response It takes in the raw data to offload as much as possible from
 // main(). main() is hard to unit test, but functions like QueryResponse are
-// easy.
+// not as hard.
 func QueryResponse(queryBytes []byte) ([]byte, error) {
 	var queryHeader dnsmessage.Header
 	var err error
@@ -59,7 +66,7 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 	}
 
 	responseBytes, err := b.Finish()
-	// I couldn't figure an easy way to test the error condition in Ginkgo
+	// I couldn't figure an easy way to test this error condition in Ginkgo
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +170,40 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 				return err
 			}
 		}
+	case dnsmessage.TypeNS:
+		{
+			err := b.StartAnswers()
+			if err != nil {
+				return err
+			}
+			nameServers := NSResources()
+			for i := range NameServers {
+				err = b.NSResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeNS,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					Length: 0,
+				}, nameServers[i])
+			}
+		}
+	case dnsmessage.TypeSOA:
+		{
+			err := b.StartAnswers()
+			if err != nil {
+				return err
+			}
+			err = b.SOAResource(dnsmessage.ResourceHeader{
+				Name:   q.Name,
+				Type:   dnsmessage.TypeSOA,
+				Class:  dnsmessage.ClassINET,
+				TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+				Length: 0,
+			}, SOAResource(q.Name.String()))
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -215,6 +256,21 @@ func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 		AAAAR.AAAA[i] = ipv16address[i]
 	}
 	return &AAAAR, nil
+}
+
+func NSResources() []dnsmessage.NSResource {
+	nsResources := []dnsmessage.NSResource{}
+	for _, nameServer := range NameServers {
+		var nameServerBytes [255]byte
+		copy(nameServerBytes[:], nameServer)
+		nsResources = append(nsResources, dnsmessage.NSResource{
+			NS: dnsmessage.Name{
+				Data:   nameServerBytes,
+				Length: uint8(len(nameServer)),
+			},
+		})
+	}
+	return nsResources
 }
 
 func MXResource() dnsmessage.MXResource {
