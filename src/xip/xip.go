@@ -5,6 +5,7 @@ package xip
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"regexp"
 	"strings"
@@ -29,6 +30,17 @@ var (
 	}
 )
 
+// DNSError sets the RCode for failed queries, currently only the ANY query
+type DNSError struct {
+	RCode dnsmessage.RCode
+}
+
+func (e *DNSError) Error() string {
+	// https://github.com/golang/go/wiki/CodeReviewComments#error-strings
+	// error strings shouldn't have capitals, but in this case it's okay
+	return fmt.Sprintf("DNS lookup failure, RCode: %v", e.RCode)
+}
+
 // QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
 // DNS response It takes in the raw data to offload as much as possible from
 // main(). main() is hard to unit test, but functions like QueryResponse are
@@ -43,7 +55,7 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	b := dnsmessage.NewBuilder(response, ResponseHeader(queryHeader))
+	b := dnsmessage.NewBuilder(response, ResponseHeader(queryHeader, dnsmessage.RCodeSuccess))
 	b.EnableCompression()
 	if err = b.StartQuestions(); err != nil {
 		return nil, err
@@ -60,6 +72,13 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 			return nil, err
 		}
 		err = processQuestion(q, &b)
+		if e, ok := err.(*DNSError); ok {
+			// set RCODE to
+			queryHeader.RCode = e.RCode
+			b = dnsmessage.NewBuilder(response, ResponseHeader(queryHeader, dnsmessage.RCodeNotImplemented))
+			b.EnableCompression()
+			break
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -153,6 +172,13 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 				}
 			}
 		}
+	case dnsmessage.TypeALL:
+		{
+			// We don't implement type ANY, so return "NotImplemented" like CloudFlare
+			// https://blog.cloudflare.com/rfc8482-saying-goodbye-to-any/
+			// Google (8.8.8.8) returns A & AAAA records.
+			return &DNSError{RCode: dnsmessage.RCodeNotImplemented}
+		}
 	case dnsmessage.TypeMX:
 		{
 			err := b.StartAnswers()
@@ -212,8 +238,9 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 // authoritative and therefore recursion is never available.  We're able to
 // "white label" domains by indiscriminately matching every query that comes
 // our way. Not being recursive has the added benefit of not being usable as an
-// amplifier in a DDOS attack
-func ResponseHeader(query dnsmessage.Header) dnsmessage.Header {
+// amplifier in a DDOS attack. We pass in the RCODE, which is normally RCodeSuccess
+// but can also be a failure (e.g. ANY type we return RCodeNotImplemented)
+func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.Header {
 	return dnsmessage.Header{
 		ID:                 query.ID,
 		Response:           true,
@@ -222,6 +249,7 @@ func ResponseHeader(query dnsmessage.Header) dnsmessage.Header {
 		Truncated:          false,
 		RecursionDesired:   query.RecursionDesired,
 		RecursionAvailable: false,
+		RCode:              rcode,
 	}
 }
 

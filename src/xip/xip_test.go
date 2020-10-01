@@ -186,7 +186,7 @@ var _ = Describe("Xip", func() {
 				}
 				expectedResponse.Authorities = append(expectedResponse.Authorities, expectedAuthority)
 			})
-			It("returns the no answers, but returns an authoritative section", func() {
+			It("returns no answers, but returns an authoritative section", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(response.Questions)).To(Equal(1))
 				Expect(response.Questions[0]).To(Equal(question))
@@ -199,6 +199,18 @@ var _ = Describe("Xip", func() {
 				Expect(response.Authorities[0]).To(Equal(expectedResponse.Authorities[0]))
 				// I've made a decision to not populate the Additionals section because it's too much work
 				// (And I don't think it's necessary)
+				Expect(len(response.Additionals)).To(Equal(0))
+			})
+		})
+		When("an ANY record is requested", func() {
+			BeforeEach(func() {
+				queryType = dnsmessage.TypeALL
+			})
+			It("responds that it's not implemented because it should be deprecated (RFC 8482)", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(response.RCode).To(Equal(dnsmessage.RCodeNotImplemented))
+				Expect(len(response.Answers)).To(Equal(0))
+				Expect(len(response.Authorities)).To(Equal(0))
 				Expect(len(response.Additionals)).To(Equal(0))
 			})
 		})
@@ -215,8 +227,7 @@ var _ = Describe("Xip", func() {
 				Truncated:          false,
 				RecursionDesired:   false,
 				RecursionAvailable: false,
-				RCode:              0,
-			})).To(Equal(dnsmessage.Header{
+			}, dnsmessage.RCodeSuccess)).To(Equal(dnsmessage.Header{
 				ID:                 headerId, // taken from the query
 				Response:           true,
 				OpCode:             0,
@@ -226,6 +237,10 @@ var _ = Describe("Xip", func() {
 				RecursionAvailable: false,
 				RCode:              0,
 			}))
+		})
+		It("returns the header with the passed-in RCode", func() {
+			Expect(xip.ResponseHeader(dnsmessage.Header{}, dnsmessage.RCodeNotImplemented).
+				RCode).To(Equal(dnsmessage.RCodeNotImplemented))
 		})
 	})
 
