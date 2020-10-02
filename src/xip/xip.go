@@ -174,9 +174,9 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 		}
 	case dnsmessage.TypeALL:
 		{
-			// We don't implement type ANY, so return "NotImplemented" like CloudFlare
+			// We don't implement type ANY, so return "NotImplemented" like CloudFlare (1.1.1.1)
 			// https://blog.cloudflare.com/rfc8482-saying-goodbye-to-any/
-			// Google (8.8.8.8) returns A & AAAA records.
+			// Google (8.8.8.8) returns every record they can find (A, AAAA, SOA, NS, MX, ...).
 			return &DNSError{RCode: dnsmessage.RCodeNotImplemented}
 		}
 	case dnsmessage.TypeMX:
@@ -224,6 +224,25 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 				Type:   dnsmessage.TypeSOA,
 				Class:  dnsmessage.ClassINET,
 				TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+				Length: 0,
+			}, SOAResource(q.Name.String()))
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		{
+			// default is the same case as an A/AAAA record which is not found,
+			// i.e. we return no answers, but we return an authority section
+			err := b.StartAuthorities()
+			if err != nil {
+				return err
+			}
+			err = b.SOAResource(dnsmessage.ResourceHeader{
+				Name:   q.Name,
+				Type:   dnsmessage.TypeSOA,
+				Class:  dnsmessage.ClassINET,
+				TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
 				Length: 0,
 			}, SOAResource(q.Name.String()))
 			if err != nil {
