@@ -214,6 +214,45 @@ var _ = Describe("Xip", func() {
 				Expect(len(response.Additionals)).To(Equal(0))
 			})
 		})
+		When("a record is requested but there's no record to return (e.g. SRV, HINFO)", func() {
+			BeforeEach(func() {
+				name = "no-srv-record.sslip.io."
+				nameArray = [255]byte{} // zero-out the array otherwise tests will fail with leftovers from longer "name"s
+				copy(nameArray[:], name)
+				queryType = dnsmessage.TypeSRV
+
+				expectedSOA := xip.SOAResource(name)
+				expectedAuthority := dnsmessage.Resource{
+					Header: dnsmessage.ResourceHeader{
+						Name: dnsmessage.Name{
+							Data:   nameArray,
+							Length: uint8(len(name)),
+						},
+						Type:   dnsmessage.TypeSOA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800,
+						Length: 36,
+					},
+					Body: &expectedSOA,
+				}
+				expectedResponse.Authorities = append(expectedResponse.Authorities, expectedAuthority)
+			})
+			It("responds with no answers but with an authority", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(response.Questions)).To(Equal(1))
+				Expect(response.Questions[0]).To(Equal(question))
+				// break test down for easier debugging
+				Expect(len(response.Answers)).To(Equal(0))
+				Expect(len(response.Authorities)).To(Equal(1))
+				Expect(response.Authorities[0].Header.Name).To(Equal(expectedResponse.Authorities[0].Header.Name))
+				Expect(response.Authorities[0].Header).To(Equal(expectedResponse.Authorities[0].Header))
+				Expect(response.Authorities[0].Body).To(Equal(expectedResponse.Authorities[0].Body))
+				Expect(response.Authorities[0]).To(Equal(expectedResponse.Authorities[0]))
+				// I've made a decision to not populate the Additionals section because it's too much work
+				// (And I don't think it's necessary)
+				Expect(len(response.Additionals)).To(Equal(0))
+			})
+		})
 	})
 
 	Describe("ResponseHeader()", func() {
