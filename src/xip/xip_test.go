@@ -19,6 +19,7 @@ var _ = Describe("Xip", func() {
 		nameArray        [255]byte
 		packedQuery      []byte
 		packedResponse   []byte
+		logMessage       string
 		response         dnsmessage.Message
 		expectedResponse dnsmessage.Message
 		headerId         uint16
@@ -77,7 +78,7 @@ var _ = Describe("Xip", func() {
 			expectedResponse.Questions = append(expectedResponse.Questions, question)
 
 			// The heart of the code: call QueryResponse()
-			packedResponse, err = xip.QueryResponse(packedQuery)
+			packedResponse, logMessage, err = xip.QueryResponse(packedQuery)
 			Expect(err).ToNot(HaveOccurred())
 			err = response.Unpack(packedResponse)
 			Expect(err).ToNot(HaveOccurred())
@@ -91,9 +92,10 @@ var _ = Describe("Xip", func() {
 				queryType = dnsmessage.TypeA
 			})
 			It("returns an error", func() {
-				_, err = xip.QueryResponse([]byte{})
+				_, logMessage, err = xip.QueryResponse([]byte{})
 				// I suspect the following may be brittle, and I would have been
 				// better off with Expect(err).To(HaveOccurred())
+				Expect(logMessage).To(Equal(""))
 				Expect(err).To(MatchError("unpacking header: id: insufficient data for base length type"))
 			})
 		})

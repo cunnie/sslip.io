@@ -42,23 +42,31 @@ func (e *DNSError) Error() string {
 }
 
 // QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
-// DNS response It takes in the raw data to offload as much as possible from
-// main(). main() is hard to unit test, but functions like QueryResponse are
-// not as hard.
-func QueryResponse(queryBytes []byte) ([]byte, error) {
+// DNS response, a string (for logging) that describes the query and the
+// response, and an error. It takes in the raw data to offload as much as
+// possible from main(). main() is hard to unit test, but functions like
+// QueryResponse are not as hard.
+//
+// Examples of log strings returned:
+//   78.46.204.247.33654: A 127-0-0-1.sslip.io → 127.0.0.1
+//   78.46.204.247.33654: A www.sslip.io → nil, SOA
+//   78.46.204.247.33654: NS www.example.com → NS
+//   78.46.204.247.33654: SOA www.example.com → SOA
+//   2600::.33654: AAAA --1.sslip.io → ::1
+func QueryResponse(queryBytes []byte) ([]byte, string, error) {
 	var queryHeader dnsmessage.Header
 	var err error
 	var response []byte
 	var p dnsmessage.Parser
 
 	if queryHeader, err = p.Start(queryBytes); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	b := dnsmessage.NewBuilder(response, ResponseHeader(queryHeader, dnsmessage.RCodeSuccess))
 	b.EnableCompression()
 	if err = b.StartQuestions(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	for {
 		q, err := p.Question()
@@ -66,30 +74,33 @@ func QueryResponse(queryBytes []byte) ([]byte, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		if err = b.Question(q); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		err = processQuestion(q, &b)
-		if e, ok := err.(*DNSError); ok {
-			// set RCODE to
-			queryHeader.RCode = e.RCode
-			b = dnsmessage.NewBuilder(response, ResponseHeader(queryHeader, dnsmessage.RCodeNotImplemented))
-			b.EnableCompression()
-			break
-		}
 		if err != nil {
-			return nil, err
+			if e, ok := err.(*DNSError); ok {
+				// set RCODE to
+				queryHeader.RCode = e.RCode
+				b = dnsmessage.NewBuilder(response, ResponseHeader(queryHeader, dnsmessage.RCodeNotImplemented))
+				b.EnableCompression()
+				break
+			} else {
+				// processQuestion shouldn't return any error but {nil,DNSError},
+				// but who knows? Someone might break contract. This is the guard.
+				return nil, "", errors.New("processQuestion() returned unexpected error type")
+			}
 		}
 	}
 
 	responseBytes, err := b.Finish()
 	// I couldn't figure an easy way to test this error condition in Ginkgo
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return responseBytes, nil
+	return responseBytes, "", nil
 }
 
 func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
