@@ -23,12 +23,13 @@ func main() {
 		}
 
 		go func() {
-			response, err := xip.QueryResponse(query)
+			response, logMessage, err := xip.QueryResponse(query)
 			if err != nil {
 				log.Println(err.Error())
-			} else {
-				_, err = conn.WriteToUDP(response, addr)
+				return
 			}
+			_, err = conn.WriteToUDP(response, addr)
+			log.Printf("%v.%d %s", addr.IP, addr.Port, logMessage)
 		}()
 	}
 }
