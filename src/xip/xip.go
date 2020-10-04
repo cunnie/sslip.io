@@ -48,11 +48,11 @@ func (e *DNSError) Error() string {
 // QueryResponse are not as hard.
 //
 // Examples of log strings returned:
-//   78.46.204.247.33654: A 127-0-0-1.sslip.io → 127.0.0.1
-//   78.46.204.247.33654: A www.sslip.io → nil, SOA
-//   78.46.204.247.33654: NS www.example.com → NS
-//   78.46.204.247.33654: SOA www.example.com → SOA
-//   2600::.33654: AAAA --1.sslip.io → ::1
+//   78.46.204.247.33654: TypeA 127-0-0-1.sslip.io ? 127.0.0.1
+//   78.46.204.247.33654: TypeA www.sslip.io ? nil, SOA
+//   78.46.204.247.33654: TypeNS www.example.com ? NS
+//   78.46.204.247.33654: TypeSOA www.example.com ? SOA
+//   2600::.33654: TypeAAAA --1.sslip.io ? ::1
 func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
 	var response []byte
@@ -105,6 +105,7 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 }
 
 func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage string, err error) {
+	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
 	switch q.Type {
 	case dnsmessage.TypeA:
 		{
@@ -129,6 +130,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				if err != nil {
 					return
 				}
+				logMessage += "nil, SOA"
 			} else {
 				err = b.StartAnswers()
 				if err != nil {
@@ -144,6 +146,8 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				if err != nil {
 					return
 				}
+				ip := net.IP(nameToA.A[:])
+				logMessage += ip.String()
 			}
 		}
 	case dnsmessage.TypeAAAA:
@@ -169,6 +173,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				if err != nil {
 					return
 				}
+				logMessage += "nil, SOA"
 			} else {
 				err = b.StartAnswers()
 				if err != nil {
@@ -184,6 +189,8 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				if err != nil {
 					return
 				}
+				ip := net.IP(nameToAAAA.AAAA[:])
+				logMessage += ip.String()
 			}
 		}
 	case dnsmessage.TypeALL:
@@ -210,6 +217,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			if err != nil {
 				return
 			}
+			logMessage += "MX"
 		}
 	case dnsmessage.TypeNS:
 		{
@@ -227,6 +235,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 					Length: 0,
 				}, nameServers[i])
 			}
+			logMessage += "NS"
 		}
 	case dnsmessage.TypeSOA:
 		{
@@ -244,6 +253,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			if err != nil {
 				return
 			}
+			logMessage += "SOA"
 		}
 	default:
 		{
@@ -263,6 +273,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			if err != nil {
 				return
 			}
+			logMessage += "nil, SOA"
 		}
 	}
 	return

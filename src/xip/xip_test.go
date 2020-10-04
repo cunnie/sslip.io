@@ -122,6 +122,7 @@ var _ = Describe("Xip", func() {
 			})
 			It("should return the correct expectedResponse", func() {
 				Expect(err).ToNot(HaveOccurred())
+				Expect(logMessage).To(Equal("TypeA 127.0.0.1.sslip.io. ? 127.0.0.1"))
 				// break the sections out to make debugging easier
 				Expect(response.Header).To(Equal(expectedResponse.Header))
 				Expect(response.Questions).To(Equal(expectedResponse.Questions))
@@ -155,6 +156,7 @@ var _ = Describe("Xip", func() {
 			})
 			It("should return the correct expectedResponse", func() {
 				Expect(err).ToNot(HaveOccurred())
+				Expect(logMessage).To(Equal("TypeAAAA --1.sslip.io. ? ::1"))
 				// break the sections out to make debugging easier
 				Expect(response.Header).To(Equal(expectedResponse.Header))
 				Expect(response.Questions).To(Equal(expectedResponse.Questions))
@@ -190,6 +192,7 @@ var _ = Describe("Xip", func() {
 			})
 			It("returns no answers, but returns an authoritative section", func() {
 				Expect(err).ToNot(HaveOccurred())
+				Expect(logMessage).To(Equal("TypeA not-an-ip.sslip.io. ? nil, SOA"))
 				Expect(len(response.Questions)).To(Equal(1))
 				Expect(response.Questions[0]).To(Equal(question))
 				// break test down for easier debugging
@@ -241,6 +244,7 @@ var _ = Describe("Xip", func() {
 			})
 			It("responds with no answers but with an authority", func() {
 				Expect(err).ToNot(HaveOccurred())
+				Expect(logMessage).To(Equal("TypeSRV no-srv-record.sslip.io. ? nil, SOA"))
 				Expect(len(response.Questions)).To(Equal(1))
 				Expect(response.Questions[0]).To(Equal(question))
 				// break test down for easier debugging
