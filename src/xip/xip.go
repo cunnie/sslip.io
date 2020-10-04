@@ -53,31 +53,31 @@ func (e *DNSError) Error() string {
 //   78.46.204.247.33654: NS www.example.com → NS
 //   78.46.204.247.33654: SOA www.example.com → SOA
 //   2600::.33654: AAAA --1.sslip.io → ::1
-func QueryResponse(queryBytes []byte) ([]byte, string, error) {
+func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
-	var err error
 	var response []byte
 	var p dnsmessage.Parser
 
 	if queryHeader, err = p.Start(queryBytes); err != nil {
-		return nil, "", err
+		return
 	}
 
 	b := dnsmessage.NewBuilder(response, ResponseHeader(queryHeader, dnsmessage.RCodeSuccess))
 	b.EnableCompression()
 	if err = b.StartQuestions(); err != nil {
-		return nil, "", err
+		return
 	}
 	for {
-		q, err := p.Question()
+		var q dnsmessage.Question
+		q, err = p.Question()
 		if err == dnsmessage.ErrSectionDone {
 			break
 		}
 		if err != nil {
-			return nil, "", err
+			return
 		}
 		if err = b.Question(q); err != nil {
-			return nil, "", err
+			return
 		}
 		err = processQuestion(q, &b)
 		if err != nil {
@@ -90,17 +90,18 @@ func QueryResponse(queryBytes []byte) ([]byte, string, error) {
 			} else {
 				// processQuestion shouldn't return any error but {nil,DNSError},
 				// but who knows? Someone might break contract. This is the guard.
-				return nil, "", errors.New("processQuestion() returned unexpected error type")
+				err = errors.New("processQuestion() returned unexpected error type")
+				return
 			}
 		}
 	}
 
-	responseBytes, err := b.Finish()
+	responseBytes, err = b.Finish()
 	// I couldn't figure an easy way to test this error condition in Ginkgo
 	if err != nil {
-		return nil, "", err
+		return
 	}
-	return responseBytes, "", nil
+	return
 }
 
 func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
