@@ -79,7 +79,7 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 		if err = b.Question(q); err != nil {
 			return
 		}
-		err = processQuestion(q, &b)
+		logMessage, err = processQuestion(q, &b)
 		if err != nil {
 			if e, ok := err.(*DNSError); ok {
 				// set RCODE to
@@ -104,11 +104,12 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 	return
 }
 
-func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
+func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage string, err error) {
 	switch q.Type {
 	case dnsmessage.TypeA:
 		{
-			nameToA, err := NameToA(q.Name.String())
+			var nameToA *dnsmessage.AResource
+			nameToA, err = NameToA(q.Name.String())
 			if err != nil {
 				// There's only one possible error this can be: ErrNotFound. note that
 				// this could be written more efficiently; however, I wrote it to
@@ -116,7 +117,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 				// err == nil', and it flummoxed me.
 				err = b.StartAuthorities()
 				if err != nil {
-					return err
+					return
 				}
 				err = b.SOAResource(dnsmessage.ResourceHeader{
 					Name:   q.Name,
@@ -126,12 +127,12 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 					Length: 0,
 				}, SOAResource(q.Name.String()))
 				if err != nil {
-					return err
+					return
 				}
 			} else {
 				err = b.StartAnswers()
 				if err != nil {
-					return err
+					return
 				}
 				err = b.AResource(dnsmessage.ResourceHeader{
 					Name:   q.Name,
@@ -141,13 +142,14 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 					Length: 0,
 				}, *nameToA)
 				if err != nil {
-					return err
+					return
 				}
 			}
 		}
 	case dnsmessage.TypeAAAA:
 		{
-			nameToAAAA, err := NameToAAAA(q.Name.String())
+			var nameToAAAA *dnsmessage.AAAAResource
+			nameToAAAA, err = NameToAAAA(q.Name.String())
 			if err != nil {
 				// There's only one possible error this can be: ErrNotFound. note that
 				// this could be written more efficiently; however, I wrote it to
@@ -155,7 +157,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 				// err == nil', and it flummoxed me.
 				err = b.StartAuthorities()
 				if err != nil {
-					return err
+					return
 				}
 				err = b.SOAResource(dnsmessage.ResourceHeader{
 					Name:   q.Name,
@@ -165,12 +167,12 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 					Length: 0,
 				}, SOAResource(q.Name.String()))
 				if err != nil {
-					return err
+					return
 				}
 			} else {
 				err = b.StartAnswers()
 				if err != nil {
-					return err
+					return
 				}
 				err = b.AAAAResource(dnsmessage.ResourceHeader{
 					Name:   q.Name,
@@ -180,7 +182,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 					Length: 0,
 				}, *nameToAAAA)
 				if err != nil {
-					return err
+					return
 				}
 			}
 		}
@@ -189,13 +191,14 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 			// We don't implement type ANY, so return "NotImplemented" like CloudFlare (1.1.1.1)
 			// https://blog.cloudflare.com/rfc8482-saying-goodbye-to-any/
 			// Google (8.8.8.8) returns every record they can find (A, AAAA, SOA, NS, MX, ...).
-			return &DNSError{RCode: dnsmessage.RCodeNotImplemented}
+			err = &DNSError{RCode: dnsmessage.RCodeNotImplemented}
+			return
 		}
 	case dnsmessage.TypeMX:
 		{
-			err := b.StartAnswers()
+			err = b.StartAnswers()
 			if err != nil {
-				return err
+				return
 			}
 			err = b.MXResource(dnsmessage.ResourceHeader{
 				Name:   q.Name,
@@ -205,14 +208,14 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 				Length: 0,
 			}, MXResource())
 			if err != nil {
-				return err
+				return
 			}
 		}
 	case dnsmessage.TypeNS:
 		{
-			err := b.StartAnswers()
+			err = b.StartAnswers()
 			if err != nil {
-				return err
+				return
 			}
 			nameServers := NSResources()
 			for i := range NameServers {
@@ -227,9 +230,9 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 		}
 	case dnsmessage.TypeSOA:
 		{
-			err := b.StartAnswers()
+			err = b.StartAnswers()
 			if err != nil {
-				return err
+				return
 			}
 			err = b.SOAResource(dnsmessage.ResourceHeader{
 				Name:   q.Name,
@@ -239,16 +242,16 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 				Length: 0,
 			}, SOAResource(q.Name.String()))
 			if err != nil {
-				return err
+				return
 			}
 		}
 	default:
 		{
 			// default is the same case as an A/AAAA record which is not found,
 			// i.e. we return no answers, but we return an authority section
-			err := b.StartAuthorities()
+			err = b.StartAuthorities()
 			if err != nil {
-				return err
+				return
 			}
 			err = b.SOAResource(dnsmessage.ResourceHeader{
 				Name:   q.Name,
@@ -258,11 +261,11 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) error {
 				Length: 0,
 			}, SOAResource(q.Name.String()))
 			if err != nil {
-				return err
+				return
 			}
 		}
 	}
-	return nil
+	return
 }
 
 // ResponseHeader returns a pre-fab DNS response header. Note that we're always
