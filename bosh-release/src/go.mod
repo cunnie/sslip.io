@@ -1,4 +1,4 @@
-module github.com/cunnie/sslip.io/src
+module xip
 
 go 1.15
 
