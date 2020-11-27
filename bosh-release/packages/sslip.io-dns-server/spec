@@ -1,0 +1,8 @@
+---
+name: sslip.io-dns-server
+
+dependencies:
+- golang-1-linux
+
+files:
+- ../src/**/*
