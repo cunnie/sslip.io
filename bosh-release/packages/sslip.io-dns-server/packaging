@@ -1,0 +1,8 @@
+set -ex
+
+source /var/vcap/packages/golang-1-linux/bosh/compile.env
+
+mkdir src ${BOSH_INSTALL_TARGET}/bin
+mv go.* main.go src
+cd src
+go build -o ${BOSH_INSTALL_TARGET}/bin/sslip.io-dns-server
