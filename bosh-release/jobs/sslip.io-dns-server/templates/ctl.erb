@@ -14,7 +14,7 @@ case $1 in
 
     cd /var/vcap/packages/sslip.io-dns-server
 
-    exec /var/vcap/packages/sslip.io-dns-server/bin/sslip.io-dns-server
+    exec /var/vcap/packages/sslip.io-dns-server/bin/sslip.io-dns-server \
       >>  $LOG_DIR/sslip.io-dns-server.stdout.log \
       2>> $LOG_DIR/sslip.io-dns-server.stderr.log
 
