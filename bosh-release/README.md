@@ -5,9 +5,9 @@ This is a BOSH Release of the Golang-based custom sslip.io DNS server. It's not 
 In the BOSH manifest, use this in the `releases:` section:
 ```yaml
 - name: sslip.io
-  sha1: 4247d6f491339ba5e1010625aa3e3ced1e8281e3
-  url: https://github.com/cunnie/sslip.io/releases/download/1.0.0/sslip.io-release-1.0.0.tgz
-  version: 1.0.0
+  sha1: c24a2b1fef37c252fda54509ef5fd82f2367c04a
+  url: https://github.com/cunnie/sslip.io/releases/download/1.0.1/sslip.io-release-1.0.1.tgz
+  version: 1.0.1
 ```
 And, in the `instance_groups:` section:
 ```yaml
@@ -15,7 +15,7 @@ And, in the `instance_groups:` section:
   - name: sslip.io-dns-server
     release: sslip.io
 ```
-Here's a sample BOSH [manifest](https://github.com/cunnie/deployments/blob/42e985ceda1f619f32d421e5dbd7df78507fb1d3/sslip.io-dns-server.yml).
+Here's a sample BOSH [manifest](https://github.com/cunnie/deployments/blob/ee993025de99cb245b0042c32b672633c4316fcf/sslip.io-dns-server.yml).
 
 After deploying, test the server. Let's assume the deployed VM's IP is 10.0.250.23:
 ```
