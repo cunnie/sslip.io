@@ -3,7 +3,7 @@ package xip_test
 import (
 	"math/rand"
 
-	"github.com/cunnie/sslip.io/src/xip"
+	"xip/xip"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
