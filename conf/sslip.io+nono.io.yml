@@ -32,7 +32,7 @@ pdns_pipe: |
   # Configuration
   #
   # Increment this timestamp when the contents of the file change.
-  XIP_TIMESTAMP="2018092000"
+  XIP_TIMESTAMP="2020112800"
 
   # The top-level domain for which the name server is authoritative.
   # CHANGEME: change "sslip.io" to your domain
@@ -42,7 +42,7 @@ pdns_pipe: |
   XIP_TTL=300
 
   # SOA record
-  XIP_SOA="briancunnie.gmail.com ns-he.nono.io $XIP_TIMESTAMP $XIP_TTL $XIP_TTL $XIP_TTL $XIP_TTL"
+  XIP_SOA="ns-he.nono.io briancunnie.gmail.com $XIP_TIMESTAMP $XIP_TTL $XIP_TTL $XIP_TTL $XIP_TTL"
 
   # The public IP addresses (e.g. for the web site) of the top-level domain.
   # `A` queries for the top-level domain will return this list of addresses.
