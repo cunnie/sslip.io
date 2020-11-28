@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/cunnie/sslip.io/src/xip"
+	"xip/xip"
 )
 
 func main() {
