@@ -2,8 +2,8 @@ package xip_test
 
 import (
 	"math/rand"
-
 	"xip/xip"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -299,12 +299,12 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("NSResources()", func() {
-		It("returns the name servers", func() {
+		It("returns a map of the name servers", func() {
 			ns := xip.NSResources()
-			for i, nameServer := range xip.NameServers {
+			for nameServer, _ := range xip.NameServers {
 				var nameServerBytes [255]byte
 				copy(nameServerBytes[:], nameServer)
-				Expect(ns[i].NS.Data).To(Equal(nameServerBytes))
+				Expect(ns[nameServer].NS.Data).To(Equal(nameServerBytes))
 			}
 		})
 	})
@@ -326,6 +326,10 @@ var _ = Describe("Xip", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(*ipv4Answer).To(Equal(expectedA))
 			},
+			// nameservers
+			Entry("ns-aws", "ns-aws.nono.io.", dnsmessage.AResource{A: [4]byte{52, 0, 56, 137}}),
+			Entry("ns-azure", "ns-azure.nono.io.", dnsmessage.AResource{A: [4]byte{52, 187, 42, 158}}),
+			Entry("ns-gce", "ns-gce.nono.io.", dnsmessage.AResource{A: [4]byte{104, 155, 144, 4}}),
 			// dots
 			Entry("loopback", "127.0.0.1", dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}}),
 			Entry("255 with domain", "255.254.253.252.com", dnsmessage.AResource{A: [4]byte{255, 254, 253, 252}}),
@@ -349,6 +353,8 @@ var _ = Describe("Xip", func() {
 			Entry("www", "www.sslip.io"),
 			Entry("a lone number", "538.sslip.io"),
 			Entry("too big", "256.254.253.252"),
+			Entry("NS but no dot", "ns-aws.nono.io"),
+			Entry("NS + cruft at beginning", "p-ns-aws.nono.io"),
 		)
 	})
 

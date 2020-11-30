@@ -23,10 +23,10 @@ var (
 	ipv4RE      = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 	ipv6RE      = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 	ErrNotFound = errors.New("record not found")
-	NameServers = []string{
-		"ns-azure.nono.io.",
-		"ns-aws.nono.io.",
-		"ns-gce.nono.io.",
+	NameServers = map[string]dnsmessage.AResource{
+		"ns-aws.nono.io.":   {A: [4]byte{52, 0, 56, 137}},
+		"ns-azure.nono.io.": {A: [4]byte{52, 187, 42, 158}},
+		"ns-gce.nono.io.":   {A: [4]byte{104, 155, 144, 4}},
 	}
 )
 
@@ -226,14 +226,14 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				return
 			}
 			nameServers := NSResources()
-			for i := range NameServers {
+			for _, nameServer := range nameServers {
 				err = b.NSResource(dnsmessage.ResourceHeader{
 					Name:   q.Name,
 					Type:   dnsmessage.TypeNS,
 					Class:  dnsmessage.ClassINET,
 					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 					Length: 0,
-				}, nameServers[i])
+				}, nameServer)
 			}
 			logMessage += "NS"
 		}
@@ -301,6 +301,10 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 // NameToA returns either an AResource that matched the hostname or ErrNotFound
 func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 	fqdn := []byte(fqdnString)
+	// is it one of our nameservers? If so, return early
+	if nsAResource, ok := NameServers[fqdnString]; ok {
+		return &nsAResource, nil
+	}
 	if !ipv4RE.Match(fqdn) {
 		return &dnsmessage.AResource{}, ErrNotFound
 	}
@@ -331,17 +335,17 @@ func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	return &AAAAR, nil
 }
 
-func NSResources() []dnsmessage.NSResource {
-	nsResources := []dnsmessage.NSResource{}
-	for _, nameServer := range NameServers {
+func NSResources() map[string]dnsmessage.NSResource {
+	nsResources := make(map[string]dnsmessage.NSResource)
+	for nameServer, _ := range NameServers {
 		var nameServerBytes [255]byte
 		copy(nameServerBytes[:], nameServer)
-		nsResources = append(nsResources, dnsmessage.NSResource{
+		nsResources[nameServer] = dnsmessage.NSResource{
 			NS: dnsmessage.Name{
 				Data:   nameServerBytes,
 				Length: uint8(len(nameServer)),
 			},
-		})
+		}
 	}
 	return nsResources
 }
