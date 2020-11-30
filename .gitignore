@@ -1,1 +1,3 @@
 .DS_Store
+# We don't check-in JetBrains's Goland settings
+.idea
