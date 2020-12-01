@@ -184,7 +184,7 @@ var _ = Describe("Xip", func() {
 						Type:   dnsmessage.TypeSOA,
 						Class:  dnsmessage.ClassINET,
 						TTL:    604800,
-						Length: 36,
+						Length: 45,
 					},
 					Body: &expectedSOA,
 				}
@@ -236,7 +236,7 @@ var _ = Describe("Xip", func() {
 						Type:   dnsmessage.TypeSOA,
 						Class:  dnsmessage.ClassINET,
 						TTL:    604800,
-						Length: 36,
+						Length: 45,
 					},
 					Body: &expectedSOA,
 				}
@@ -326,6 +326,8 @@ var _ = Describe("Xip", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(*ipv4Answer).To(Equal(expectedA))
 			},
+			// sslip.io website
+			Entry("sslip.io", "sslip.io.", dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}}),
 			// nameservers
 			Entry("ns-aws", "ns-aws.nono.io.", dnsmessage.AResource{A: [4]byte{52, 0, 56, 137}}),
 			Entry("ns-azure", "ns-azure.nono.io.", dnsmessage.AResource{A: [4]byte{52, 187, 42, 158}}),
@@ -365,6 +367,8 @@ var _ = Describe("Xip", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(*ipv6Answer).To(Equal(expectedAAAA))
 			},
+			// sslip.io website
+			Entry("sslip.io", "sslip.io.", xip.OurAandAAAARecords["sslip.io."].AAAAResource),
 			// dashes only
 			Entry("loopback", "--1", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
 			Entry("ff with domain", "fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
