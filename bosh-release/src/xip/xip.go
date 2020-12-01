@@ -14,15 +14,24 @@ import (
 )
 
 const (
-	Hostmaster = "yoyo.nono.io."
+	Hostmaster = "briancunnie.gmail.com."
 	MxHost     = "mail.protonmail.ch."
 )
 
 var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
-	ipv4RE      = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
-	ipv6RE      = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
-	ErrNotFound = errors.New("record not found")
+	ipv4RE             = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+	ipv6RE             = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+	ErrNotFound        = errors.New("record not found")
+	OurAandAAAARecords = map[string]struct {
+		dnsmessage.AResource
+		dnsmessage.AAAAResource
+	}{
+		"sslip.io.": {
+			AResource:    dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}},
+			AAAAResource: dnsmessage.AAAAResource{AAAA: [16]byte{42, 1, 4, 248, 12, 23, 11, 143, 0, 0, 0, 0, 0, 0, 0, 2}},
+		},
+	}
 	NameServers = map[string]dnsmessage.AResource{
 		"ns-aws.nono.io.":   {A: [4]byte{52, 0, 56, 137}},
 		"ns-azure.nono.io.": {A: [4]byte{52, 187, 42, 158}},
@@ -301,6 +310,10 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 // NameToA returns either an AResource that matched the hostname or ErrNotFound
 func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 	fqdn := []byte(fqdnString)
+	// is it our webserver? If so, return early
+	if webServer, ok := OurAandAAAARecords[fqdnString]; ok {
+		return &webServer.AResource, nil
+	}
 	// is it one of our nameservers? If so, return early
 	if nsAResource, ok := NameServers[fqdnString]; ok {
 		return &nsAResource, nil
@@ -320,6 +333,10 @@ func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 // or ErrNotFound
 func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	fqdn := []byte(fqdnString)
+	// is it our webserver? If so, return early
+	if webServer, ok := OurAandAAAARecords[fqdnString]; ok {
+		return &webServer.AAAAResource, nil
+	}
 	if !ipv6RE.Match(fqdn) {
 		return &dnsmessage.AAAAResource{}, ErrNotFound
 	}
@@ -377,7 +394,7 @@ func SOAResource(domain string) dnsmessage.SOAResource {
 			Data:   mboxArray,
 			Length: uint8(len(Hostmaster)),
 		},
-		Serial: 2020090400,
+		Serial: 2020120100,
 		// I cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
 		Retry:   900,
