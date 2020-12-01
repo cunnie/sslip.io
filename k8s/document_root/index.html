@@ -51,8 +51,12 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       class="alert-link">[Status]</a></sup></p>
       <p><em>sslip.io</em> is a DNS (<a href="https://en.wikipedia.org/wiki/Domain_Name_System">Domain Name System</a>)
       service that, when queried with a hostname with an embedded IP address, returns that IP Address. It was inspired
-      by and uses much of the code of <a href="http://xip.io">xip.io</a>, which was created by <a href=
-      "https://github.com/sstephenson">Sam Stephenson</a>.</p>
+      by <a href="http://xip.io">xip.io</a>, which was created by <a href="https://github.com/sstephenson">Sam
+      Stephenson</a>.</p>
+      <div class="alert alert-success" role="alert">
+        <b>2020-12-01 New Software!</b> We've replaced our original PowerDNS + Bash script backend with a customized
+        DNS server written in Golang. Let us know if anything breaks.
+      </div>
       <p>Here are some examples:</p>
       <table class="table">
         <thead>
@@ -200,10 +204,6 @@ IE10 viewport hack for Surface/desktop Windows 8 bug -->
 Google Analytics -->
    
   <script>
-
-
-
-
     (function(i, s, o, g, r, a, m) {
       i['GoogleAnalyticsObject'] = r;
       i[r] = i[r] || function() {
