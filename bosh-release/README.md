@@ -5,9 +5,9 @@ This is a BOSH Release of the Golang-based custom sslip.io DNS server. It's not 
 In the BOSH manifest, use this in the `releases:` section:
 ```yaml
 - name: sslip.io
-  sha1: 0f23bff9d1136d3d5e3b033d013759fe3aa85613
-  url: https://github.com/cunnie/sslip.io/releases/download/1.1.1/sslip.io-release-1.1.1.tgz
-  version: 1.1.1
+  sha1: 3a59e21554da481463f292e2f11becf94e4a51aa
+  url: https://github.com/cunnie/sslip.io/releases/download/1.1.2/sslip.io-release-1.1.2.tgz
+  version: 1.1.2
 ```
 And, in the `instance_groups:` section:
 ```yaml
