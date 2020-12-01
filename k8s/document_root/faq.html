@@ -1,19 +1,16 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
+  <meta name="generator" content="HTML Tidy for HTML5 for Apple macOS version 5.6.0">
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width,
-initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- The above 3 meta tags *must* come first in the head; any
 other head content must come *after* these tags -->
   <title>sslip.io FAQ</title>
   <meta name="description" content="sslip.io">
-  <meta name="author" content="Brian Cunnie">
-  <!-- cute Green Lock icon -->
-  <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico">
-  <!-- Latest
+  <meta name="author" content="Brian Cunnie"><!-- cute Green Lock icon -->
+  <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico"><!-- Latest
   compiled and minified CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
   <!-- Optional theme -->
@@ -27,28 +24,27 @@ other head content must come *after* these tags -->
   <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
   <![endif]-->
 </head>
-
 <body>
   <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container">
       <div class="navbar-header">
-        <button type="button" class="navbar-toggle
-  collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false"
-        aria-controls="navbar">
-          <span class="sr-only">Toggle navigation </span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button> <a class="navbar-brand" href="/">sslip.io</a> </div>
-      <div id="navbar" class="collapse
-  navbar-collapse">
-        <ul class="nav navbar-nav">
-          <li><a href="/">Home</a></li>
-          <li class="active"><a href="faq.html">FAQ</a></li>
-          <li><a href="about.html">About</a></li>
-        </ul>
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+        aria-expanded="false" aria-controls="navbar"><span class="sr-only">Toggle navigation</span></button> <a class=
+        "navbar-brand" href="/">sslip.io</a>
       </div>
-      <!--/.nav-collapse -->
+      <div id="navbar" class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <li>
+            <a href="/">Home</a>
+          </li>
+          <li class="active">
+            <a href="faq.html">FAQ</a>
+          </li>
+          <li>
+            <a href="about.html">About</a>
+          </li>
+        </ul>
+      </div><!--/.nav-collapse -->
     </div>
   </nav>
   <div class="container">
@@ -57,126 +53,100 @@ other head content must come *after* these tags -->
       <p class="lead">Do I have to pay to use this service?</p>
       <p>No, it's free.</p>
       <p class="lead">Can I use this certificate on my commerce website?</p>
-      <p>Although there's no technical reason why you couldn't use
-        the sslip.io SSL key and certificate for your commerce
-        web, we <i>strongly</i> recommend against it: the key
-        is publicly available; your traffic isn't secure. sslip.io's
-        primary purpose is to assist developers who need to test
-        against valid SSL certs, not to safeguard content.</p>
-      <p class="lead">My webserver wants a certificate and an "intermediate certificate
-        chain"&mdash;where do I get that? </p>
-      <p>Certain web servers (e.g. <a href="http://www.tenable.com">Tenable's</a>        <a href="http://www.tenable.com/products/nessus-vulnerability-scanner">Nessus</a>        scanner) prefer to split the chained certificate file
-        (which has three concatenated certificates) into two
-        files: one file containing a single certificate for the
-        server itself (e.g. the "*.sslip.io" certificate), and
-        a second file containing the intermediate certificate
-        authorities (e.g. the two COMODO certificate authorities).</p>
-      <p>You can split the chained certificate file by hand, or
-        you can download them, pre-split, from GitHub: </p>
+      <p>Although there's no technical reason why you couldn't use the sslip.io SSL key and certificate for your
+      commerce web, we <i>strongly</i> recommend against it: the key is publicly available; your traffic isn't secure.
+      sslip.io's primary purpose is to assist developers who need to test against valid SSL certs, not to safeguard
+      content.</p>
+      <p class="lead">My webserver wants a certificate and an "intermediate certificate chain"—where do I get that?</p>
+      <p>Certain web servers (e.g. <a href="http://www.tenable.com">Tenable's</a> <a href=
+      "http://www.tenable.com/products/nessus-vulnerability-scanner">Nessus</a> scanner) prefer to split the chained
+      certificate file (which has three concatenated certificates) into two files: one file containing a single
+      certificate for the server itself (e.g. the "*.sslip.io" certificate), and a second file containing the
+      intermediate certificate authorities (e.g. the two COMODO certificate authorities).</p>
+      <p>You can split the chained certificate file by hand, or you can download them, pre-split, from GitHub:</p>
       <ul>
-        <li>the server <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.crt.pem">certificate</a>          ("*.sslip.io") </li>
-        <li>the intermediate certificate <a href="https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/intermediate-ca.crt.pem">chain</a>          (the COMODO CAs)</li>
+        <li>the server <a href=
+        "https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/sslip.io.crt.pem">certificate</a> ("*.sslip.io")
+        </li>
+        <li>the intermediate certificate <a href=
+        "https://raw.githubusercontent.com/cunnie/sslip.io/master/ssl/intermediate-ca.crt.pem">chain</a> (the COMODO
+        CAs)
+        </li>
       </ul>
-      <p class="lead">Why can't I use dots in my hostname? xip.io lets me use
-        dots. </p>
-      <p>You can't have dots, but you can have dashes: for example,
-        "www-sf-ca-us-10-9-9-142.sslip.io" will work with sslip.io's
-        wildcard SSL certificate, but "www.sf.ca.us.10.9.9.142.sslip.io"
-        will not. This is a technical limitation of wildcard
-        certs and the manner in which browsers treat them (read
-        more <a href="http://security.stackexchange.com/questions/10538/what-certificates-are-needed-for-multi-level-subdomains">here</a>).</p>
-      <p>This restricts sslip.io's usage model. For example, it
-        won't work properly with Cloud Foundry's app domain or
-        system domain.</p>
-      <p class="lead">Does sslip.io work with name-based virtual hosting? We
-        have multiple projects but only one webserver.</p>
-
-      <p> sslip.io interoperates quite well with <a href="https://en.wikipedia.org/wiki/Virtual_hosting#Name-based">name-based virtual hosting</a>.
-        You can prepend identifying information to the sslip.io
-        hostname without jeopardizing the address resolution, and then use
-        those hostnames to distinguish the content being served.
-        For example, let's assume that your webserver's IP address
-        is 10.9.9.30, and that you have three projects you're
-        working on (Apple, Google, and Facebook). You would use
-        the following three sslip.io hostnames: </p>
-
+      <p class="lead">Why can't I use dots in my hostname? xip.io lets me use dots.</p>
+      <p>You can't have dots, but you can have dashes: for example, "www-sf-ca-us-10-9-9-142.sslip.io" will work with
+      sslip.io's wildcard SSL certificate, but "www.sf.ca.us.10.9.9.142.sslip.io" will not. This is a technical
+      limitation of wildcard certs and the manner in which browsers treat them (read more <a href=
+      "http://security.stackexchange.com/questions/10538/what-certificates-are-needed-for-multi-level-subdomains">here</a>).</p>
+      <p>This restricts sslip.io's usage model. For example, it won't work properly with Cloud Foundry's app domain or
+      system domain.</p>
+      <p class="lead">Does sslip.io work with name-based virtual hosting? We have multiple projects but only one
+      webserver.</p>
+      <p>sslip.io interoperates quite well with <a href=
+      "https://en.wikipedia.org/wiki/Virtual_hosting#Name-based">name-based virtual hosting</a>. You can prepend
+      identifying information to the sslip.io hostname without jeopardizing the address resolution, and then use those
+      hostnames to distinguish the content being served. For example, let's assume that your webserver's IP address is
+      10.9.9.30, and that you have three projects you're working on (Apple, Google, and Facebook). You would use the
+      following three sslip.io hostnames:</p>
       <ul>
         <li>apple-10-9-9-30.sslip.io</li>
         <li>facebook-10-9-9-30.sslip.io</li>
         <li>google-10-9-9-30.sslip.io</li>
       </ul>
-      <p class="lead">Can you make the hostnames easier to remember? It's as
-        hard as memorizing IP addresses.</p>
-      <p>Unfortunately, no. We appreciate that "52-0-56-137.sslip.io"
-        is not an easy-to-remember hostname, whereas something
-        along the lines of "aws-server.sslip.io" would be much
-        simpler, but we don't see an easy solution&mdash;we need
-        to be able to extract the IP address from the hostname
-        in order for our DNS nameserver to reply with the proper
-        address when queried.</p>
+      <p class="lead">Can you make the hostnames easier to remember? It's as hard as memorizing IP addresses.</p>
+      <p>Unfortunately, no. We appreciate that "52-0-56-137.sslip.io" is not an easy-to-remember hostname, whereas
+      something along the lines of "aws-server.sslip.io" would be much simpler, but we don't see an easy solution—we
+      need to be able to extract the IP address from the hostname in order for our DNS nameserver to reply with the
+      proper address when queried.</p>
       <p class="lead">Do you have support for IPv6-style addresses?</p>
-      <p>Not yet, but if there's enough demand for it we might try
-        implementing it.</p>
-      <p class="lead">Why did you choose a 4096-bit key instead of a 2048-bit
-        key?
-      </p>
-      <p>We couldn't help ourselves&mdash;when it comes to keys,
-        longer is better. In retrospect there were flaws in our
-        thinking: certain hardware devices, e.g. YubiKeys, only
-        support keys of length 2048 bits or less. Also, there
-        was no technical value in making a long key&mdash;it's
-        publicly available on GitHub, so a zero-bit key would
-        have been equally secure.</p>
-      <p class="lead">Do I have to use the sslip.io domain? I'd rather have a
-        valid cert for my domain.</p>
-      <p>If you want valid SSL certificate, and you don't want to
-        use the sslip.io domain, then you'll need to purchase
-        a certificate for your domain. We purchased ours from
-        <a href="https://www.cheapsslshop.com">Cheap SSL Shop</a>,
-        but use a vendor with whom you're comfortable. </p>
-      <p class="lead">What is the sslip.io certificate chain? </p>
-      <p>The sslip.io certificate chain is the series of certificates,
-        each signing the next, with a root certificate at the
-        top. It looks like the following:</p>
-      <div class="col-sm-12">
-        <img src="img/cert_chain.png" height="206" /> </div>
+      <p>Not yet, but if there's enough demand for it we might try implementing it.</p>
+      <p class="lead">Why did you choose a 4096-bit key instead of a 2048-bit key?</p>
+      <p>We couldn't help ourselves—when it comes to keys, longer is better. In retrospect there were flaws in our
+      thinking: certain hardware devices, e.g. YubiKeys, only support keys of length 2048 bits or less. Also, there was
+      no technical value in making a long key—it's publicly available on GitHub, so a zero-bit key would have been
+      equally secure.</p>
+      <p class="lead">Do I have to use the sslip.io domain? I'd rather have a valid cert for my domain.</p>
+      <p>If you want valid SSL certificate, and you don't want to use the sslip.io domain, then you'll need to purchase
+      a certificate for your domain. We purchased ours from <a href="https://www.cheapsslshop.com">Cheap SSL Shop</a>,
+      but use a vendor with whom you're comfortable.</p>
+      <p class="lead">What is the sslip.io certificate chain?</p>
+      <p>The sslip.io certificate chain is the series of certificates, each signing the next, with a root certificate
+      at the top. It looks like the following:</p>
+      <div class="col-sm-12"><img src="img/cert_chain.png" height="206"></div>
       <div class="row"></div>
-      <p></p>
-      <p>Note that the "root" certificate is "AddTrust's External
-        CA Root", which issued a certificate to the "COMODO RSA
-        Certification Authority", which in turn issued a certificate
-        to the "COMODO RSA Domain Validation Secure Server CA"
-        which in turn issued our certificate, "*.sslip.io".
-      </p>
+      <p>Note that the "root" certificate is "AddTrust's External CA Root", which issued a certificate to the "COMODO
+      RSA Certification Authority", which in turn issued a certificate to the "COMODO RSA Domain Validation Secure
+      Server CA" which in turn issued our certificate, "*.sslip.io".</p>
       <p class="lead">How is "sslip.io" pronounced?</p>
       <p>ESS-ESS-ELL-EYE-PEE-DOT-EYE-OH</p>
       <p class="lead">Where do I report bugs? I think I found one.</p>
-      <p>Open an issue on <a href="https://github.com/cunnie/sslip.io/issues">GitHub</a>;
-        we're tracking our issues there.</p>
-      <p class="lead">There's a typo/mistake on the sslip.io website. </p>
+      <p>Open an issue on <a href="https://github.com/cunnie/sslip.io/issues">GitHub</a>; we're tracking our issues
+      there.</p>
+      <p class="lead">There's a typo/mistake on the sslip.io website.</p>
       <p>Thanks! We love <a href="https://github.com/cunnie/sslip.io/pulls">pull requests</a>.</p>
-      <div class="row">
-        <p></p>
-      </div>
-      <p>&copy; 2015 Brian Cunnie, Pivotal Software </p>
+      <div class="row"></div>
+      <p>© 2015 Brian Cunnie, Pivotal Software</p>
     </div>
-  </div>
-  <!-- /.container -->
+  </div><!-- /.container -->
   <!-- Bootstrap core JavaScript ================================================== -->
   <!--
   Placed at the end of the document so the pages load faster -->
   <!-- jQuery
   (necessary for Bootstrap's JavaScript plugins) -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-  <!--
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script> <!--
   Latest compiled and minified JavaScript -->
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-  <!--
+   
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> <!--
   IE10 viewport hack for Surface/desktop Windows 8 bug -->
-  <script src="https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script>
+   
+  <script src=
+  "https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script> 
   <!--
   Google Analytics -->
+   
   <script>
+
+
     (function(i, s, o, g, r, a, m) {
       i['GoogleAnalyticsObject'] = r;
       i[r] = i[r] || function() {
@@ -193,5 +163,4 @@ other head content must come *after* these tags -->
     ga('send', 'pageview');
   </script>
 </body>
-
 </html>
