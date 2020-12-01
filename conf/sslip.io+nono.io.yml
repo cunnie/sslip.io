@@ -1,19 +1,4 @@
-pdns_named_conf: |
-  zone "diarizer.com" {
-    type slave;
-      file "/var/vcap/jobs/pdns/etc/diarizer.com";
-      masters { 78.46.204.247; };
-  };
-  zone "nono.com" {
-    type slave;
-      file "/var/vcap/jobs/pdns/etc/nono.com";
-      masters { 78.46.204.247; };
-  };
-  zone "nono.io" {
-    type slave;
-      file "/var/vcap/jobs/pdns/etc/nono.io";
-      masters { 78.46.204.247; };
-  };
+pdns_named_conf: ""
 pdns_conf: |
   launch=pipe
   pipe-command=/var/vcap/jobs/pdns/bin/pipe /var/vcap/jobs/pdns/etc/pipe.conf
@@ -30,7 +15,7 @@ pdns_pipe: |
   # Configuration
   #
   # Increment this timestamp when the contents of the file change.
-  XIP_TIMESTAMP="2020112800"
+  XIP_TIMESTAMP="2020090400"
 
   # The top-level domain for which the name server is authoritative.
   # CHANGEME: change "sslip.io" to your domain
@@ -40,7 +25,7 @@ pdns_pipe: |
   XIP_TTL=300
 
   # SOA record
-  XIP_SOA="ns-he.nono.io briancunnie.gmail.com $XIP_TIMESTAMP $XIP_TTL $XIP_TTL $XIP_TTL $XIP_TTL"
+  XIP_SOA="sslip.io yoyo.nono.io $XIP_TIMESTAMP 900 900 1800 300"
 
   # The public IP addresses (e.g. for the web site) of the top-level domain.
   # `A` queries for the top-level domain will return this list of addresses.
