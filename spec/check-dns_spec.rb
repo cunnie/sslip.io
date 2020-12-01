@@ -17,19 +17,11 @@ def get_whois_nameservers(domain)
   nameservers
 end
 
-def idn_dig?
-  system("dig -h | grep idn")
-end
-
 domain = ENV['DOMAIN'] || 'example.com'
 whois_nameservers = get_whois_nameservers(domain)
 
 describe domain do
   soa = nil
-  idn_dig = `dig -h | grep idn`
-  dig_args = "+short"
-  dig_args += idn_dig? ? " +noidnin" : ""
-
 
   context "when evaluating $DOMAIN (\"#{domain}\") environment variable" do
     let (:domain) { ENV['DOMAIN'] }
@@ -46,55 +38,55 @@ describe domain do
   end
 
   whois_nameservers.each do |whois_nameserver|
-    it "nameserver #{whois_nameserver}'s NS records match whois's, " +
-      "`dig #{dig_args} ns sslip.io @#{whois_nameserver}`" do
-      dig_nameservers = `dig #{dig_args} ns sslip.io @#{whois_nameserver}`.split(/\n+/)
+    it "nameserver #{whois_nameserver}'s NS records match whois's #{whois_nameservers}, " +
+      "`dig +short ns sslip.io @#{whois_nameserver}`" do
+      dig_nameservers = `dig +short ns sslip.io @#{whois_nameserver}`.split(/\n+/)
       expect(dig_nameservers.sort).to eq(whois_nameservers.sort)
     end
 
     it "nameserver #{whois_nameserver}'s SOA record match" do
-      dig_soa = `dig #{dig_args} soa sslip.io @#{whois_nameserver}`
+      dig_soa = `dig +short soa sslip.io @#{whois_nameserver}`
       soa = soa || dig_soa
       expect(dig_soa).to eq(soa)
     end
 
     a = [ rand(256), rand(256), rand(256), rand(256) ]
-    it "nameserver #{whois_nameserver} resolves #{a.join(".")}.sslip.io to #{a.join(".")}" do
-      expect(`dig #{dig_args} #{a.join(".") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
+    it "resolves #{a.join(".")}.sslip.io to #{a.join(".")}" do
+      expect(`dig +short #{a.join(".") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
     end
 
     a = [ rand(256), rand(256), rand(256), rand(256) ]
-    it "nameserver #{whois_nameserver} resolves #{a.join("-")}.sslip.io to #{a.join(".")}" do
-      expect(`dig #{dig_args} #{a.join("-") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
-    end
-
-    a = [ rand(256), rand(256), rand(256), rand(256) ]
-    b = [ ('a'..'z').to_a, ('0'..'9').to_a ].flatten.shuffle[0,8].join
-    it "nameserver #{whois_nameserver} resolves #{b}.#{a.join("-")}.sslip.io to #{a.join(".")}" do
-      expect(`dig #{dig_args} #{b}.#{a.join("-") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
+    it "resolves #{a.join("-")}.sslip.io to #{a.join(".")}" do
+      expect(`dig +short #{a.join("-") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
     end
 
     a = [ rand(256), rand(256), rand(256), rand(256) ]
     b = [ ('a'..'z').to_a, ('0'..'9').to_a ].flatten.shuffle[0,8].join
-    it "nameserver #{whois_nameserver} resolves #{a.join("-")}.#{b} to #{a.join(".")}" do
-      expect(`dig #{dig_args} #{a.join("-") + "." + b} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
+    it "resolves #{b}.#{a.join("-")}.sslip.io to #{a.join(".")}" do
+      expect(`dig +short #{b}.#{a.join("-") + "." + domain} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
+    end
+
+    a = [ rand(256), rand(256), rand(256), rand(256) ]
+    b = [ ('a'..'z').to_a, ('0'..'9').to_a ].flatten.shuffle[0,8].join
+    it "resolves #{a.join("-")}.#{b} to #{a.join(".")}" do
+      expect(`dig +short #{a.join("-") + "." + b} @#{whois_nameserver}`.chomp).to  eq(a.join("."))
     end
 
     # don't begin the hostname with a double-dash -- `dig` mistakes it for an argument
-    it "nameserver #{whois_nameserver} resolves api.--.sslip.io' to eq ::)}" do
-      expect(`dig #{dig_args} AAAA api.--.sslip.io @#{whois_nameserver}`.chomp).to eq("::")
+    it "resolves api.--.sslip.io' to eq ::)}" do
+      expect(`dig +short AAAA api.--.sslip.io @#{whois_nameserver}`.chomp).to eq("::")
     end
 
-    it "nameserver #{whois_nameserver} resolves localhost.--1.sslip.io' to eq ::1)}" do
-      expect(`dig #{dig_args} AAAA localhost.api.--1.sslip.io @#{whois_nameserver}`.chomp).to eq("::1")
+    it "resolves localhost.--1.sslip.io' to eq ::1)}" do
+      expect(`dig +short AAAA localhost.api.--1.sslip.io @#{whois_nameserver}`.chomp).to eq("::1")
     end
 
-    it "nameserver #{whois_nameserver} resolves 2001-4860-4860--8888.sslip.io' to eq 2001:4860:4860::8888)}" do
-      expect(`dig #{dig_args} AAAA 2001-4860-4860--8888.sslip.io @#{whois_nameserver}`.chomp).to eq("2001:4860:4860::8888")
+    it "resolves 2001-4860-4860--8888.sslip.io' to eq 2001:4860:4860::8888)}" do
+      expect(`dig +short AAAA 2001-4860-4860--8888.sslip.io @#{whois_nameserver}`.chomp).to eq("2001:4860:4860::8888")
     end
 
-    it "nameserver #{whois_nameserver} resolves 2601-646-100-69f0--24.sslip.io' to eq 2601:646:100:69f0::24)}" do
-      expect(`dig #{dig_args} AAAA 2601-646-100-69f0--24.sslip.io @#{whois_nameserver}`.chomp).to eq("2601:646:100:69f0::24")
+    it "resolves 2601-646-100-69f0--24.sslip.io' to eq 2601:646:100:69f0::24)}" do
+      expect(`dig +short AAAA 2601-646-100-69f0--24.sslip.io @#{whois_nameserver}`.chomp).to eq("2601:646:100:69f0::24")
     end
   end
 end
