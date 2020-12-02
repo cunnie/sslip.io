@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# Build binaries for macOS, Windows, Linux, FreeBSD
+#
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd $DIR/../src
+
+export GOOS GOARCH
+for GOOS in darwin linux freebsd; do
+  for GOARCH in amd64; do
+    go build -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH main.go
+  done
+done
+
+# Windows has a custom extension
+GOOS=windows GOARCH=amd64
+go build -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH.exe main.go
