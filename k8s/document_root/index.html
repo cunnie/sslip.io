@@ -149,10 +149,21 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
         </tbody>
       </table>
       <p>Let’s test it from the command line using <code>dig</code>:</p>
-      <pre>
-      <code>dig +short 169-254-169-254.xip.example.com @ns-gce.nono.io.</code></pre>
+      <pre><code>dig +short 169-254-169-254.xip.example.com @ns-gce.nono.io.</code></pre>
       <p>Yields, hopefully: <sup><a href="#timeout" class="alert-link">[connection timed out]</a></sup></p>
       <pre><code>169.254.169.254</code></pre>
+      <h3 id="server">But I Want My Own DNS Server!</h3>
+      <p>If you want to run your own DNS server, it's simple: you can compile from <a href=
+      "https://github.com/cunnie/sslip.io">source</a> or you can use one of our <a href=
+      "https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we install & run
+      our server within a docker container:</p>
+      <pre>
+docker run -it --rm fedora
+curl -L https://github.com/cunnie/sslip.io/releases/download/1.1.2/sslip.io-dns-server-linux-amd64 -o dns-server
+chmod +x dns-server
+./dns-server 2&gt; dns-server.log &
+dnf install -y bind-utils
+dig +short 127-0-0-1.sslip.io @localhost # returns "127.0.0.1"</pre>
       <h4 id="tls-transport-layer-security">TLS (Transport Layer Security)</h4>
       <p>If you have a wildcard certificate for your sslip.io-style subdomain, you may install it on your machines for
       TLS-verified connections.</p>
@@ -164,7 +175,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       </div>
       <p>For a real-world example of a TLS wildcard cert and sslip.io domain, browse <a href=
       "https://52-0-56-137.sslip.io" class="uri">https://52-0-56-137.sslip.io</a>.</p>
-      <p>Pivotal employees can download the <i>*.sslip.io</i> TLS private key <a href=
+      <p>VMware employees can download the <i>*.sslip.io</i> TLS private key <a href=
       "https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">here</a>.</p>
       <hr>
       <h4 id="footnotes">Footnotes</h4>
