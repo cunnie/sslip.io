@@ -113,7 +113,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       <h3 id="branding">Branding / White Label / Custom Domains</h3>
       <p>sslip.io can be used to brand your own site (you don’t need to use the sslip.io domain). For example, say you
       own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
-      accomplish this, set the following four DNS servers as NS records for the subdomain “xip.example.com”</p>
+      accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
       <div class="alert alert-warning" role="alert">
         <b>2019-07-31 Nameserver (NS) Change!</b> Update your nameservers. We have deprecated ns-vultr.nono.io because
         it's turned off the last week of the month when it has reached its 3 TB bandwidth quota.
@@ -182,7 +182,7 @@ dig +short 127-0-0-1.sslip.io @localhost # returns "127.0.0.1"</pre>
       <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
       more often an indication that when the servers were last checked (currently every six hours), the CI (continuous
       integration) <a href="https://ci.nono.io/teams/main/pipelines/sslip.io">server</a> had difficulty reaching one of
-      the four sslip.io nameservers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
+      the three sslip.io nameservers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
       out]</a></sup></p>
       <p><a id="timeout"><sup>[connection timed out]</sup></a></p>
       <p>DNS runs over <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a> which has no guaranteed
