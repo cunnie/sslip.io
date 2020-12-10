@@ -18,24 +18,76 @@ const (
 	MxHost     = "mail.protonmail.ch."
 )
 
+// DomainCustomizations are values that are returned for specific queries.
+// The map key is the the domain in question, e.g. "sslip.io." (always include trailing dot).
+// For example, when querying for MX records for "sslip.io", return the protonmail servers,
+// but when querying for MX records for generic queries, e.g. "127.0.0.1.sslip.io", return the
+// default (which happens to be no MX records).
+//
+// Noticeably absent are the NS records and SOA records. They don't need to be customized
+// because they are always the same, regardless of the domain being queried.
+type DomainCustomizations map[string]struct {
+	A     []dnsmessage.AResource
+	AAAA  []dnsmessage.AAAAResource
+	CNAME dnsmessage.CNAMEResource
+	MX    []dnsmessage.MXResource
+	TXT   dnsmessage.TXTResource
+}
+
 var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
-	ipv4RE             = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
-	ipv6RE             = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
-	ErrNotFound        = errors.New("record not found")
-	OurAandAAAARecords = map[string]struct {
-		dnsmessage.AResource
-		dnsmessage.AAAAResource
-	}{
-		"sslip.io.": {
-			AResource:    dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}},
-			AAAAResource: dnsmessage.AAAAResource{AAAA: [16]byte{42, 1, 4, 248, 12, 23, 11, 143, 0, 0, 0, 0, 0, 0, 0, 2}},
-		},
-	}
+	ipv4RE      = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+	ipv6RE      = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
+	ErrNotFound = errors.New("record not found")
 	NameServers = map[string]dnsmessage.AResource{
 		"ns-aws.nono.io.":   {A: [4]byte{52, 0, 56, 137}},
 		"ns-azure.nono.io.": {A: [4]byte{52, 187, 42, 158}},
 		"ns-gce.nono.io.":   {A: [4]byte{104, 155, 144, 4}},
+	}
+
+	Customizations = DomainCustomizations{
+		"sslip.io.": {
+			A: []dnsmessage.AResource{
+				{A: [4]byte{78, 46, 204, 247}},
+			},
+			AAAA: []dnsmessage.AAAAResource{
+				{AAAA: [16]byte{42, 1, 4, 248, 12, 23, 11, 143, 0, 0, 0, 0, 0, 0, 0, 2}},
+			},
+			MX: []dnsmessage.MXResource{
+				// mail.protonmail.ch
+				{
+					Pref: 10,
+					// Use The Go Playground https://play.golang.org/p/knv3Jbkq0DP
+					// to convert strings to dnsmessage.Name for easy cut-and-paste
+					MX: dnsmessage.Name{
+						Length: 18,
+						Data: [255]byte{
+							109, 97, 105, 108, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						},
+					},
+				},
+				// mailsec.protonmail.ch
+				{
+					Pref: 10,
+					MX: dnsmessage.Name{
+						Length: 21,
+						Data: [255]byte{
+							109, 97, 105, 108, 115, 101, 99, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+						},
+					},
+				},
+			},
+			// although multiple TXT records with multiple strings are allowed, we're sticking
+			// with a single TXT record with multiple strings to simplify things, just like AWS
+			// does: https://serverfault.com/questions/815841/multiple-txt-fields-for-same-subdomain
+			TXT: dnsmessage.TXTResource{
+				TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"},
+			},
+		},
+		// nameserver addresses; we get queries for those every once in a while
+		"ns-aws.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}}},
+		"ns-azure.nono.io.": {A: []dnsmessage.AResource{{A: [4]byte{52, 187, 42, 158}}}},
+		"ns-gce.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{104, 155, 144, 4}}}},
 	}
 )
 
@@ -46,7 +98,7 @@ type DNSError struct {
 
 func (e *DNSError) Error() string {
 	// https://github.com/golang/go/wiki/CodeReviewComments#error-strings
-	// error strings shouldn't have capitals, but in this case it's okay
+	// error strings shouldn't have capitals, but in this case it's okay because DNS is an acronym
 	return fmt.Sprintf("DNS lookup failure, RCode: %v", e.RCode)
 }
 
@@ -97,7 +149,7 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 				b.EnableCompression()
 				break
 			} else {
-				// processQuestion shouldn't return any error but {nil,DNSError},
+				// processQuestion shouldn't return any error but DNSError,
 				// but who knows? Someone might break contract. This is the guard.
 				err = errors.New("processQuestion() returned unexpected error type")
 				return
@@ -310,13 +362,11 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 // NameToA returns either an AResource that matched the hostname or ErrNotFound
 func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 	fqdn := []byte(fqdnString)
-	// is it our webserver? If so, return early
-	if webServer, ok := OurAandAAAARecords[fqdnString]; ok {
-		return &webServer.AResource, nil
-	}
-	// is it one of our nameservers? If so, return early
-	if nsAResource, ok := NameServers[fqdnString]; ok {
-		return &nsAResource, nil
+	// is it a customized A record? If so, return early
+	if domain, ok := Customizations[fqdnString]; ok {
+		if len(domain.A) > 0 {
+			return &domain.A[0], nil // TODO: handle multiple A records
+		}
 	}
 	if !ipv4RE.Match(fqdn) {
 		return &dnsmessage.AResource{}, ErrNotFound
@@ -333,9 +383,11 @@ func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 // or ErrNotFound
 func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	fqdn := []byte(fqdnString)
-	// is it our webserver? If so, return early
-	if webServer, ok := OurAandAAAARecords[fqdnString]; ok {
-		return &webServer.AAAAResource, nil
+	// is it a customized AAAA record? If so, return early
+	if domain, ok := Customizations[fqdnString]; ok {
+		if len(domain.AAAA) > 0 {
+			return &domain.AAAA[0], nil // TODO: handle multiple AAAA records
+		}
 	}
 	if !ipv6RE.Match(fqdn) {
 		return &dnsmessage.AAAAResource{}, ErrNotFound
@@ -394,7 +446,7 @@ func SOAResource(domain string) dnsmessage.SOAResource {
 			Data:   mboxArray,
 			Length: uint8(len(Hostmaster)),
 		},
-		Serial: 2020120100,
+		Serial: 2020121000,
 		// I cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
 		Retry:   900,
