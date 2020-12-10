@@ -368,7 +368,7 @@ var _ = Describe("Xip", func() {
 				Expect(*ipv6Answer).To(Equal(expectedAAAA))
 			},
 			// sslip.io website
-			Entry("sslip.io", "sslip.io.", xip.OurAandAAAARecords["sslip.io."].AAAAResource),
+			Entry("sslip.io", "sslip.io.", xip.Customizations["sslip.io."].AAAA[0]),
 			// dashes only
 			Entry("loopback", "--1", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
 			Entry("ff with domain", "fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
