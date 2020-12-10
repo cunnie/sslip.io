@@ -164,6 +164,19 @@ chmod +x dns-server
 ./dns-server 2&gt; dns-server.log &
 dnf install -y bind-utils
 dig +short 127-0-0-1.sslip.io @localhost # returns "127.0.0.1"</pre>
+      <h3 id="related">Related Services</h3>
+      <ul>
+        <li>
+          <a href="http://xip.io/">xip.io</a>: the inspiration for sslip.io
+        </li>
+        <li>
+          <a href="http://nip.io">nip.io</a>: similar to xip.io, but the PowerDNS backend is written in elegant Python
+        </li>
+        <li>
+          <a href="https://github.com/Corollarium/localtls">localtls</a>: A DNS server + webserver to provide TLS to on
+          local addresses.
+        </li>
+      </ul>
       <h4 id="tls-transport-layer-security">TLS (Transport Layer Security)</h4>
       <p>If you have a wildcard certificate for your sslip.io-style subdomain, you may install it on your machines for
       TLS-verified connections.</p>
