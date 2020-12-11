@@ -290,18 +290,28 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("MXResource()", func() {
-		It("returns the MX resource (go ProtonMail!)", func() {
-			mx := xip.MXResource()
+		It("returns the MX resource", func() {
+			query := "xyz"
+			mx := xip.MXResource(query)
 			var mxHostBytes [255]byte
-			copy(mxHostBytes[:], xip.MxHost)
-			Expect(mx.MX.Data).To(Equal(mxHostBytes))
+			copy(mxHostBytes[:], query)
+			Expect(len(mx)).To(Equal(1))
+			Expect(mx[0].MX.Length).To(Equal(uint8(3))) // "xyz" has 3 letters
+			Expect(mx[0].MX.Data).To(Equal(mxHostBytes))
+		})
+		When("sslip.io is the domain being queried", func() {
+			It("returns sslip.io's custom MX records", func() {
+				mx := xip.MXResource("sslip.io.")
+				Expect(len(mx)).To(Equal(2))
+				Expect(mx[0].MX.Data).To(Equal(xip.Customizations["sslip.io."].MX[0].MX.Data))
+			})
 		})
 	})
 
 	Describe("NSResources()", func() {
 		It("returns a map of the name servers", func() {
 			ns := xip.NSResources()
-			for nameServer, _ := range xip.NameServers {
+			for _, nameServer := range xip.NameServers {
 				var nameServerBytes [255]byte
 				copy(nameServerBytes[:], nameServer)
 				Expect(ns[nameServer].NS.Data).To(Equal(nameServerBytes))

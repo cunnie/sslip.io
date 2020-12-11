@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/dns/dnsmessage"
@@ -39,10 +40,10 @@ var (
 	ipv4RE      = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])[.-]){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 	ipv6RE      = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|--(ffff(-0{1,4}){0,1}-){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
 	ErrNotFound = errors.New("record not found")
-	NameServers = map[string]dnsmessage.AResource{
-		"ns-aws.nono.io.":   {A: [4]byte{52, 0, 56, 137}},
-		"ns-azure.nono.io.": {A: [4]byte{52, 187, 42, 158}},
-		"ns-gce.nono.io.":   {A: [4]byte{104, 155, 144, 4}},
+	NameServers = []string{
+		"ns-aws.nono.io.",
+		"ns-azure.nono.io.",
+		"ns-gce.nono.io.",
 	}
 
 	Customizations = DomainCustomizations{
@@ -57,22 +58,22 @@ var (
 				// mail.protonmail.ch
 				{
 					Pref: 10,
-					// Use The Go Playground https://play.golang.org/p/knv3Jbkq0DP
+					// Use The Go Playground https://play.golang.org/p/tM4y1eLJ1dg
 					// to convert strings to dnsmessage.Name for easy cut-and-paste
 					MX: dnsmessage.Name{
-						Length: 18,
+						Length: 19,
 						Data: [255]byte{
-							109, 97, 105, 108, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+							109, 97, 105, 108, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						},
 					},
 				},
 				// mailsec.protonmail.ch
 				{
-					Pref: 10,
+					Pref: 20,
 					MX: dnsmessage.Name{
-						Length: 21,
+						Length: 22,
 						Data: [255]byte{
-							109, 97, 105, 108, 115, 101, 99, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+							109, 97, 105, 108, 115, 101, 99, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						},
 					},
 				},
@@ -151,7 +152,7 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 			} else {
 				// processQuestion shouldn't return any error but DNSError,
 				// but who knows? Someone might break contract. This is the guard.
-				err = errors.New("processQuestion() returned unexpected error type")
+				err = fmt.Errorf("processQuestion() returned unexpected error type: %s", err.Error())
 				return
 			}
 		}
@@ -268,17 +269,22 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			if err != nil {
 				return
 			}
-			err = b.MXResource(dnsmessage.ResourceHeader{
-				Name:   q.Name,
-				Type:   dnsmessage.TypeMX,
-				Class:  dnsmessage.ClassINET,
-				TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-				Length: 0,
-			}, MXResource())
-			if err != nil {
-				return
+			mailExchangers := MXResource(q.Name.String())
+			var logMessages []string
+			for _, mailExchanger := range mailExchangers {
+				err = b.MXResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeMX,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					Length: 0,
+				}, mailExchanger)
+				logMessages = append(logMessages, strconv.Itoa(int(mailExchanger.Pref))+" "+string(mailExchanger.MX.Data[:]))
+				if err != nil {
+					return
+				}
 			}
-			logMessage += "MX"
+			logMessage += strings.Join(logMessages, ", ")
 		}
 	case dnsmessage.TypeNS:
 		{
@@ -406,7 +412,7 @@ func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 
 func NSResources() map[string]dnsmessage.NSResource {
 	nsResources := make(map[string]dnsmessage.NSResource)
-	for nameServer, _ := range NameServers {
+	for _, nameServer := range NameServers {
 		var nameServerBytes [255]byte
 		copy(nameServerBytes[:], nameServer)
 		nsResources[nameServer] = dnsmessage.NSResource{
@@ -419,28 +425,35 @@ func NSResources() map[string]dnsmessage.NSResource {
 	return nsResources
 }
 
-func MXResource() dnsmessage.MXResource {
+func MXResource(fqdnString string) []dnsmessage.MXResource {
+	if domain, ok := Customizations[fqdnString]; ok {
+		if len(domain.MX) > 0 {
+			return domain.MX
+		}
+	}
 	var mxHostBytes [255]byte
-	copy(mxHostBytes[:], MxHost)
-	return dnsmessage.MXResource{
-		Pref: 0,
-		MX: dnsmessage.Name{
-			Data:   mxHostBytes,
-			Length: uint8(len(MxHost)),
+	copy(mxHostBytes[:], fqdnString)
+	return []dnsmessage.MXResource{
+		{
+			Pref: 0,
+			MX: dnsmessage.Name{
+				Data:   mxHostBytes,
+				Length: uint8(len(fqdnString)),
+			},
 		},
 	}
 }
 
 // SOAResource returns the hard-coded SOA
-func SOAResource(domain string) dnsmessage.SOAResource {
+func SOAResource(fqdnString string) dnsmessage.SOAResource {
 	var domainBytes [255]byte
-	copy(domainBytes[:], domain)
+	copy(domainBytes[:], fqdnString)
 	var mboxArray [255]byte
 	copy(mboxArray[:], Hostmaster)
 	return dnsmessage.SOAResource{
 		NS: dnsmessage.Name{
 			Data:   domainBytes,
-			Length: uint8(len(domain)),
+			Length: uint8(len(fqdnString)),
 		},
 		MBox: dnsmessage.Name{
 			Data:   mboxArray,
