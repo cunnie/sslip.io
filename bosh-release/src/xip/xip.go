@@ -369,10 +369,8 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
-	if domain, ok := Customizations[fqdnString]; ok {
-		if len(domain.A) > 0 {
-			return &domain.A[0], nil // TODO: handle multiple A records
-		}
+	if domain, ok := Customizations[fqdnString]; ok && len(domain.A) > 0 {
+		return &domain.A[0], nil // TODO: handle multiple A records
 	}
 	if !ipv4RE.Match(fqdn) {
 		return &dnsmessage.AResource{}, ErrNotFound
@@ -390,10 +388,8 @@ func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	fqdn := []byte(fqdnString)
 	// is it a customized AAAA record? If so, return early
-	if domain, ok := Customizations[fqdnString]; ok {
-		if len(domain.AAAA) > 0 {
-			return &domain.AAAA[0], nil // TODO: handle multiple AAAA records
-		}
+	if domain, ok := Customizations[fqdnString]; ok && len(domain.AAAA) > 0 {
+		return &domain.AAAA[0], nil // TODO: handle multiple AAAA records
 	}
 	if !ipv6RE.Match(fqdn) {
 		return &dnsmessage.AAAAResource{}, ErrNotFound
@@ -426,10 +422,8 @@ func NSResources() map[string]dnsmessage.NSResource {
 }
 
 func MXResource(fqdnString string) []dnsmessage.MXResource {
-	if domain, ok := Customizations[fqdnString]; ok {
-		if len(domain.MX) > 0 {
-			return domain.MX
-		}
+	if domain, ok := Customizations[fqdnString]; ok && len(domain.MX) > 0 {
+		return domain.MX
 	}
 	var mxHostBytes [255]byte
 	copy(mxHostBytes[:], fqdnString)
