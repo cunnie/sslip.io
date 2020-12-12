@@ -352,7 +352,7 @@ var _ = Describe("Xip", func() {
 			Entry("link-local with domain", "169-254-168-253-com", dnsmessage.AResource{A: [4]byte{169, 254, 168, 253}}),
 			Entry("IETF protocol assignments with domain and www", "www-192-0-0-1-com", dnsmessage.AResource{A: [4]byte{192, 0, 0, 1}}),
 			// dots-and-dashes, mix-and-matches
-			Entry("test-net address with dots-and-dashes", "www-192.0-2.3.example-me.com", dnsmessage.AResource{A: [4]byte{192, 0, 2, 3}}),
+			Entry("Pandaxin's paradox", "minio-01.192-168-1-100.sslip.io", dnsmessage.AResource{A: [4]byte{192, 168, 1, 100}}),
 		)
 		DescribeTable("when it does not match an IP address",
 			func(fqdn string) {
@@ -367,6 +367,7 @@ var _ = Describe("Xip", func() {
 			Entry("too big", "256.254.253.252"),
 			Entry("NS but no dot", "ns-aws.nono.io"),
 			Entry("NS + cruft at beginning", "p-ns-aws.nono.io"),
+			Entry("test-net address with dots-and-dashes mixed", "www-192.0-2.3.example-me.com"),
 		)
 	})
 
