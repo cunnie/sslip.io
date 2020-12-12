@@ -6,31 +6,35 @@
 groups:
 - name: sslip.io
   jobs:
-  - check-dns
+  - dns-servers
   - unit
 
 jobs:
 - name: unit
   public: true
   plan:
-  - {get: cunnie-bin,   trigger: true}
+  - get: sslip.io
+    trigger: true
   - task: unit-tests
     config:
       platform: linux
       image_resource:
         type: docker-image
         source:
-          repository: fedora
+          repository: cunnie/fedora-golang-bosh
       inputs:
-      - name: cunnie-bin
+      - name: sslip.io
       run:
-        dir: cunnie-bin
-        path: ./pdns_pipe_spec.sh
-- name: check-dns
+        dir: sslip.io/src
+        path: ginkgo
+        args:
+        - -r
+        - .
+- name: dns-servers
   public: true
   plan:
   - {get: sslip.io,   trigger: true}
-  - {get: 6h,         trigger: true}
+  - {get: every-six-hours,         trigger: true}
   - task: check-dns
     file: sslip.io/ci/tasks/check-dns.yml
     attempts: 10
@@ -43,12 +47,7 @@ resources:
   source:
     uri: https://github.com/cunnie/sslip.io
     branch: master
-- name: cunnie-bin
-  type: git
-  source:
-    uri: https://github.com/cunnie/bin
-    branch: master
 
-- name: 6h
+- name: every-six-hours
   type: time
   source: {interval: 6h}

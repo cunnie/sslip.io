@@ -2,8 +2,8 @@
 
 | Test Type | Status |
 |---|---|
-| Production Nameservers | [![ci.nono.io](https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/check-dns/badge)](https://ci.nono.io/?groups=sslip.io) |
-| DNS Server Unit Tests | _placeholder_ |
+| Production Nameservers | [![ci.nono.io](https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/dns-servers/badge)](https://ci.nono.io/teams/main/pipelines/sslip.io) |
+| DNS Server Unit Tests | [![ci.nono.io](https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/unit/badge)](https://ci.nono.io/teams/main/pipelines/sslip.io) |
 
 *sslip.io* is a DNS server that maps specially-crafted DNS A records to IP addresses
 (e.g. "127-0-0-1.sslip.io" maps to 127.0.0.1). It is similar to, and inspired by,
