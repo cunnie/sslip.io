@@ -1,7 +1,10 @@
 package xip_test
 
 import (
+	"encoding/binary"
 	"math/rand"
+	"net"
+	"strings"
 	"xip/xip"
 
 	. "github.com/onsi/ginkgo"
@@ -25,6 +28,8 @@ var _ = Describe("Xip", func() {
 		headerId         uint16
 		question         dnsmessage.Question
 	)
+	rand.Seed(GinkgoRandomSeed()) // Set to ginkgo's seed so that it's different each test & we can reproduce failures if necessary
+
 	Describe("QueryResponse()", func() {
 		BeforeEach(func() {
 			headerId = uint16(rand.Int31())
@@ -403,5 +408,33 @@ var _ = Describe("Xip", func() {
 			Entry("a 1 without double-dash", "-1"),
 			Entry("too big", "--g"),
 		)
+		When("using randomly generated IPv6 addresses (fuzz testing)", func() {
+			It("should succeed every time", func() {
+				for i := 0; i < 1000; i++ {
+					addr := randomIPv6Address()
+					ipv6Answer, err := xip.NameToAAAA(strings.ReplaceAll(addr.String(), ":", "-"))
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ipv6Answer.AAAA[:]).To(Equal([]uint8(addr)))
+				}
+			})
+		})
 	})
 })
+
+func randomIPv6Address() net.IP {
+	upperHalf := make([]byte, 8)
+	lowerHalf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(upperHalf, rand.Uint64())
+	binary.LittleEndian.PutUint64(lowerHalf, rand.Uint64())
+	ipv6 := net.IP(append(upperHalf, lowerHalf...))
+	// IPv6 addrs have a lot of all-zero two-byte sections
+	// So we zero-out ~50% of the sections
+	for i := 0; i < 8; i++ {
+		if rand.Int()%2 == 0 {
+			for j := 0; j < 2; j++ {
+				ipv6[i*2+j] = 0
+			}
+		}
+	}
+	return ipv6
+}
