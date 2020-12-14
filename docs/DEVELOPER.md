@@ -44,4 +44,15 @@ Prepare the BOSH release
 shasum ~/Downloads/sslip.io-release-${VERSION}.tgz
 z deployments
 nvim sslip.io.yml
+bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
+dig +short 127-0-0-1.sslip.io # output should be 127.0.0.1
+git add -p
+git ci -v -m"Bump sslip.io: $OLD_VERSION → $VERSION"
+git push
+```
+Update the webserver with the HTML with new versions:
+```
+ssh nono.io
+curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/master/k8s/document_root/index.html
+exit
 ```
