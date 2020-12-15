@@ -16,7 +16,6 @@ import (
 
 const (
 	Hostmaster = "briancunnie.gmail.com."
-	MxHost     = "mail.protonmail.ch."
 )
 
 // DomainCustomizations are values that are returned for specific queries.
@@ -27,13 +26,15 @@ const (
 //
 // Noticeably absent are the NS records and SOA records. They don't need to be customized
 // because they are always the same, regardless of the domain being queried.
-type DomainCustomizations map[string]struct {
+type DomainCustomization struct {
 	A     []dnsmessage.AResource
 	AAAA  []dnsmessage.AAAAResource
 	CNAME dnsmessage.CNAMEResource
 	MX    []dnsmessage.MXResource
 	TXT   dnsmessage.TXTResource
 }
+
+type DomainCustomizations map[string]DomainCustomization
 
 var (
 	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))($|[.-])`)
@@ -83,7 +84,10 @@ var (
 			// with a single TXT record with multiple strings to simplify things, just like AWS
 			// does: https://serverfault.com/questions/815841/multiple-txt-fields-for-same-subdomain
 			TXT: dnsmessage.TXTResource{
-				TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"},
+				TXT: []string{
+					"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26", // protonmail verification; don't delete
+					"v=spf1 include:_spf.protonmail.ch mx ~all",
+				},
 			},
 		},
 		// nameserver addresses; we get queries for those every once in a while
@@ -323,6 +327,50 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			}
 			logMessage += "SOA"
 		}
+	case dnsmessage.TypeTXT:
+		{
+			err = b.StartAnswers()
+			if err != nil {
+				return
+			}
+			var txt dnsmessage.TXTResource
+			txt, err = TXTResource(q.Name.String())
+			if err != nil {
+				err = b.StartAuthorities()
+				if err != nil {
+					return
+				}
+				err = b.SOAResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeSOA,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+					Length: 0,
+				}, SOAResource(q.Name.String()))
+				if err != nil {
+					return
+				}
+				logMessage += "nil, SOA"
+				return
+			}
+			err = b.TXTResource(dnsmessage.ResourceHeader{
+				Name:  q.Name,
+				Type:  dnsmessage.TypeTXT,
+				Class: dnsmessage.ClassINET,
+				// aggressively expire (5 mins) TXT records, long enough to obtain a Let's Encrypt cert,
+				// but short enough to free up frequently-used domains (e.g. 192.168.0.1.sslip.io) for the next user
+				TTL:    300,
+				Length: 0,
+			}, txt)
+			if err != nil {
+				return
+			}
+			var logMessageTXTs []string
+			for _, TXTstring := range txt.TXT {
+				logMessageTXTs = append(logMessageTXTs, TXTstring)
+			}
+			logMessage += `TXT "` + strings.Join(logMessageTXTs, `", "`) + `"`
+		}
 	default:
 		{
 			// default is the same case as an A/AAAA record which is not found,
@@ -462,4 +510,12 @@ func SOAResource(fqdnString string) dnsmessage.SOAResource {
 		Expire:  1800,
 		MinTTL:  300,
 	}
+}
+
+func TXTResource(fqdnString string) (dnsmessage.TXTResource, error) {
+	// is it a customized TXT record? If so, return early
+	if domain, ok := Customizations[fqdnString]; ok {
+		return domain.TXT, nil
+	}
+	return dnsmessage.TXTResource{}, ErrNotFound
 }
