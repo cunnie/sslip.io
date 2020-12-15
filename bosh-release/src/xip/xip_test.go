@@ -334,6 +334,33 @@ var _ = Describe("Xip", func() {
 		})
 	})
 
+	Describe("TXTResource()", func() {
+		It("returns no TXT resources", func() {
+			domain := "example.com."
+			_, err := xip.TXTResource(domain)
+			Expect(err).To(HaveOccurred())
+		})
+		When("queried for the sslip.io domain", func() {
+			It("returns mail-related TXT resources for the sslip.io domain", func() {
+				domain := "sslip.io."
+				txt, err := xip.TXTResource(domain)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(len(txt.TXT)).To(Equal(2))
+				Expect(txt.TXT[0]).To(MatchRegexp("protonmail-verification="))
+				Expect(txt.TXT[1]).To(MatchRegexp("v=spf1"))
+			})
+		})
+		When("a domain has been customized", func() { // Unnecessary, but confirms Golang's behavior for me, a doubting Thomas
+			customDomain := "some-crazy-domain-name-no-really.io."
+			xip.Customizations[customDomain] = xip.DomainCustomization{}
+			It("returns no TXT resources", func() {
+				_, err := xip.TXTResource(customDomain)
+				Expect(err).To(HaveOccurred())
+			})
+			delete(xip.Customizations, customDomain) // clean-up
+		})
+	})
+
 	Describe("NameToA()", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedA dnsmessage.AResource) {
