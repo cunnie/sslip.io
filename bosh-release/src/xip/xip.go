@@ -31,7 +31,7 @@ type DomainCustomization struct {
 	AAAA  []dnsmessage.AAAAResource
 	CNAME dnsmessage.CNAMEResource
 	MX    []dnsmessage.MXResource
-	TXT   dnsmessage.TXTResource
+	TXT   []dnsmessage.TXTResource
 }
 
 type DomainCustomizations map[string]DomainCustomization
@@ -80,14 +80,12 @@ var (
 					},
 				},
 			},
-			// although multiple TXT records with multiple strings are allowed, we're sticking
-			// with a single TXT record with multiple strings to simplify things, just like AWS
-			// does: https://serverfault.com/questions/815841/multiple-txt-fields-for-same-subdomain
-			TXT: dnsmessage.TXTResource{
-				TXT: []string{
-					"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26", // protonmail verification; don't delete
-					"v=spf1 include:_spf.protonmail.ch mx ~all",
-				},
+			// Although multiple TXT records with multiple strings are allowed, we're sticking
+			// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
+			// and that's what google.com does.
+			TXT: []dnsmessage.TXTResource{
+				{TXT: []string{"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"}}, // ProtonMail verification; don't delete
+				{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},                        // Sender Policy Framework
 			},
 		},
 		// nameserver addresses; we get queries for those every once in a while
@@ -307,29 +305,33 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			if err != nil {
 				return
 			}
-			var txt dnsmessage.TXTResource
-			txt, err = TXTResource(q.Name.String())
+			var txts []dnsmessage.TXTResource
+			txts, err = TXTResources(q.Name.String())
 			if err != nil {
 				err = noAnswersOnlyAuthorities(q, b, &logMessage)
 				return
 			}
-			err = b.TXTResource(dnsmessage.ResourceHeader{
-				Name:  q.Name,
-				Type:  dnsmessage.TypeTXT,
-				Class: dnsmessage.ClassINET,
-				// aggressively expire (5 mins) TXT records, long enough to obtain a Let's Encrypt cert,
-				// but short enough to free up frequently-used domains (e.g. 192.168.0.1.sslip.io) for the next user
-				TTL:    300,
-				Length: 0,
-			}, txt)
-			if err != nil {
-				return
+			var logMessageTXTss []string
+			for _, txt := range txts {
+				err = b.TXTResource(dnsmessage.ResourceHeader{
+					Name:  q.Name,
+					Type:  dnsmessage.TypeTXT,
+					Class: dnsmessage.ClassINET,
+					// aggressively expire (5 mins) TXT records, long enough to obtain a Let's Encrypt cert,
+					// but short enough to free up frequently-used domains (e.g. 192.168.0.1.sslip.io) for the next user
+					TTL:    300,
+					Length: 0,
+				}, txt)
+				if err != nil {
+					return
+				}
+				var logMessageTXTs []string
+				for _, TXTstring := range txt.TXT {
+					logMessageTXTs = append(logMessageTXTs, TXTstring)
+				}
+				logMessageTXTss = append(logMessageTXTss, `TXT "`+strings.Join(logMessageTXTs, `", "`)+`"`)
 			}
-			var logMessageTXTs []string
-			for _, TXTstring := range txt.TXT {
-				logMessageTXTs = append(logMessageTXTs, TXTstring)
-			}
-			logMessage += `TXT "` + strings.Join(logMessageTXTs, `", "`) + `"`
+			logMessage += strings.Join(logMessageTXTss, " ")
 		}
 	default:
 		{
@@ -459,12 +461,12 @@ func SOAResource(fqdnString string) dnsmessage.SOAResource {
 	}
 }
 
-func TXTResource(fqdnString string) (dnsmessage.TXTResource, error) {
+func TXTResources(fqdnString string) ([]dnsmessage.TXTResource, error) {
 	// is it a customized TXT record? If so, return early
 	if domain, ok := Customizations[fqdnString]; ok {
 		return domain.TXT, nil
 	}
-	return dnsmessage.TXTResource{}, ErrNotFound
+	return nil, ErrNotFound
 }
 
 func noAnswersOnlyAuthorities(q dnsmessage.Question, b *dnsmessage.Builder, logMessage *string) error {
