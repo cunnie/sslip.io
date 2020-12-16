@@ -35,6 +35,7 @@ git ci -v  # BOSH release: 1.2.1: TXT records
 git tag $VERSION
 git push
 git push --tags
+cd ..
 bin/make_all
 ```
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
