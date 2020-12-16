@@ -4,11 +4,12 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 the might not make sense unless you're on my workstation.
 
 ```
-export OLD_VERSION=1.1.2
-export VERSION=1.2.0
-cd ~/workspace/sslip.io
+export OLD_VERSION=1.2.0
+export VERSION=1.2.1
+cd ~/go/src/github.com/cunnie/sslip.io
 git pull -r
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html # update the download instructions on the website
+cd bosh-release/
 lpass show a # refresh LastPass token
 . ~/workspace/deployments/.envrc # set BOSH auth
 export BOSH_DEPLOYMENT=sslip.io-dns-server
@@ -17,10 +18,12 @@ bosh upload-release
 bosh -n -d sslip.io-dns-server deploy ~/workspace/deployments/sslip.io-dns-server.yml --recreate
 bosh instances # record the IP address of the instance
 IP=10.0.250.22
-dig +short 127.0.0.1.example.com @$IP # 127.0.0.1
-dig +short ns example.com @$IP        # ns-aws, ns-azure, ns-gce
-dig +short mx example.com @$IP        # 1 x themselves
-dig +short mx sslip.io @$IP           # 2 x protonmail
+dig +short 127.0.0.1.example.com @$IP  # 127.0.0.1
+dig +short ns example.com @$IP         # ns-aws, ns-azure, ns-gce
+dig +short mx example.com @$IP         # 1 x themselves
+dig +short mx sslip.io @$IP            # 2 x protonmail
+dig +short txt sslip.io @$IP           # 2 x protonmail
+dig +short txt 127.0.0.1.sslip.io @$IP # no records
 bosh upload-blobs
 bosh create-release \
   --final \
@@ -28,7 +31,7 @@ bosh create-release \
   --version ${VERSION} --force
 git add -N releases/ .final_builds/
 git add -p
-git ci -v  # BOSH release: 1.2.0: bugfixes
+git ci -v  # BOSH release: 1.2.1: TXT records
 git tag $VERSION
 git push
 git push --tags
