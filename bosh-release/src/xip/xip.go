@@ -183,21 +183,8 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				// this could be written more efficiently; however, I wrote it to
 				// accommodate 'if err != nil' convention. My first version was 'if
 				// err == nil', and it flummoxed me.
-				err = b.StartAuthorities()
-				if err != nil {
-					return
-				}
-				err = b.SOAResource(dnsmessage.ResourceHeader{
-					Name:   q.Name,
-					Type:   dnsmessage.TypeA,
-					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
-					Length: 0,
-				}, SOAResource(q.Name.String()))
-				if err != nil {
-					return
-				}
-				logMessage += "nil, SOA"
+				err = noAnswersOnlyAuthorities(q, b, &logMessage)
+				return
 			} else {
 				err = b.StartAnswers()
 				if err != nil {
@@ -226,21 +213,8 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				// this could be written more efficiently; however, I wrote it to
 				// accommodate 'if err != nil' convention. My first version was 'if
 				// err == nil', and it flummoxed me.
-				err = b.StartAuthorities()
-				if err != nil {
-					return
-				}
-				err = b.SOAResource(dnsmessage.ResourceHeader{
-					Name:   q.Name,
-					Type:   dnsmessage.TypeSOA,
-					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
-					Length: 0,
-				}, SOAResource(q.Name.String()))
-				if err != nil {
-					return
-				}
-				logMessage += "nil, SOA"
+				err = noAnswersOnlyAuthorities(q, b, &logMessage)
+				return
 			} else {
 				err = b.StartAnswers()
 				if err != nil {
@@ -336,21 +310,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			var txt dnsmessage.TXTResource
 			txt, err = TXTResource(q.Name.String())
 			if err != nil {
-				err = b.StartAuthorities()
-				if err != nil {
-					return
-				}
-				err = b.SOAResource(dnsmessage.ResourceHeader{
-					Name:   q.Name,
-					Type:   dnsmessage.TypeSOA,
-					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
-					Length: 0,
-				}, SOAResource(q.Name.String()))
-				if err != nil {
-					return
-				}
-				logMessage += "nil, SOA"
+				err = noAnswersOnlyAuthorities(q, b, &logMessage)
 				return
 			}
 			err = b.TXTResource(dnsmessage.ResourceHeader{
@@ -375,21 +335,8 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 		{
 			// default is the same case as an A/AAAA record which is not found,
 			// i.e. we return no answers, but we return an authority section
-			err = b.StartAuthorities()
-			if err != nil {
-				return
-			}
-			err = b.SOAResource(dnsmessage.ResourceHeader{
-				Name:   q.Name,
-				Type:   dnsmessage.TypeSOA,
-				Class:  dnsmessage.ClassINET,
-				TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
-				Length: 0,
-			}, SOAResource(q.Name.String()))
-			if err != nil {
-				return
-			}
-			logMessage += "nil, SOA"
+			err = noAnswersOnlyAuthorities(q, b, &logMessage)
+			return
 		}
 	}
 	return
@@ -518,4 +465,23 @@ func TXTResource(fqdnString string) (dnsmessage.TXTResource, error) {
 		return domain.TXT, nil
 	}
 	return dnsmessage.TXTResource{}, ErrNotFound
+}
+
+func noAnswersOnlyAuthorities(q dnsmessage.Question, b *dnsmessage.Builder, logMessage *string) error {
+	err := b.StartAuthorities()
+	if err != nil {
+		return err
+	}
+	err = b.SOAResource(dnsmessage.ResourceHeader{
+		Name:   q.Name,
+		Type:   dnsmessage.TypeSOA,
+		Class:  dnsmessage.ClassINET,
+		TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+		Length: 0,
+	}, SOAResource(q.Name.String()))
+	if err != nil {
+		return err
+	}
+	*logMessage += "nil, SOA"
+	return nil
 }
