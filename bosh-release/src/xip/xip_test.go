@@ -406,9 +406,10 @@ var _ = Describe("Xip", func() {
 	Describe("NameToAAAA()", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedAAAA dnsmessage.AAAAResource) {
-				ipv6Answer, err := xip.NameToAAAA(fqdn)
+				ipv6Answers, err := xip.NameToAAAA(fqdn)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(*ipv6Answer).To(Equal(expectedAAAA))
+				Expect(len(ipv6Answers)).To(Equal(1))
+				Expect(ipv6Answers[0]).To(Equal(expectedAAAA))
 			},
 			// sslip.io website
 			Entry("sslip.io", "sslip.io.", xip.Customizations["sslip.io."].AAAA[0]),
@@ -439,10 +440,28 @@ var _ = Describe("Xip", func() {
 			It("should succeed every time", func() {
 				for i := 0; i < 1000; i++ {
 					addr := randomIPv6Address()
-					ipv6Answer, err := xip.NameToAAAA(strings.ReplaceAll(addr.String(), ":", "-"))
+					ipv6Answers, err := xip.NameToAAAA(strings.ReplaceAll(addr.String(), ":", "-"))
 					Expect(err).ToNot(HaveOccurred())
-					Expect(ipv6Answer.AAAA[:]).To(Equal([]uint8(addr)))
+					Expect(ipv6Answers[0].AAAA[:]).To(Equal([]uint8(addr)))
 				}
+			})
+		})
+		When("There is more than one AAAA record", func() {
+			It("returns them all", func() {
+				fqdn := random8ByteString()
+				xip.Customizations[fqdn] = xip.DomainCustomization{
+					//copy(xip.Customizations[fqdn].AAAA, dnsmessage.AAAAResource)
+					AAAA: []dnsmessage.AAAAResource{
+						{AAAA: [16]byte{1}},
+						{AAAA: [16]byte{2}},
+					},
+				}
+				ipv6Addrs, err := xip.NameToAAAA(fqdn)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(ipv6Addrs)).To(Equal(2))
+				Expect(ipv6Addrs[0].AAAA).To(Equal([16]byte{1}))
+				Expect(ipv6Addrs[1].AAAA).To(Equal([16]byte{2}))
+				delete(xip.Customizations, fqdn)
 			})
 		})
 	})
@@ -464,4 +483,14 @@ func randomIPv6Address() net.IP {
 		}
 	}
 	return ipv6
+}
+
+// random8ByteString() returns an 8-char string consisting solely of the letters a-z.
+func random8ByteString() string {
+	var randomString []byte
+	for i := 0; i < 8; i++ {
+		// 97 == ascii 'a', and there are 26 letters in the alphabet
+		randomString = append(randomString, byte(97+rand.Intn(26)))
+	}
+	return string(randomString)
 }
