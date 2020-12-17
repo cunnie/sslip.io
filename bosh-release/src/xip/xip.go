@@ -204,13 +204,10 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 		}
 	case dnsmessage.TypeAAAA:
 		{
-			var nameToAAAA *dnsmessage.AAAAResource
-			nameToAAAA, err = NameToAAAA(q.Name.String())
+			var nameToAAAAs []dnsmessage.AAAAResource
+			nameToAAAAs, err = NameToAAAA(q.Name.String())
 			if err != nil {
-				// There's only one possible error this can be: ErrNotFound. note that
-				// this could be written more efficiently; however, I wrote it to
-				// accommodate 'if err != nil' convention. My first version was 'if
-				// err == nil', and it flummoxed me.
+				// There's only one possible error this can be: ErrNotFound
 				err = noAnswersOnlyAuthorities(q, b, &logMessage)
 				return
 			} else {
@@ -218,18 +215,22 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				if err != nil {
 					return
 				}
-				err = b.AAAAResource(dnsmessage.ResourceHeader{
-					Name:   q.Name,
-					Type:   dnsmessage.TypeAAAA,
-					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-					Length: 0,
-				}, *nameToAAAA)
-				if err != nil {
-					return
+				var logMessages []string
+				for _, nameToAAAA := range nameToAAAAs {
+					err = b.AAAAResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeAAAA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, nameToAAAA)
+					if err != nil {
+						return
+					}
+					ip := net.IP(nameToAAAA.AAAA[:])
+					logMessages = append(logMessages, ip.String())
 				}
-				ip := net.IP(nameToAAAA.AAAA[:])
-				logMessage += ip.String()
+				logMessage += strings.Join(logMessages, ", ")
 			}
 		}
 	case dnsmessage.TypeALL:
@@ -383,14 +384,14 @@ func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
 
 // NameToAAAA NameToA returns either an AAAAResource that matched the hostname
 // or ErrNotFound
-func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
+func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, error) {
 	fqdn := []byte(fqdnString)
 	// is it a customized AAAA record? If so, return early
 	if domain, ok := Customizations[fqdnString]; ok && len(domain.AAAA) > 0 {
-		return &domain.AAAA[0], nil // TODO: handle multiple AAAA records
+		return domain.AAAA, nil
 	}
 	if !ipv6RE.Match(fqdn) {
-		return &dnsmessage.AAAAResource{}, ErrNotFound
+		return nil, ErrNotFound
 	}
 
 	ipv6RE.Longest()
@@ -402,7 +403,7 @@ func NameToAAAA(fqdnString string) (*dnsmessage.AAAAResource, error) {
 	for i := range ipv16address {
 		AAAAR.AAAA[i] = ipv16address[i]
 	}
-	return &AAAAR, nil
+	return []dnsmessage.AAAAResource{AAAAR}, nil
 }
 
 func NSResources() map[string]dnsmessage.NSResource {
