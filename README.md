@@ -41,18 +41,17 @@ the source:
 
 - it binds to port 53 (you can't change it)
 - it only binds to UDP (no TCP, sorry)
-- if the hostname queried doesn't match, it doesn't return an _Answer_ section;
-  instead, it returns an _Authorities_ section with an SOA.
 - The SOA record is hard-coded with the exception of the _MNAME_ (primary master
   name server) record, which is set to the queried hostname (e.g. `dig
-  big.apple.com @localhost` would have an SOA with an _MNAME_ record of
-  `big.apple.com.`.
+  big.apple.com @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
+  `big.apple.com.`
 - The NS records are hard-coded
-- The MX records are hard-coded with the exception of `sslip.io` itself, which
-  has custom MX records to enable email delivery.
-- There are no TXT records, or SRV. If those records (or any other unknown ones)
-  are queried, the server returns no _Answers_ but an _Authorities_ section with
-  the SOA
+- The MX records are hard-coded to the queried hostname with a preference of 0,
+  with the exception of `sslip.io` itself, which has custom MX records to enable
+  email delivery to ProtonMail.
+- No TXT records are returned with the exception of `sslip.io`, which has custom
+  records to enable email delivery
+- There are no SRV records
 
 To run the unit tests:
 ```
