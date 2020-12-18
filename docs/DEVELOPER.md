@@ -53,6 +53,7 @@ dig +short 127-0-0-1.sslip.io # output should be 127.0.0.1
 git add -p
 git ci -v -m"Bump sslip.io: $OLD_VERSION → $VERSION"
 git push
+popd
 ```
 Update the webserver with the HTML with new versions:
 ```
@@ -63,7 +64,9 @@ exit
 Update the Dockefile with the new release:
 ```
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/Dockerfile-sslip.io-dns-server
+docker build k8s/ -f k8s/Dockerfile-sslip.io-dns-server -t cunnie/sslip.io-dns-server:$VERSION -t cunnie/sslip.io-dns-server:latest
+docker push cunnie/sslip.io-dns-server -a
 git add -p
-git ci -m"Dockerfile: bump sslip.io-dns-server release"
+git ci -m"Dockerfile: cunnie/sslip.io-dns-server → $VERSION"
 git push
 ```
