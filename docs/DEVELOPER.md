@@ -60,3 +60,10 @@ ssh nono.io
 curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/master/k8s/document_root/index.html
 exit
 ```
+Update the Dockefile with the new release:
+```
+sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/Dockerfile-sslip.io-dns-server
+git add -p
+git ci -m"Dockerfile: bump sslip.io-dns-server release"
+git push
+```
