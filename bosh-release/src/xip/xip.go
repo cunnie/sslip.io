@@ -174,8 +174,8 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 	switch q.Type {
 	case dnsmessage.TypeA:
 		{
-			var nameToA *dnsmessage.AResource
-			nameToA, err = NameToA(q.Name.String())
+			var nameToAs []dnsmessage.AResource
+			nameToAs, err = NameToA(q.Name.String())
 			if err != nil {
 				// There's only one possible error this can be: ErrNotFound. note that
 				// this could be written more efficiently; however, I wrote it to
@@ -188,18 +188,22 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				if err != nil {
 					return
 				}
-				err = b.AResource(dnsmessage.ResourceHeader{
-					Name:   q.Name,
-					Type:   dnsmessage.TypeSOA,
-					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-					Length: 0,
-				}, *nameToA)
-				if err != nil {
-					return
+				var logMessages []string
+				for _, nameToA := range nameToAs {
+					err = b.AResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeAAAA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, nameToA)
+					if err != nil {
+						return
+					}
+					ip := net.IP(nameToA.A[:])
+					logMessages = append(logMessages, ip.String())
 				}
-				ip := net.IP(nameToA.A[:])
-				logMessage += ip.String()
+				logMessage += strings.Join(logMessages, ", ")
 			}
 		}
 	case dnsmessage.TypeAAAA:
@@ -364,25 +368,27 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 	}
 }
 
-// NameToA returns either an AResource that matched the hostname or ErrNotFound
-func NameToA(fqdnString string) (*dnsmessage.AResource, error) {
+// NameToA returns either an []AResource that matched the hostname or ErrNotFound
+func NameToA(fqdnString string) ([]dnsmessage.AResource, error) {
 	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
 	if domain, ok := Customizations[fqdnString]; ok && len(domain.A) > 0 {
-		return &domain.A[0], nil // TODO: handle multiple A records
+		return domain.A, nil
 	}
-	for _, ipv4RE := range []*regexp.Regexp{ipv4REDots, ipv4REDashes} {
+	for _, ipv4RE := range []*regexp.Regexp{ipv4REDashes, ipv4REDots} {
 		if ipv4RE.Match(fqdn) {
 			match := string(ipv4RE.FindSubmatch(fqdn)[2])
 			match = strings.Replace(match, "-", ".", -1)
 			ipv4address := net.ParseIP(match).To4()
-			return &dnsmessage.AResource{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}}, nil
+			return []dnsmessage.AResource{
+				{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
+			}, nil
 		}
 	}
-	return &dnsmessage.AResource{}, ErrNotFound
+	return nil, ErrNotFound
 }
 
-// NameToAAAA NameToA returns either an AAAAResource that matched the hostname
+// NameToAAAA NameToA returns either []AAAAResource that matched the hostname
 // or ErrNotFound
 func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, error) {
 	fqdn := []byte(fqdnString)
