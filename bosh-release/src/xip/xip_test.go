@@ -364,9 +364,10 @@ var _ = Describe("Xip", func() {
 	Describe("NameToA()", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedA dnsmessage.AResource) {
-				ipv4Answer, err := xip.NameToA(fqdn)
+				ipv4Answers, err := xip.NameToA(fqdn)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(*ipv4Answer).To(Equal(expectedA))
+				Expect(len(ipv4Answers)).To(Equal(1))
+				Expect(ipv4Answers[0]).To(Equal(expectedA))
 			},
 			// sslip.io website
 			Entry("sslip.io", "sslip.io.", dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}}),
@@ -401,6 +402,41 @@ var _ = Describe("Xip", func() {
 			Entry("NS + cruft at beginning", "p-ns-aws.nono.io"),
 			Entry("test-net address with dots-and-dashes mixed", "www-192.0-2.3.example-me.com"),
 		)
+		When("There is more than one A record", func() {
+			It("returns them all", func() {
+				fqdn := random8ByteString()
+				xip.Customizations[fqdn] = xip.DomainCustomization{
+					A: []dnsmessage.AResource{
+						{A: [4]byte{1}},
+						{A: [4]byte{2}},
+					},
+				}
+				ipv4Addrs, err := xip.NameToA(fqdn)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(ipv4Addrs)).To(Equal(2))
+				Expect(ipv4Addrs[0].A).To(Equal([4]byte{1}))
+				Expect(ipv4Addrs[1].A).To(Equal([4]byte{2}))
+				delete(xip.Customizations, fqdn)
+			})
+		})
+		When("There are multiple matches", func() {
+			It("returns the leftmost one", func() {
+				aResource, err := xip.NameToA("nono.io.127.0.0.1.192.168.0.1.sslip.io")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(aResource)).To(Equal(1))
+				Expect(aResource[0]).
+					To(Equal(dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}}))
+			})
+		})
+		When("There are matches with dashes and dots", func() {
+			It("returns the one with dashes", func() {
+				aResource, err := xip.NameToA("nono.io.127.0.0.1.192-168-0-1.sslip.io")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(aResource)).To(Equal(1))
+				Expect(aResource[0]).
+					To(Equal(dnsmessage.AResource{A: [4]byte{192, 168, 0, 1}}))
+			})
+		})
 	})
 
 	Describe("NameToAAAA()", func() {
@@ -450,7 +486,6 @@ var _ = Describe("Xip", func() {
 			It("returns them all", func() {
 				fqdn := random8ByteString()
 				xip.Customizations[fqdn] = xip.DomainCustomization{
-					//copy(xip.Customizations[fqdn].AAAA, dnsmessage.AAAAResource)
 					AAAA: []dnsmessage.AAAAResource{
 						{AAAA: [16]byte{1}},
 						{AAAA: [16]byte{2}},
