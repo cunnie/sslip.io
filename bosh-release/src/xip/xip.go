@@ -329,7 +329,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			if err != nil {
 				return
 			}
-			nameServers := NSResources()
+			nameServers := NSResources(q.Name.String())
 			for _, nameServer := range nameServers {
 				err = b.NSResource(dnsmessage.ResourceHeader{
 					Name:   q.Name,
@@ -491,7 +491,7 @@ func MxResources(fqdnString string) []dnsmessage.MXResource {
 	}
 }
 
-func NSResources() map[string]dnsmessage.NSResource {
+func NSResources(fqdnString string) map[string]dnsmessage.NSResource {
 	nsResources := make(map[string]dnsmessage.NSResource)
 	for _, nameServer := range NameServers {
 		var nameServerBytes [255]byte
