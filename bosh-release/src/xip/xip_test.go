@@ -295,8 +295,8 @@ var _ = Describe("Xip", func() {
 	})
 	Describe("CNAMEResources()", func() {
 		It("returns no CNAME resources", func() {
-			domain := random8ByteString() + ".com."
-			_, err := xip.CNAMEResource(domain)
+			randomDomain := random8ByteString() + ".com."
+			_, err := xip.CNAMEResource(randomDomain)
 			Expect(err).To(HaveOccurred())
 		})
 		When("querying one of sslip.io's DKIM CNAME's", func() {
@@ -308,15 +308,18 @@ var _ = Describe("Xip", func() {
 		})
 		When("a domain has been customized but has no CNAMEs", func() {
 			It("returns an error", func() {
-				cname, err := xip.CNAMEResource("sslip.io.")
+				customizedDomain := random8ByteString() + ".com."
+				xip.Customizations[customizedDomain] = xip.DomainCustomization{}
+				cname, err := xip.CNAMEResource(customizedDomain)
 				Expect(cname).To(BeNil())
 				Expect(err).To(HaveOccurred())
+				delete(xip.Customizations, customizedDomain)
 			})
 		})
 		When("a domain has been customized with CNAMES", func() {
 			It("returns CNAME resources", func() {
-				customDomain := random8ByteString() + ".com."
-				xip.Customizations[customDomain] = xip.DomainCustomization{
+				customizedDomain := random8ByteString() + ".com."
+				xip.Customizations[customizedDomain] = xip.DomainCustomization{
 					CNAME: dnsmessage.CNAMEResource{
 						CNAME: dnsmessage.Name{
 							// google.com.
@@ -327,22 +330,22 @@ var _ = Describe("Xip", func() {
 						},
 					},
 				}
-				cname, err := xip.CNAMEResource(customDomain)
+				cname, err := xip.CNAMEResource(customizedDomain)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cname.CNAME.String()).To(Equal("google.com."))
-				delete(xip.Customizations, customDomain) // clean-up
+				delete(xip.Customizations, customizedDomain) // clean-up
 			})
 		})
 	})
 
 	Describe("MxResources()", func() {
 		It("returns the MX resource", func() {
-			query := "xyz"
-			mx := xip.MxResources(query)
+			randomDomain := random8ByteString() + ".com."
+			mx := xip.MxResources(randomDomain)
 			var mxHostBytes [255]byte
-			copy(mxHostBytes[:], query)
+			copy(mxHostBytes[:], randomDomain)
 			Expect(len(mx)).To(Equal(1))
-			Expect(mx[0].MX.Length).To(Equal(uint8(3))) // "xyz" has 3 letters
+			Expect(mx[0].MX.Length).To(Equal(uint8(13))) // randomDomain has 13 letters
 			Expect(mx[0].MX.Data).To(Equal(mxHostBytes))
 		})
 		When("sslip.io is the domain being queried", func() {
@@ -356,7 +359,8 @@ var _ = Describe("Xip", func() {
 
 	Describe("NSResources()", func() {
 		It("returns a map of the name servers", func() {
-			ns := xip.NSResources()
+			randomDomain := random8ByteString() + ".com."
+			ns := xip.NSResources(randomDomain)
 			for _, nameServer := range xip.NameServers {
 				var nameServerBytes [255]byte
 				copy(nameServerBytes[:], nameServer)
@@ -367,18 +371,18 @@ var _ = Describe("Xip", func() {
 
 	Describe("SOAResource()", func() {
 		It("returns the SOA resource for the domain in question", func() {
-			domain := "example.com."
-			soa := xip.SOAResource(domain)
+			randomDomain := random8ByteString() + ".com."
+			soa := xip.SOAResource(randomDomain)
 			var domainBytes [255]byte
-			copy(domainBytes[:], domain)
+			copy(domainBytes[:], randomDomain)
 			Expect(soa.NS.Data).To(Equal(domainBytes))
 		})
 	})
 
 	Describe("TXTResources()", func() {
 		It("returns no TXT resources", func() {
-			domain := "example.com."
-			_, err := xip.TXTResources(domain)
+			randomDomain := random8ByteString() + ".com."
+			_, err := xip.TXTResources(randomDomain)
 			Expect(err).To(HaveOccurred())
 		})
 		When("queried for the sslip.io domain", func() {
@@ -392,13 +396,13 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		When("a domain has been customized", func() { // Unnecessary, but confirms Golang's behavior for me, a doubting Thomas
-			customDomain := random8ByteString() + ".com."
-			xip.Customizations[customDomain] = xip.DomainCustomization{}
+			customizedDomain := random8ByteString() + ".com."
+			xip.Customizations[customizedDomain] = xip.DomainCustomization{}
 			It("returns no TXT resources", func() {
-				_, err := xip.TXTResources(customDomain)
+				_, err := xip.TXTResources(customizedDomain)
 				Expect(err).To(HaveOccurred())
 			})
-			delete(xip.Customizations, customDomain) // clean-up
+			delete(xip.Customizations, customizedDomain) // clean-up
 		})
 	})
 
@@ -515,7 +519,7 @@ var _ = Describe("Xip", func() {
 		)
 		When("using randomly generated IPv6 addresses (fuzz testing)", func() {
 			It("should succeed every time", func() {
-				for i := 0; i < 1000; i++ {
+				for i := 0; i < 10000; i++ {
 					addr := randomIPv6Address()
 					ipv6Answers, err := xip.NameToAAAA(strings.ReplaceAll(addr.String(), ":", "-"))
 					Expect(err).ToNot(HaveOccurred())
