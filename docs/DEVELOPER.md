@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 the might not make sense unless you're on my workstation.
 
 ```
-export OLD_VERSION=1.2.0
-export VERSION=1.2.1
+export OLD_VERSION=1.2.2
+export VERSION=1.3.0
 cd ~/go/src/github.com/cunnie/sslip.io
 git pull -r
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html # update the download instructions on the website
@@ -18,12 +18,20 @@ bosh upload-release
 bosh -n -d sslip.io-dns-server deploy ~/workspace/deployments/sslip.io-dns-server.yml --recreate
 bosh instances # record the IP address of the instance
 IP=10.0.250.22
-dig +short 127.0.0.1.example.com @$IP  # 127.0.0.1
-dig +short ns example.com @$IP         # ns-aws, ns-azure, ns-gce
-dig +short mx example.com @$IP         # 1 x themselves
-dig +short mx sslip.io @$IP            # 2 x protonmail
-dig +short txt sslip.io @$IP           # 2 x protonmail
+dig +short 127.0.0.1.example.com @$IP
+echo 127.0.0.1
+dig +short ns example.com @$IP
+printf "ns-aws.nono.io.\nns-azure.nono.io.\nns-gce.nono.io."
+dig +short mx example.com @$IP
+echo "0 example.com."
+dig +short mx sslip.io @$IP
+printf "10 mail.protonmail.ch.\n20 mailsec.protonmail.ch."
+dig +short txt sslip.io @$IP
+printf "\"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26\"\n\"v=spf1 include:_spf.protonmail.ch mx ~all\""
 dig +short txt 127.0.0.1.sslip.io @$IP # no records
+dig +short cname sslip.io @$IP # no records
+dig +short cname protonmail._domainkey.sslip.io @$IP
+echo protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
 bosh upload-blobs
 bosh create-release \
   --final \
@@ -31,7 +39,7 @@ bosh create-release \
   --version ${VERSION} --force
 git add -N releases/ .final_builds/
 git add -p
-git ci -v  # BOSH release: 1.2.1: TXT records
+git ci -v  # BOSH release: 1.3.0: CNAME records
 git tag $VERSION
 git push
 git push --tags
