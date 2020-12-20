@@ -14,10 +14,6 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-const (
-	Hostmaster = "briancunnie.gmail.com."
-)
-
 // DomainCustomizations are values that are returned for specific queries.
 // The map key is the the domain in question, e.g. "sslip.io." (always include trailing dot).
 // For example, when querying for MX records for "sslip.io", return the protonmail servers,
@@ -320,7 +316,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 					Length: 0,
 				}, mailExchanger)
-				logMessages = append(logMessages, strconv.Itoa(int(mailExchanger.Pref))+" "+string(mailExchanger.MX.Data[:]))
+				logMessages = append(logMessages, strconv.Itoa(int(mailExchanger.Pref))+" "+string(mailExchanger.MX.Data[:mailExchanger.MX.Length]))
 				if err != nil {
 					return
 				}
@@ -447,7 +443,7 @@ func NameToA(fqdnString string) ([]dnsmessage.AResource, error) {
 	return nil, ErrNotFound
 }
 
-// NameToAAAA NameToA returns either []AAAAResource that matched the hostname
+// NameToAAAA returns either []AAAAResource that matched the hostname
 // or ErrNotFound
 func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, error) {
 	fqdn := []byte(fqdnString)
@@ -472,7 +468,6 @@ func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, error) {
 }
 
 func CNAMEResource(fqdnString string) (*dnsmessage.CNAMEResource, error) {
-	// is it a customized TXT record? If so, return early
 	if domain, ok := Customizations[fqdnString]; ok && domain.CNAME != (dnsmessage.CNAMEResource{}) {
 		return &domain.CNAME, nil
 	}
@@ -511,23 +506,24 @@ func NSResources() map[string]dnsmessage.NSResource {
 	return nsResources
 }
 
-// SOAResource returns the hard-coded SOA
+// SOAResource returns the hard-coded (except MNAME) SOA
 func SOAResource(fqdnString string) dnsmessage.SOAResource {
 	var domainBytes [255]byte
 	copy(domainBytes[:], fqdnString)
-	var mboxArray [255]byte
-	copy(mboxArray[:], Hostmaster)
 	return dnsmessage.SOAResource{
 		NS: dnsmessage.Name{
 			Data:   domainBytes,
 			Length: uint8(len(fqdnString)),
 		},
+		// "briancunnie.gmail.com."
 		MBox: dnsmessage.Name{
-			Data:   mboxArray,
-			Length: uint8(len(Hostmaster)),
+			Length: 22,
+			Data: [255]byte{
+				98, 114, 105, 97, 110, 99, 117, 110, 110, 105, 101, 46, 103, 109, 97, 105, 108, 46, 99, 111, 109, 46,
+			},
 		},
-		Serial: 2020121000,
-		// I cribbed the Refresh/Retry/Expire from google.com
+		Serial: 2020122000,
+		// cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
 		Retry:   900,
 		Expire:  1800,
@@ -536,7 +532,6 @@ func SOAResource(fqdnString string) dnsmessage.SOAResource {
 }
 
 func TXTResources(fqdnString string) ([]dnsmessage.TXTResource, error) {
-	// is it a customized TXT record? If so, return early
 	if domain, ok := Customizations[fqdnString]; ok {
 		return domain.TXT, nil
 	}
