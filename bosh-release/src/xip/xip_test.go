@@ -293,11 +293,52 @@ var _ = Describe("Xip", func() {
 				RCode).To(Equal(dnsmessage.RCodeNotImplemented))
 		})
 	})
+	Describe("CNAMEResources()", func() {
+		It("returns no CNAME resources", func() {
+			domain := random8ByteString() + ".com."
+			_, err := xip.CNAMEResource(domain)
+			Expect(err).To(HaveOccurred())
+		})
+		When("querying one of sslip.io's DKIM CNAME's", func() {
+			It("returns the CNAME", func() {
+				cname, err := xip.CNAMEResource("protonmail._domainkey.sslip.io.")
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(cname.CNAME.String()).To(MatchRegexp("^protonmail\\.domainkey.*.domains\\.proton\\.ch\\.$"))
+			})
+		})
+		When("a domain has been customized but has no CNAMEs", func() {
+			It("returns an error", func() {
+				cname, err := xip.CNAMEResource("sslip.io.")
+				Expect(cname).To(BeNil())
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		When("a domain has been customized with CNAMES", func() {
+			It("returns CNAME resources", func() {
+				customDomain := random8ByteString() + ".com."
+				xip.Customizations[customDomain] = xip.DomainCustomization{
+					CNAME: dnsmessage.CNAMEResource{
+						CNAME: dnsmessage.Name{
+							// google.com.
+							Length: 11,
+							Data: [255]byte{
+								103, 111, 111, 103, 108, 101, 46, 99, 111, 109, 46,
+							},
+						},
+					},
+				}
+				cname, err := xip.CNAMEResource(customDomain)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cname.CNAME.String()).To(Equal("google.com."))
+				delete(xip.Customizations, customDomain) // clean-up
+			})
+		})
+	})
 
-	Describe("MXResource()", func() {
+	Describe("MxResources()", func() {
 		It("returns the MX resource", func() {
 			query := "xyz"
-			mx := xip.MXResource(query)
+			mx := xip.MxResources(query)
 			var mxHostBytes [255]byte
 			copy(mxHostBytes[:], query)
 			Expect(len(mx)).To(Equal(1))
@@ -306,7 +347,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("sslip.io is the domain being queried", func() {
 			It("returns sslip.io's custom MX records", func() {
-				mx := xip.MXResource("sslip.io.")
+				mx := xip.MxResources("sslip.io.")
 				Expect(len(mx)).To(Equal(2))
 				Expect(mx[0].MX.Data).To(Equal(xip.Customizations["sslip.io."].MX[0].MX.Data))
 			})
@@ -351,7 +392,7 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		When("a domain has been customized", func() { // Unnecessary, but confirms Golang's behavior for me, a doubting Thomas
-			customDomain := "some-crazy-domain-name-no-really.io."
+			customDomain := random8ByteString() + ".com."
 			xip.Customizations[customDomain] = xip.DomainCustomization{}
 			It("returns no TXT resources", func() {
 				_, err := xip.TXTResources(customDomain)
