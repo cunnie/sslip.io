@@ -60,12 +60,12 @@ var (
 				// mail.protonmail.ch
 				{
 					Pref: 10,
-					// Use The Go Playground https://play.golang.org/p/tM4y1eLJ1dg
+					// Use The Go Playground https://play.golang.org/p/G2BYkakyj-R
 					// to convert strings to dnsmessage.Name for easy cut-and-paste
 					MX: dnsmessage.Name{
 						Length: 19,
 						Data: [255]byte{
-							109, 97, 105, 108, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+							109, 97, 105, 108, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 46,
 						},
 					},
 				},
@@ -75,7 +75,7 @@ var (
 					MX: dnsmessage.Name{
 						Length: 22,
 						Data: [255]byte{
-							109, 97, 105, 108, 115, 101, 99, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+							109, 97, 105, 108, 115, 101, 99, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 46,
 						},
 					},
 				},
@@ -92,6 +92,40 @@ var (
 		"ns-aws.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}}},
 		"ns-azure.nono.io.": {A: []dnsmessage.AResource{{A: [4]byte{52, 187, 42, 158}}}},
 		"ns-gce.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{104, 155, 144, 4}}}},
+		// CNAMEs for sslip.io for DKIM signing
+		"protonmail._domainkey.sslip.io.": {
+			CNAME: dnsmessage.CNAMEResource{
+				CNAME: dnsmessage.Name{
+					// protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
+					Length: 93,
+					Data: [255]byte{
+						112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 100, 111, 109, 97, 105, 110, 107, 101, 121, 46, 100, 119, 52, 103, 121, 107, 118, 53, 105, 50, 98, 114, 116, 107, 106, 103, 108, 114, 102, 51, 52, 119, 102, 54, 107, 98, 120, 112, 97, 53, 104, 103, 116, 109, 103, 50, 120, 113, 111, 112, 105, 110, 104, 103, 120, 110, 53, 97, 120, 111, 55, 51, 97, 46, 100, 111, 109, 97, 105, 110, 115, 46, 112, 114, 111, 116, 111, 110, 46, 99, 104, 46,
+					},
+				},
+			},
+		},
+		"protonmail2._domainkey.sslip.io.": {
+			CNAME: dnsmessage.CNAMEResource{
+				CNAME: dnsmessage.Name{
+					// protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
+					Length: 94,
+					Data: [255]byte{
+						112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 50, 46, 100, 111, 109, 97, 105, 110, 107, 101, 121, 46, 100, 119, 52, 103, 121, 107, 118, 53, 105, 50, 98, 114, 116, 107, 106, 103, 108, 114, 102, 51, 52, 119, 102, 54, 107, 98, 120, 112, 97, 53, 104, 103, 116, 109, 103, 50, 120, 113, 111, 112, 105, 110, 104, 103, 120, 110, 53, 97, 120, 111, 55, 51, 97, 46, 100, 111, 109, 97, 105, 110, 115, 46, 112, 114, 111, 116, 111, 110, 46, 99, 104, 46,
+					},
+				},
+			},
+		},
+		"protonmail3._domainkey.sslip.io.": {
+			CNAME: dnsmessage.CNAMEResource{
+				CNAME: dnsmessage.Name{
+					// protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
+					Length: 94,
+					Data: [255]byte{
+						112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 51, 46, 100, 111, 109, 97, 105, 110, 107, 101, 121, 46, 100, 119, 52, 103, 121, 107, 118, 53, 105, 50, 98, 114, 116, 107, 106, 103, 108, 114, 102, 51, 52, 119, 102, 54, 107, 98, 120, 112, 97, 53, 104, 103, 116, 109, 103, 50, 120, 113, 111, 112, 105, 110, 104, 103, 120, 110, 53, 97, 120, 111, 55, 51, 97, 46, 100, 111, 109, 97, 105, 110, 115, 46, 112, 114, 111, 116, 111, 110, 46, 99, 104, 46,
+					},
+				},
+			},
+		},
 	}
 )
 
@@ -245,13 +279,38 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			err = &DNSError{RCode: dnsmessage.RCodeNotImplemented}
 			return
 		}
+	case dnsmessage.TypeCNAME:
+		{
+			err = b.StartAnswers()
+			if err != nil {
+				return
+			}
+			var cname *dnsmessage.CNAMEResource
+			cname, err = CNAMEResource(q.Name.String())
+			if err != nil {
+				err = noAnswersOnlyAuthorities(q, b, &logMessage)
+				return
+			}
+			err = b.CNAMEResource(dnsmessage.ResourceHeader{
+				Name:  q.Name,
+				Type:  dnsmessage.TypeCNAME,
+				Class: dnsmessage.ClassINET,
+				// aggressively expire (5 mins) CNAME records until we are sure sslip.io's CNAMEs are correct
+				TTL:    300,
+				Length: 0,
+			}, *cname)
+			if err != nil {
+				return
+			}
+			logMessage += "CNAME " + cname.CNAME.String()
+		}
 	case dnsmessage.TypeMX:
 		{
 			err = b.StartAnswers()
 			if err != nil {
 				return
 			}
-			mailExchangers := MXResource(q.Name.String())
+			mailExchangers := MxResources(q.Name.String())
 			var logMessages []string
 			for _, mailExchanger := range mailExchangers {
 				err = b.MXResource(dnsmessage.ResourceHeader{
@@ -412,22 +471,15 @@ func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, error) {
 	return []dnsmessage.AAAAResource{AAAAR}, nil
 }
 
-func NSResources() map[string]dnsmessage.NSResource {
-	nsResources := make(map[string]dnsmessage.NSResource)
-	for _, nameServer := range NameServers {
-		var nameServerBytes [255]byte
-		copy(nameServerBytes[:], nameServer)
-		nsResources[nameServer] = dnsmessage.NSResource{
-			NS: dnsmessage.Name{
-				Data:   nameServerBytes,
-				Length: uint8(len(nameServer)),
-			},
-		}
+func CNAMEResource(fqdnString string) (*dnsmessage.CNAMEResource, error) {
+	// is it a customized TXT record? If so, return early
+	if domain, ok := Customizations[fqdnString]; ok && domain.CNAME != (dnsmessage.CNAMEResource{}) {
+		return &domain.CNAME, nil
 	}
-	return nsResources
+	return nil, ErrNotFound
 }
 
-func MXResource(fqdnString string) []dnsmessage.MXResource {
+func MxResources(fqdnString string) []dnsmessage.MXResource {
 	if domain, ok := Customizations[fqdnString]; ok && len(domain.MX) > 0 {
 		return domain.MX
 	}
@@ -442,6 +494,21 @@ func MXResource(fqdnString string) []dnsmessage.MXResource {
 			},
 		},
 	}
+}
+
+func NSResources() map[string]dnsmessage.NSResource {
+	nsResources := make(map[string]dnsmessage.NSResource)
+	for _, nameServer := range NameServers {
+		var nameServerBytes [255]byte
+		copy(nameServerBytes[:], nameServer)
+		nsResources[nameServer] = dnsmessage.NSResource{
+			NS: dnsmessage.Name{
+				Data:   nameServerBytes,
+				Length: uint8(len(nameServer)),
+			},
+		}
+	}
+	return nsResources
 }
 
 // SOAResource returns the hard-coded SOA
