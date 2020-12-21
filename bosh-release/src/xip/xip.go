@@ -37,6 +37,7 @@ var (
 	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])-){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
+	dns01ChallengeRE = regexp.MustCompile(`_acme-challenge\.`)
 	ErrNotFound      = errors.New("record not found")
 	// Use The Go Playground https://play.golang.org/p/G2BYkakyj-R
 	// to convert strings to dnsmessage.Name for easy cut-and-paste
@@ -340,7 +341,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 					Length: 0,
 				}, mailExchanger)
-				logMessages = append(logMessages, strconv.Itoa(int(mailExchanger.Pref))+" "+string(mailExchanger.MX.Data[:mailExchanger.MX.Length]))
+				logMessages = append(logMessages, strconv.Itoa(int(mailExchanger.Pref))+" "+mailExchanger.MX.String())
 				if err != nil {
 					return
 				}
@@ -354,6 +355,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				return
 			}
 			nameServers := NSResources(q.Name.String())
+			var logMessages []string
 			for _, nameServer := range nameServers {
 				err = b.NSResource(dnsmessage.ResourceHeader{
 					Name:   q.Name,
@@ -362,8 +364,9 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 					Length: 0,
 				}, nameServer)
+				logMessages = append(logMessages, nameServer.NS.String())
 			}
-			logMessage += "NS"
+			logMessage += strings.Join(logMessages, ", ")
 		}
 	case dnsmessage.TypeSOA:
 		{
@@ -483,6 +486,10 @@ func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, error) {
 	match := string(ipv6RE.FindSubmatch(fqdn)[2])
 	match = strings.Replace(match, "-", ":", -1)
 	ipv16address := net.ParseIP(match).To16()
+	if ipv16address == nil {
+		// We shouldn't reach here because `match` should always be valid, but we're not optimists
+		return nil, ErrNotFound
+	}
 
 	AAAAR := dnsmessage.AAAAResource{}
 	for i := range ipv16address {
@@ -516,6 +523,21 @@ func MxResources(fqdnString string) []dnsmessage.MXResource {
 }
 
 func NSResources(fqdnString string) []dnsmessage.NSResource {
+	if dns01ChallengeRE.Match([]byte(fqdnString)) {
+		strippedFqdn := dns01ChallengeRE.ReplaceAll([]byte(fqdnString), []byte{})
+		_, errIPv4 := NameToA(fqdnString)
+		_, errIPv6 := NameToAAAA(fqdnString)
+		if errIPv4 == nil || errIPv6 == nil {
+			var strippedFqdnData = [255]byte{}
+			copy(strippedFqdnData[:], strippedFqdn)
+			return []dnsmessage.NSResource{
+				{NS: dnsmessage.Name{
+					Length: uint8(len(strippedFqdn)),
+					Data:   strippedFqdnData,
+				},
+				}}
+		}
+	}
 	return NameServers
 }
 

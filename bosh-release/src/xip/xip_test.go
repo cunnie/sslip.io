@@ -366,6 +366,26 @@ var _ = Describe("Xip", func() {
 			Expect(string(ns[1].NS.String())).To(Equal("ns-azure.nono.io."))
 			Expect(string(ns[2].NS.String())).To(Equal("ns-gce.nono.io."))
 		})
+		When(`the domain name contains "_acme-challenge."`, func() {
+			When("the domain name has an embedded IP", func() {
+				It(`returns an array of one NS record pointing to the domain name _sans_ "acme-challenge."`, func() {
+					randomDomain := "192.168.0.1." + random8ByteString() + ".com."
+					ns := xip.NSResources("_acme-challenge." + randomDomain)
+					Expect(len(ns)).To(Equal(1))
+					Expect(ns[0].NS.String()).To(Equal(randomDomain))
+					AResources, err := xip.NameToA(randomDomain)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(AResources[0].A).To(Equal([4]byte{192, 168, 0, 1}))
+				})
+			})
+			When("the domain name does not have an embedded IP", func() {
+				It("returns the default trinity of nameservers", func() {
+					randomDomain := random8ByteString() + ".com."
+					ns := xip.NSResources("_acme-challenge." + randomDomain)
+					Expect(len(ns)).To(Equal(3))
+				})
+			})
+		})
 	})
 
 	Describe("SOAResource()", func() {
