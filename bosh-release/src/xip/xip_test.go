@@ -358,14 +358,13 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("NSResources()", func() {
-		It("returns a map of the name servers", func() {
+		It("returns an array of hard-coded name servers", func() {
 			randomDomain := random8ByteString() + ".com."
 			ns := xip.NSResources(randomDomain)
-			for _, nameServer := range xip.NameServers {
-				var nameServerBytes [255]byte
-				copy(nameServerBytes[:], nameServer)
-				Expect(ns[nameServer].NS.Data).To(Equal(nameServerBytes))
-			}
+			Expect(len(ns)).To(Equal(3))
+			Expect(string(ns[0].NS.String())).To(Equal("ns-aws.nono.io."))
+			Expect(string(ns[1].NS.String())).To(Equal("ns-azure.nono.io."))
+			Expect(string(ns[2].NS.String())).To(Equal("ns-gce.nono.io."))
 		})
 	})
 

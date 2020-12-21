@@ -36,12 +36,38 @@ var (
 	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])-){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
-	ipv6RE      = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
-	ErrNotFound = errors.New("record not found")
-	NameServers = []string{
-		"ns-aws.nono.io.",
-		"ns-azure.nono.io.",
-		"ns-gce.nono.io.",
+	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
+	ErrNotFound      = errors.New("record not found")
+	// Use The Go Playground https://play.golang.org/p/G2BYkakyj-R
+	// to convert strings to dnsmessage.Name for easy cut-and-paste
+	NameServers = []dnsmessage.NSResource{
+		// ns-aws.nono.io.
+		{
+			NS: dnsmessage.Name{
+				Length: 15,
+				Data: [255]byte{
+					110, 115, 45, 97, 119, 115, 46, 110, 111, 110, 111, 46, 105, 111, 46,
+				},
+			},
+		},
+		// ns-azure.nono.io.
+		{
+			NS: dnsmessage.Name{
+				Length: 17,
+				Data: [255]byte{
+					110, 115, 45, 97, 122, 117, 114, 101, 46, 110, 111, 110, 111, 46, 105, 111, 46,
+				},
+			},
+		},
+		// ns-gce.nono.io.
+		{
+			NS: dnsmessage.Name{
+				Length: 15,
+				Data: [255]byte{
+					110, 115, 45, 103, 99, 101, 46, 110, 111, 110, 111, 46, 105, 111, 46,
+				},
+			},
+		},
 	}
 
 	Customizations = DomainCustomizations{
@@ -56,8 +82,6 @@ var (
 				// mail.protonmail.ch
 				{
 					Pref: 10,
-					// Use The Go Playground https://play.golang.org/p/G2BYkakyj-R
-					// to convert strings to dnsmessage.Name for easy cut-and-paste
 					MX: dnsmessage.Name{
 						Length: 19,
 						Data: [255]byte{
@@ -491,19 +515,8 @@ func MxResources(fqdnString string) []dnsmessage.MXResource {
 	}
 }
 
-func NSResources(fqdnString string) map[string]dnsmessage.NSResource {
-	nsResources := make(map[string]dnsmessage.NSResource)
-	for _, nameServer := range NameServers {
-		var nameServerBytes [255]byte
-		copy(nameServerBytes[:], nameServer)
-		nsResources[nameServer] = dnsmessage.NSResource{
-			NS: dnsmessage.Name{
-				Data:   nameServerBytes,
-				Length: uint8(len(nameServer)),
-			},
-		}
-	}
-	return nsResources
+func NSResources(fqdnString string) []dnsmessage.NSResource {
+	return NameServers
 }
 
 // SOAResource returns the hard-coded (except MNAME) SOA
