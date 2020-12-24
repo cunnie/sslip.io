@@ -60,6 +60,7 @@ z deployments
 nvim sslip.io.yml
 bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
 dig +short 127-0-0-1.sslip.io # output should be 127.0.0.1
+dig +short ns _acme-challenge.127-0-0-1.sslip.io # should be 127-0-0-1.sslip.io.
 git add -p
 git ci -v -m"Bump sslip.io: $OLD_VERSION → $VERSION"
 git push
