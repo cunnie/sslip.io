@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 the might not make sense unless you're on my workstation.
 
 ```
-export OLD_VERSION=1.2.2
-export VERSION=1.3.0
+export OLD_VERSION=1.3.0
+export VERSION=1.3.1
 cd ~/go/src/github.com/cunnie/sslip.io
 git pull -r
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html # update the download instructions on the website
@@ -21,17 +21,19 @@ IP=10.0.250.22
 dig +short 127.0.0.1.example.com @$IP
 echo 127.0.0.1
 dig +short ns example.com @$IP
-printf "ns-aws.nono.io.\nns-azure.nono.io.\nns-gce.nono.io."
+printf "ns-aws.nono.io.\nns-azure.nono.io.\nns-gce.nono.io.\n"
 dig +short mx example.com @$IP
 echo "0 example.com."
 dig +short mx sslip.io @$IP
-printf "10 mail.protonmail.ch.\n20 mailsec.protonmail.ch."
+printf "10 mail.protonmail.ch.\n20 mailsec.protonmail.ch.\n"
 dig +short txt sslip.io @$IP
-printf "\"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26\"\n\"v=spf1 include:_spf.protonmail.ch mx ~all\""
+printf "\"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26\"\n\"v=spf1 include:_spf.protonmail.ch mx ~all\"\n"
 dig +short txt 127.0.0.1.sslip.io @$IP # no records
 dig +short cname sslip.io @$IP # no records
 dig +short cname protonmail._domainkey.sslip.io @$IP
 echo protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
+dig +short ns _acme-challenge.127-0-0-1.sslip.io @$IP
+echo 127-0-0-1.sslip.io.
 bosh upload-blobs
 bosh create-release \
   --final \
