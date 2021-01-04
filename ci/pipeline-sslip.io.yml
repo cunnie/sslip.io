@@ -25,7 +25,7 @@ jobs:
       inputs:
       - name: sslip.io
       run:
-        dir: sslip.io/src
+        dir: sslip.io/src/sslip.io-dns-server
         path: ginkgo
         args:
         - -r
