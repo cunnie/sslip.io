@@ -1,14 +1,24 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"sync"
 
 	"golang.org/x/net/dns/dnsmessage"
 )
 
 var txt = `Set this TXT record: curl -X POST http://localhost/update -d  '{"txt":"Certificate Authority's validation token"}'`
+
+// Txt is for parsing the JSON POST to set the DNS TXT record
+type Txt struct {
+	Txt string
+}
 
 func main() {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
@@ -46,7 +56,7 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 			log.Printf("I expected one question but got %d.\n", len(query.Questions))
 			continue
 		}
-		// We only return answers to TXT records, nothing else
+		// We only return answers to TXT queries, nothing else
 		if query.Questions[0].Type != dnsmessage.TypeTXT {
 			log.Println("I expected a question for a TypeTXT record but got a question for a " + query.Questions[0].Type.String() + " record.")
 			continue
@@ -87,4 +97,39 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 func httpServer(group *sync.WaitGroup) {
 	defer group.Done()
 	log.Println("I'm firing up the HTTP server.")
+	http.HandleFunc("/", usageHandler)
+	http.HandleFunc("/update", updateTxtHandler)
+	log.Fatal(http.ListenAndServe(":80", nil))
+}
+
+func usageHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := fmt.Fprintln(w, `Set the TXT record: curl -X POST http://localhost/update -d  '{"txt":"Certificate Authority's validation token"}'`)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err.Error())
+	}
+}
+
+func updateTxtHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		err := errors.New("/update requires POST method, not " + r.Method + " method")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Println(err.Error())
+		return
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err.Error())
+		return
+	}
+	var updateTxt Txt
+	err = json.Unmarshal(body, &updateTxt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err.Error())
+		return
+	}
+	// this is the money shot, where we update the DNS TXT record to what was in the POST request
+	txt = updateTxt.Txt
 }
