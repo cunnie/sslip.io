@@ -91,8 +91,6 @@ docker run --rm -it \
 
 Clean-up:
 ```
-gcloud compute firewall-rules delete sslip-io-allow-dns-http-ssh
-gcloud compute firewall-rules delete sslip-io-allow-dns-http
 gcloud compute firewall-rules delete sslip-io-allow-dns
-gcloud compute instances delete
+gcloud compute instances delete sslip
 ```

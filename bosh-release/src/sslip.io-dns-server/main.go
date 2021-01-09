@@ -19,7 +19,7 @@ func main() {
 		_, addr, err := conn.ReadFromUDP(query)
 		if err != nil {
 			log.Println(err.Error())
-			break
+			continue
 		}
 
 		go func() {
