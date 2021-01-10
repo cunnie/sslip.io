@@ -1,0 +1,2 @@
+# don't checkin artifact from Docker build process
+wildcard-dns-http-server
