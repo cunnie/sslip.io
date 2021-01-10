@@ -39,38 +39,21 @@ var (
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	dns01ChallengeRE = regexp.MustCompile(`_acme-challenge\.`)
 	ErrNotFound      = errors.New("record not found")
-	// Use The Go Playground https://play.golang.org/p/G2BYkakyj-R
-	// to convert strings to dnsmessage.Name for easy cut-and-paste
-	NameServers = []dnsmessage.NSResource{
-		// ns-aws.nono.io.
-		{
-			NS: dnsmessage.Name{
-				Length: 15,
-				Data: [255]byte{
-					110, 115, 45, 97, 119, 115, 46, 110, 111, 110, 111, 46, 105, 111, 46,
-				},
-			},
-		},
-		// ns-azure.nono.io.
-		{
-			NS: dnsmessage.Name{
-				Length: 17,
-				Data: [255]byte{
-					110, 115, 45, 97, 122, 117, 114, 101, 46, 110, 111, 110, 111, 46, 105, 111, 46,
-				},
-			},
-		},
-		// ns-gce.nono.io.
-		{
-			NS: dnsmessage.Name{
-				Length: 15,
-				Data: [255]byte{
-					110, 115, 45, 103, 99, 101, 46, 110, 111, 110, 111, 46, 105, 111, 46,
-				},
-			},
-		},
+	nsAws, _         = dnsmessage.NewName("ns-aws.nono.io.")
+	nsAzure, _       = dnsmessage.NewName("ns-azure.nono.io.")
+	nsGce, _         = dnsmessage.NewName("ns-gce.nono.io.")
+	NameServers      = []dnsmessage.NSResource{
+		{NS: nsAws},
+		{NS: nsAzure},
+		{NS: nsGce},
 	}
 
+	mbox, _        = dnsmessage.NewName("briancunnie.gmail.com.")
+	mx1, _         = dnsmessage.NewName("mail.protonmail.ch.")
+	mx2, _         = dnsmessage.NewName("mailsec.protonmail.ch.")
+	dkim1, _       = dnsmessage.NewName("protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	dkim2, _       = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	dkim3, _       = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
 	Customizations = DomainCustomizations{
 		"sslip.io.": {
 			A: []dnsmessage.AResource{
@@ -80,25 +63,13 @@ var (
 				{AAAA: [16]byte{42, 1, 4, 248, 12, 23, 11, 143, 0, 0, 0, 0, 0, 0, 0, 2}},
 			},
 			MX: []dnsmessage.MXResource{
-				// mail.protonmail.ch
 				{
 					Pref: 10,
-					MX: dnsmessage.Name{
-						Length: 19,
-						Data: [255]byte{
-							109, 97, 105, 108, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 46,
-						},
-					},
+					MX:   mx1,
 				},
-				// mailsec.protonmail.ch
 				{
 					Pref: 20,
-					MX: dnsmessage.Name{
-						Length: 22,
-						Data: [255]byte{
-							109, 97, 105, 108, 115, 101, 99, 46, 112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 99, 104, 46,
-						},
-					},
+					MX:   mx2,
 				},
 			},
 			// Although multiple TXT records with multiple strings are allowed, we're sticking
@@ -116,35 +87,17 @@ var (
 		// CNAMEs for sslip.io for DKIM signing
 		"protonmail._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dnsmessage.Name{
-					// protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
-					Length: 93,
-					Data: [255]byte{
-						112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 46, 100, 111, 109, 97, 105, 110, 107, 101, 121, 46, 100, 119, 52, 103, 121, 107, 118, 53, 105, 50, 98, 114, 116, 107, 106, 103, 108, 114, 102, 51, 52, 119, 102, 54, 107, 98, 120, 112, 97, 53, 104, 103, 116, 109, 103, 50, 120, 113, 111, 112, 105, 110, 104, 103, 120, 110, 53, 97, 120, 111, 55, 51, 97, 46, 100, 111, 109, 97, 105, 110, 115, 46, 112, 114, 111, 116, 111, 110, 46, 99, 104, 46,
-					},
-				},
+				CNAME: dkim1,
 			},
 		},
 		"protonmail2._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dnsmessage.Name{
-					// protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
-					Length: 94,
-					Data: [255]byte{
-						112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 50, 46, 100, 111, 109, 97, 105, 110, 107, 101, 121, 46, 100, 119, 52, 103, 121, 107, 118, 53, 105, 50, 98, 114, 116, 107, 106, 103, 108, 114, 102, 51, 52, 119, 102, 54, 107, 98, 120, 112, 97, 53, 104, 103, 116, 109, 103, 50, 120, 113, 111, 112, 105, 110, 104, 103, 120, 110, 53, 97, 120, 111, 55, 51, 97, 46, 100, 111, 109, 97, 105, 110, 115, 46, 112, 114, 111, 116, 111, 110, 46, 99, 104, 46,
-					},
-				},
+				CNAME: dkim2,
 			},
 		},
 		"protonmail3._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dnsmessage.Name{
-					// protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
-					Length: 94,
-					Data: [255]byte{
-						112, 114, 111, 116, 111, 110, 109, 97, 105, 108, 51, 46, 100, 111, 109, 97, 105, 110, 107, 101, 121, 46, 100, 119, 52, 103, 121, 107, 118, 53, 105, 50, 98, 114, 116, 107, 106, 103, 108, 114, 102, 51, 52, 119, 102, 54, 107, 98, 120, 112, 97, 53, 104, 103, 116, 109, 103, 50, 120, 113, 111, 112, 105, 110, 104, 103, 120, 110, 53, 97, 120, 111, 55, 51, 97, 46, 100, 111, 109, 97, 105, 110, 115, 46, 112, 114, 111, 116, 111, 110, 46, 99, 104, 46,
-					},
-				},
+				CNAME: dkim3,
 			},
 		},
 	}
@@ -509,33 +462,24 @@ func MxResources(fqdnString string) []dnsmessage.MXResource {
 	if domain, ok := Customizations[fqdnString]; ok && len(domain.MX) > 0 {
 		return domain.MX
 	}
-	var mxHostBytes [255]byte
-	copy(mxHostBytes[:], fqdnString)
+	mx, _ := dnsmessage.NewName(fqdnString)
 	return []dnsmessage.MXResource{
 		{
 			Pref: 0,
-			MX: dnsmessage.Name{
-				Data:   mxHostBytes,
-				Length: uint8(len(fqdnString)),
-			},
+			MX:   mx,
 		},
 	}
 }
 
 func NSResources(fqdnString string) []dnsmessage.NSResource {
 	if dns01ChallengeRE.Match([]byte(fqdnString)) {
-		strippedFqdn := dns01ChallengeRE.ReplaceAll([]byte(fqdnString), []byte{})
+		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
 		_, errIPv4 := NameToA(fqdnString)
 		_, errIPv6 := NameToAAAA(fqdnString)
 		if errIPv4 == nil || errIPv6 == nil {
-			var strippedFqdnData = [255]byte{}
-			copy(strippedFqdnData[:], strippedFqdn)
+			ns, _ := dnsmessage.NewName(strippedFqdn)
 			return []dnsmessage.NSResource{
-				{NS: dnsmessage.Name{
-					Length: uint8(len(strippedFqdn)),
-					Data:   strippedFqdnData,
-				},
-				}}
+				{NS: ns}}
 		}
 	}
 	return NameServers
@@ -545,18 +489,10 @@ func NSResources(fqdnString string) []dnsmessage.NSResource {
 func SOAResource(fqdnString string) dnsmessage.SOAResource {
 	var domainBytes [255]byte
 	copy(domainBytes[:], fqdnString)
+	mname, _ := dnsmessage.NewName(fqdnString)
 	return dnsmessage.SOAResource{
-		NS: dnsmessage.Name{
-			Data:   domainBytes,
-			Length: uint8(len(fqdnString)),
-		},
-		// "briancunnie.gmail.com."
-		MBox: dnsmessage.Name{
-			Length: 22,
-			Data: [255]byte{
-				98, 114, 105, 97, 110, 99, 117, 110, 110, 105, 101, 46, 103, 109, 97, 105, 108, 46, 99, 111, 109, 46,
-			},
-		},
+		NS:     mname,
+		MBox:   mbox,
 		Serial: 2020122000,
 		// cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
