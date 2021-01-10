@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-var txt = `Set this TXT record: curl -X POST http://localhost/update -d  '{"txt":"Certificate Authority's validation token"}'`
+var txt = `Set this TXT record: curl -X POST http://localhost/update -d  '{"txt":"Certificate Authority validation token"}'`
 
 // Txt is for parsing the JSON POST to set the DNS TXT record
 type Txt struct {
@@ -131,5 +131,6 @@ func updateTxtHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// this is the money shot, where we update the DNS TXT record to what was in the POST request
+	log.Println("Updating TXT record from \"" + txt + "\" → \"" + updateTxt.Txt + "\".")
 	txt = updateTxt.Txt
 }
