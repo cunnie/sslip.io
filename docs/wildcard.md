@@ -37,42 +37,29 @@ sudo apt update && sudo apt upgrade -y && sudo apt install -y docker.io jq
  # add us to the docker group
 sudo addgroup $USER docker
 newgrp docker
- # Let's install the acme-dns Docker image
-docker pull joohoi/acme-dns
+ # Let's install the DNS/HTTP Docker image
+docker pull cunnie/wildcard-dns-http-server
  # Create the necessary directories
-mkdir -p config/ data/ tls/
- # Grab the generic config
-curl -L https://raw.githubusercontent.com/joohoi/acme-dns/master/config.cfg -o config/config.cfg
- # customize the config
-sed -i "s/auth.example.org/$FQDN/g" config/config.cfg
+mkdir -p tls/
  # disable systemd-resolved to fix "Error starting userland proxy: listen tcp 0.0.0.0:53: bind: address already in use."
  # thanks https://askubuntu.com/questions/907246/how-to-disable-systemd-resolved-in-ubuntu
 sudo systemctl disable systemd-resolved
 sudo systemctl stop systemd-resolved
 echo nameserver 8.8.8.8 | sudo tee /etc/resolv.conf
- # listen to port 53 on all interfaces (INADDR_ANY)
-sed -i 's/^listen = "127.0.0.1:53"/listen = "0.0.0.0:53"/' config/config.cfg
-sed -i "s/198.51.100.1/$IP/" config/config.cfg
- # webserver: listen to port 80, no TLS
-sed -i 's/^tls = .*/tls = "none"/' config/config.cfg
-sed -i 's/^port = .*/port = "80"/' config/config.cfg
- # Let's start 'er up:
-docker run --rm --name acmedns     \
- -p 53:53                          \
- -p 53:53/udp                      \
- -p 80:80                          \
- -v $HOME/config:/etc/acme-dns:ro  \
- -v $HOME/data:/var/lib/acme-dns   \
- -d joohoi/acme-dns
+ # Let's start it up:
+docker run -it --rm --name wildcard \
+ -p 53:53/udp                       \
+ -p 80:80                           \
+ cunnie/wildcard-dns-http-server &
  # sanity check; response should be "35-199-174-9.sslip.io." and "35.199.174.9"
 dig +short ns $FQDN @localhost
 dig +short $FQDN @localhost
  # Set up the acme.sh Let's Encrypt variables
 curl -s -X POST http://$FQDN/register > /tmp/acme-dns.json
-export ACMEDNS_UPDATE_URL="http://$FQDN/update"
-export ACMEDNS_USERNAME=$(jq -r .username /tmp/acme-dns.json)
-export ACMEDNS_PASSWORD=$(jq -r .password /tmp/acme-dns.json)
-export ACMEDNS_SUBDOMAIN=$(jq -r .subdomain /tmp/acme-dns.json)
+export ACMEDNS_UPDATE_URL="http://localhost/update"
+# export ACMEDNS_USERNAME=$(jq -r .username /tmp/acme-dns.json)
+# export ACMEDNS_PASSWORD=$(jq -r .password /tmp/acme-dns.json)
+# export ACMEDNS_SUBDOMAIN=$(jq -r .subdomain /tmp/acme-dns.json)
 docker run --rm -it \
   -v $PWD/tls:/acme.sh \
   -e ACMEDNS_UPDATE_URL \
