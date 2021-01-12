@@ -264,6 +264,41 @@ var _ = Describe("Xip", func() {
 				Expect(len(response.Additionals)).To(Equal(0))
 			})
 		})
+		When("an '_acme-challenge.' with an embedded IP address is requested", func() {
+			BeforeEach(func() {
+				name = "_acme-challenge.127-0-0-1.sslip.io."
+				nameArray = [255]byte{} // zero-out the array otherwise tests will fail with leftovers from longer "name"s
+				copy(nameArray[:], name)
+				queryType = dnsmessage.TypeTXT
+
+				expectedNSes := xip.NSResources(name)
+				Expect(len(expectedNSes)).To(Equal(1))
+				expectedAuthority := dnsmessage.Resource{
+					Header: dnsmessage.ResourceHeader{
+						Name: dnsmessage.Name{
+							Data:   nameArray,
+							Length: uint8(len(name)),
+						},
+						Type:   dnsmessage.TypeNS,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800,
+						Length: 20,
+					},
+					Body: &expectedNSes[0],
+				}
+				expectedResponse.Authorities = append(expectedResponse.Authorities, expectedAuthority)
+			})
+			It("responds with no answers but with an authority of an NS server", func() {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(logMessage).To(Equal("TypeTXT _acme-challenge.127-0-0-1.sslip.io. ? nil, NS 127-0-0-1.sslip.io."))
+				Expect(len(response.Answers)).To(Equal(0))
+				Expect(len(response.Authorities)).To(Equal(1))
+				Expect(response.Authorities[0].Header.Name).To(Equal(expectedResponse.Authorities[0].Header.Name))
+				Expect(response.Authorities[0].Header).To(Equal(expectedResponse.Authorities[0].Header))
+				Expect(response.Authorities[0].Body).To(Equal(expectedResponse.Authorities[0].Body))
+				Expect(response.Authorities[0]).To(Equal(expectedResponse.Authorities[0]))
+			})
+		})
 	})
 
 	Describe("ResponseHeader()", func() {
@@ -499,6 +534,35 @@ var _ = Describe("Xip", func() {
 				Expect(len(aResource)).To(Equal(1))
 				Expect(aResource[0]).
 					To(Equal(dnsmessage.AResource{A: [4]byte{192, 168, 0, 1}}))
+			})
+		})
+	})
+
+	Describe("IsAcmeChallenge()", func() {
+		When("the domain doesn't have '_acme-challenge.' in it", func() {
+			It("returns false", func() {
+				randomDomain := random8ByteString() + ".com."
+				Expect(xip.IsAcmeChallenge(randomDomain)).To(BeFalse())
+			})
+			It("returns false even when there are embedded IPs", func() {
+				randomDomain := "127.0.0.1." + random8ByteString() + ".com."
+				Expect(xip.IsAcmeChallenge(randomDomain)).To(BeFalse())
+			})
+		})
+		When("it has '_acme-challenge.' in it", func() {
+			When("it does NOT have any embedded IPs", func() {
+				It("returns false", func() {
+					randomDomain := "_acme-challenge." + random8ByteString() + ".com."
+					Expect(xip.IsAcmeChallenge(randomDomain)).To(BeFalse())
+				})
+			})
+			When("it has embedded IPs", func() {
+				It("returns true", func() {
+					randomDomain := "_acme-challenge.127.0.0.1." + random8ByteString() + ".com."
+					Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
+					randomDomain = "_acme-challenge.fe80--1." + random8ByteString() + ".com."
+					Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
+				})
 			})
 		})
 	})

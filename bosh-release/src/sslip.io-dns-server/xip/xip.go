@@ -189,7 +189,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 				// this could be written more efficiently; however, I wrote it to
 				// accommodate 'if err != nil' convention. My first version was 'if
 				// err == nil', and it flummoxed me.
-				err = noAnswersOnlyAuthorities(q, b, &logMessage)
+				err = noAnswerOnlySoaAuthority(q, b, &logMessage)
 				return
 			} else {
 				err = b.StartAnswers()
@@ -220,7 +220,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			nameToAAAAs, err = NameToAAAA(q.Name.String())
 			if err != nil {
 				// There's only one possible error this can be: ErrNotFound
-				err = noAnswersOnlyAuthorities(q, b, &logMessage)
+				err = noAnswerOnlySoaAuthority(q, b, &logMessage)
 				return
 			} else {
 				err = b.StartAnswers()
@@ -262,7 +262,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			var cname *dnsmessage.CNAMEResource
 			cname, err = CNAMEResource(q.Name.String())
 			if err != nil {
-				err = noAnswersOnlyAuthorities(q, b, &logMessage)
+				err = noAnswerOnlySoaAuthority(q, b, &logMessage)
 				return
 			}
 			err = b.CNAMEResource(dnsmessage.ResourceHeader{
@@ -341,6 +341,9 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 		}
 	case dnsmessage.TypeTXT:
 		{
+			// if the TXT record is customized, we return that
+			// if it's an "_acme-challenge." TXT, we return no answer but an NS authority not SOA authority
+			// otherwise we return the usual `noAnswerOnlySoaAuthority`
 			err = b.StartAnswers()
 			if err != nil {
 				return
@@ -348,7 +351,11 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 			var txts []dnsmessage.TXTResource
 			txts, err = TXTResources(q.Name.String())
 			if err != nil {
-				err = noAnswersOnlyAuthorities(q, b, &logMessage)
+				if IsAcmeChallenge(q.Name.String()) {
+					err = noAnswerOnlyNsAuthority(q, b, &logMessage)
+					return
+				}
+				err = noAnswerOnlySoaAuthority(q, b, &logMessage)
 				return
 			}
 			var logMessageTXTss []string
@@ -377,7 +384,7 @@ func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage s
 		{
 			// default is the same case as an A/AAAA record which is not found,
 			// i.e. we return no answers, but we return an authority section
-			err = noAnswersOnlyAuthorities(q, b, &logMessage)
+			err = noAnswerOnlySoaAuthority(q, b, &logMessage)
 			return
 		}
 	}
@@ -471,24 +478,28 @@ func MxResources(fqdnString string) []dnsmessage.MXResource {
 	}
 }
 
-func NSResources(fqdnString string) []dnsmessage.NSResource {
-	if dns01ChallengeRE.Match([]byte(fqdnString)) {
-		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
+func IsAcmeChallenge(fqdnString string) bool {
+	if dns01ChallengeRE.MatchString(fqdnString) {
 		_, errIPv4 := NameToA(fqdnString)
 		_, errIPv6 := NameToAAAA(fqdnString)
 		if errIPv4 == nil || errIPv6 == nil {
-			ns, _ := dnsmessage.NewName(strippedFqdn)
-			return []dnsmessage.NSResource{
-				{NS: ns}}
+			return true
 		}
+	}
+	return false
+}
+
+func NSResources(fqdnString string) []dnsmessage.NSResource {
+	if IsAcmeChallenge(fqdnString) {
+		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
+		ns, _ := dnsmessage.NewName(strippedFqdn)
+		return []dnsmessage.NSResource{{NS: ns}}
 	}
 	return NameServers
 }
 
 // SOAResource returns the hard-coded (except MNAME) SOA
 func SOAResource(fqdnString string) dnsmessage.SOAResource {
-	var domainBytes [255]byte
-	copy(domainBytes[:], fqdnString)
 	mname, _ := dnsmessage.NewName(fqdnString)
 	return dnsmessage.SOAResource{
 		NS:     mname,
@@ -509,7 +520,7 @@ func TXTResources(fqdnString string) ([]dnsmessage.TXTResource, error) {
 	return nil, ErrNotFound
 }
 
-func noAnswersOnlyAuthorities(q dnsmessage.Question, b *dnsmessage.Builder, logMessage *string) error {
+func noAnswerOnlySoaAuthority(q dnsmessage.Question, b *dnsmessage.Builder, logMessage *string) error {
 	err := b.StartAuthorities()
 	if err != nil {
 		return err
@@ -525,5 +536,33 @@ func noAnswersOnlyAuthorities(q dnsmessage.Question, b *dnsmessage.Builder, logM
 		return err
 	}
 	*logMessage += "nil, SOA"
+	return nil
+}
+
+// noAnswerOnlyNsAuthority is a corner-case when it's a query for a TXT record for
+// a domain that has "_acme-challenge." in it; in that case we return an NS record
+// to the domain queried, e.g. "127-0-0-1.sslip.io", which has the "_acme-challenge."
+// stripped.
+func noAnswerOnlyNsAuthority(q dnsmessage.Question, b *dnsmessage.Builder, logMessage *string) error {
+	err := b.StartAuthorities()
+	if err != nil {
+		return err
+	}
+	var nsNames []string
+	nses := NSResources(q.Name.String())
+	for _, ns := range nses {
+		nsNames = append(nsNames, ns.NS.String())
+		err = b.NSResource(dnsmessage.ResourceHeader{
+			Name:   q.Name,
+			Type:   dnsmessage.TypeNS,
+			Class:  dnsmessage.ClassINET,
+			TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+			Length: 0,
+		}, ns)
+		if err != nil {
+			return err
+		}
+	}
+	*logMessage += "nil, NS " + strings.Join(nsNames, ", ")
 	return nil
 }
