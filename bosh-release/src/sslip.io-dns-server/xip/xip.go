@@ -5,7 +5,6 @@ package xip
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"regexp"
 	"strconv"
@@ -38,7 +37,6 @@ var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	dns01ChallengeRE = regexp.MustCompile(`_acme-challenge\.`)
-	ErrNotFound      = errors.New("record not found")
 	nsAws, _         = dnsmessage.NewName("ns-aws.nono.io.")
 	nsAzure, _       = dnsmessage.NewName("ns-azure.nono.io.")
 	nsGce, _         = dnsmessage.NewName("ns-gce.nono.io.")
@@ -103,15 +101,17 @@ var (
 	}
 )
 
-// DNSError sets the RCode for failed queries, currently only the ANY query
-type DNSError struct {
-	RCode dnsmessage.RCode
-}
-
-func (e *DNSError) Error() string {
-	// https://github.com/golang/go/wiki/CodeReviewComments#error-strings
-	// error strings shouldn't have capitals, but in this case it's okay because DNS is an acronym
-	return fmt.Sprintf("DNS lookup failure, RCode: %v", e.RCode)
+// Response Why do I have a crazy struct of fields of arrays of functions?
+// It's because I can't use dnsmessage.Builder as I had hoped; specifically
+// I need to set the Header _after_ I process the message, but Builder expects
+// it to be set first, so I use the functions as a sort of batch process to
+// create the Builder. What in Header needs to be tweaked? Certain TXT records
+// need to unset the authoritative field, and queries for ANY record need
+// to set the rcode.
+type Response struct {
+	Header      dnsmessage.Header
+	Answers     []func(*dnsmessage.Builder) error
+	Authorities []func(*dnsmessage.Builder) error
 }
 
 // QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
@@ -128,271 +128,353 @@ func (e *DNSError) Error() string {
 //   2600::.33654: TypeAAAA --1.sslip.io ? ::1
 func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
-	var response []byte
 	var p dnsmessage.Parser
+	var response = &Response{}
 
 	if queryHeader, err = p.Start(queryBytes); err != nil {
-		return
+		return nil, "", err
+	}
+	var q dnsmessage.Question
+	// we only answer the first question even though there technically may be more than one;
+	// de facto there's one and only one question
+	if q, err = p.Question(); err != nil {
+		return nil, "", err
+	}
+	response.Header = ResponseHeader(queryHeader, dnsmessage.RCodeSuccess)
+	logMessage, err = processQuestion(q, response)
+	if err != nil {
+		return nil, "", err
 	}
 
-	b := dnsmessage.NewBuilder(response, ResponseHeader(queryHeader, dnsmessage.RCodeSuccess))
+	b := dnsmessage.NewBuilder(nil, response.Header)
 	b.EnableCompression()
 	if err = b.StartQuestions(); err != nil {
+		return nil, "", err
+	}
+	if err = b.Question(q); err != nil {
 		return
 	}
-	for {
-		var q dnsmessage.Question
-		q, err = p.Question()
-		if err == dnsmessage.ErrSectionDone {
-			break
-		}
-		if err != nil {
-			return
-		}
-		if err = b.Question(q); err != nil {
-			return
-		}
-		logMessage, err = processQuestion(q, &b)
-		if err != nil {
-			if e, ok := err.(*DNSError); ok {
-				// set RCODE to
-				queryHeader.RCode = e.RCode
-				b = dnsmessage.NewBuilder(response, ResponseHeader(queryHeader, dnsmessage.RCodeNotImplemented))
-				b.EnableCompression()
-				break
-			} else {
-				// processQuestion shouldn't return any error but DNSError,
-				// but who knows? Someone might break contract. This is the guard.
-				err = fmt.Errorf("processQuestion() returned unexpected error type: %s", err.Error())
-				return
-			}
+	if err = b.StartAnswers(); err != nil {
+		return nil, "", err
+	}
+	for _, answer := range response.Answers {
+		if err = answer(&b); err != nil {
+			return nil, "", err
 		}
 	}
-
-	responseBytes, err = b.Finish()
-	// I couldn't figure an easy way to test this error condition in Ginkgo
-	if err != nil {
-		return
+	if err = b.StartAuthorities(); err != nil {
+		return nil, "", err
 	}
-	return
+	for _, authority := range response.Authorities {
+		if err = authority(&b); err != nil {
+			return nil, "", err
+		}
+	}
+	if responseBytes, err = b.Finish(); err != nil {
+		return nil, "", err
+	}
+	return responseBytes, logMessage, nil
 }
 
-func processQuestion(q dnsmessage.Question, b *dnsmessage.Builder) (logMessage string, err error) {
-	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
+func processQuestion(q dnsmessage.Question, response *Response) (string, error) {
+	var err error
+	var logMessage = q.Type.String() + " " + q.Name.String() + " ? "
 	switch q.Type {
 	case dnsmessage.TypeA:
 		{
 			var nameToAs []dnsmessage.AResource
-			nameToAs, err = NameToA(q.Name.String())
-			if err != nil {
-				// There's only one possible error this can be: ErrNotFound. note that
-				// this could be written more efficiently; however, I wrote it to
-				// accommodate 'if err != nil' convention. My first version was 'if
-				// err == nil', and it flummoxed me.
-				err = noAnswerOnlySoaAuthority(q, b, &logMessage)
-				return
-			} else {
-				err = b.StartAnswers()
-				if err != nil {
-					return
-				}
-				var logMessages []string
-				for _, nameToA := range nameToAs {
-					err = b.AResource(dnsmessage.ResourceHeader{
-						Name:   q.Name,
-						Type:   dnsmessage.TypeAAAA,
-						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-						Length: 0,
-					}, nameToA)
-					if err != nil {
-						return
-					}
-					ip := net.IP(nameToA.A[:])
-					logMessages = append(logMessages, ip.String())
-				}
-				logMessage += strings.Join(logMessages, ", ")
+			nameToAs = NameToA(q.Name.String())
+			if len(nameToAs) == 0 {
+				// No Answers, only 1 Authorities
+				soaHeader, soaResource := SOAAuthority(q.Name)
+				response.Authorities = append(response.Authorities,
+					func(b *dnsmessage.Builder) error {
+						if err = b.SOAResource(soaHeader, soaResource); err != nil {
+							return err
+						}
+						return nil
+					})
+				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
+			response.Answers = append(response.Answers,
+				// 1 or more A records; A records > 1 only available via Customizations
+				func(b *dnsmessage.Builder) error {
+					for _, nameToA := range nameToAs {
+						err = b.AResource(dnsmessage.ResourceHeader{
+							Name:   q.Name,
+							Type:   dnsmessage.TypeA,
+							Class:  dnsmessage.ClassINET,
+							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							Length: 0,
+						}, nameToA)
+						if err != nil {
+							return err
+						}
+					}
+					return nil
+				})
+			var logMessages []string
+			for _, nameToA := range nameToAs {
+				ip := net.IP(nameToA.A[:])
+				logMessages = append(logMessages, ip.String())
+			}
+			return logMessage + strings.Join(logMessages, ", "), nil
 		}
 	case dnsmessage.TypeAAAA:
 		{
 			var nameToAAAAs []dnsmessage.AAAAResource
-			nameToAAAAs, err = NameToAAAA(q.Name.String())
-			if err != nil {
-				// There's only one possible error this can be: ErrNotFound
-				err = noAnswerOnlySoaAuthority(q, b, &logMessage)
-				return
-			} else {
-				err = b.StartAnswers()
-				if err != nil {
-					return
-				}
-				var logMessages []string
-				for _, nameToAAAA := range nameToAAAAs {
-					err = b.AAAAResource(dnsmessage.ResourceHeader{
-						Name:   q.Name,
-						Type:   dnsmessage.TypeAAAA,
-						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-						Length: 0,
-					}, nameToAAAA)
-					if err != nil {
-						return
-					}
-					ip := net.IP(nameToAAAA.AAAA[:])
-					logMessages = append(logMessages, ip.String())
-				}
-				logMessage += strings.Join(logMessages, ", ")
+			nameToAAAAs = NameToAAAA(q.Name.String())
+			if len(nameToAAAAs) == 0 {
+				// No Answers, only 1 Authorities
+				soaHeader, soaResource := SOAAuthority(q.Name)
+				response.Authorities = append(response.Authorities,
+					func(b *dnsmessage.Builder) error {
+						if err = b.SOAResource(soaHeader, soaResource); err != nil {
+							return err
+						}
+						return nil
+					})
+				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
+			response.Answers = append(response.Answers,
+				// 1 or more AAAA records; AAAA records > 1 only available via Customizations
+				func(b *dnsmessage.Builder) error {
+					for _, nameToAAAA := range nameToAAAAs {
+						err = b.AAAAResource(dnsmessage.ResourceHeader{
+							Name:   q.Name,
+							Type:   dnsmessage.TypeAAAA,
+							Class:  dnsmessage.ClassINET,
+							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							Length: 0,
+						}, nameToAAAA)
+						if err != nil {
+							return err
+						}
+					}
+					return nil
+				})
+			var logMessages []string
+			for _, nameToAAAA := range nameToAAAAs {
+				ip := net.IP(nameToAAAA.AAAA[:])
+				logMessages = append(logMessages, ip.String())
+			}
+			return logMessage + strings.Join(logMessages, ", "), nil
 		}
 	case dnsmessage.TypeALL:
 		{
 			// We don't implement type ANY, so return "NotImplemented" like CloudFlare (1.1.1.1)
 			// https://blog.cloudflare.com/rfc8482-saying-goodbye-to-any/
 			// Google (8.8.8.8) returns every record they can find (A, AAAA, SOA, NS, MX, ...).
-			err = &DNSError{RCode: dnsmessage.RCodeNotImplemented}
-			return
+			response.Header.RCode = dnsmessage.RCodeNotImplemented
+			return logMessage + "NotImplemented", nil
 		}
 	case dnsmessage.TypeCNAME:
 		{
-			err = b.StartAnswers()
-			if err != nil {
-				return
-			}
+			// If there is a CNAME, there can only be 1, and only from Customizations
 			var cname *dnsmessage.CNAMEResource
-			cname, err = CNAMEResource(q.Name.String())
-			if err != nil {
-				err = noAnswerOnlySoaAuthority(q, b, &logMessage)
-				return
+			cname = CNAMEResource(q.Name.String())
+			if cname == nil {
+				// No Answers, only 1 Authorities
+				soaHeader, soaResource := SOAAuthority(q.Name)
+				response.Authorities = append(response.Authorities,
+					func(b *dnsmessage.Builder) error {
+						if err = b.SOAResource(soaHeader, soaResource); err != nil {
+							return err
+						}
+						return nil
+					})
+				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
-			err = b.CNAMEResource(dnsmessage.ResourceHeader{
-				Name:  q.Name,
-				Type:  dnsmessage.TypeCNAME,
-				Class: dnsmessage.ClassINET,
-				// aggressively expire (5 mins) CNAME records until we are sure sslip.io's CNAMEs are correct
-				TTL:    300,
-				Length: 0,
-			}, *cname)
-			if err != nil {
-				return
-			}
-			logMessage += "CNAME " + cname.CNAME.String()
+			response.Answers = append(response.Answers,
+				// 1 CNAME record, via Customizations
+				func(b *dnsmessage.Builder) error {
+					err = b.CNAMEResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeCNAME,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, *cname)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+			return logMessage + cname.CNAME.String(), nil
 		}
 	case dnsmessage.TypeMX:
 		{
-			err = b.StartAnswers()
-			if err != nil {
-				return
-			}
-			mailExchangers := MxResources(q.Name.String())
+			mailExchangers := MXResources(q.Name.String())
 			var logMessages []string
-			for _, mailExchanger := range mailExchangers {
-				err = b.MXResource(dnsmessage.ResourceHeader{
-					Name:   q.Name,
-					Type:   dnsmessage.TypeMX,
-					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-					Length: 0,
-				}, mailExchanger)
-				logMessages = append(logMessages, strconv.Itoa(int(mailExchanger.Pref))+" "+mailExchanger.MX.String())
-				if err != nil {
-					return
-				}
+
+			// We can be sure that len(mailExchangers) > 1, but we check anyway
+			if len(mailExchangers) == 0 {
+				return "", errors.New("no MX records, but there should be one")
 			}
-			logMessage += strings.Join(logMessages, ", ")
+			response.Answers = append(response.Answers,
+				// 1 or more A records; A records > 1 only available via Customizations
+				func(b *dnsmessage.Builder) error {
+					for _, mailExchanger := range mailExchangers {
+						err = b.MXResource(dnsmessage.ResourceHeader{
+							Name:   q.Name,
+							Type:   dnsmessage.TypeMX,
+							Class:  dnsmessage.ClassINET,
+							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							Length: 0,
+						}, mailExchanger)
+					}
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+			for _, mailExchanger := range mailExchangers {
+				logMessages = append(logMessages, strconv.Itoa(int(mailExchanger.Pref))+" "+mailExchanger.MX.String())
+			}
+			return logMessage + strings.Join(logMessages, ", "), nil
 		}
 	case dnsmessage.TypeNS:
 		{
-			err = b.StartAnswers()
-			if err != nil {
-				return
-			}
 			nameServers := NSResources(q.Name.String())
 			var logMessages []string
+			response.Answers = append(response.Answers,
+				// 1 or more A records; A records > 1 only available via Customizations
+				func(b *dnsmessage.Builder) error {
+					for _, nameServer := range nameServers {
+						err = b.NSResource(dnsmessage.ResourceHeader{
+							Name:   q.Name,
+							Type:   dnsmessage.TypeNS,
+							Class:  dnsmessage.ClassINET,
+							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							Length: 0,
+						}, nameServer)
+						if err != nil {
+							return err
+						}
+					}
+					return nil
+				})
 			for _, nameServer := range nameServers {
-				err = b.NSResource(dnsmessage.ResourceHeader{
-					Name:   q.Name,
-					Type:   dnsmessage.TypeNS,
-					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-					Length: 0,
-				}, nameServer)
 				logMessages = append(logMessages, nameServer.NS.String())
 			}
-			logMessage += strings.Join(logMessages, ", ")
+			return logMessage + strings.Join(logMessages, ", "), nil
 		}
 	case dnsmessage.TypeSOA:
 		{
-			err = b.StartAnswers()
-			if err != nil {
-				return
-			}
-			err = b.SOAResource(dnsmessage.ResourceHeader{
-				Name:   q.Name,
-				Type:   dnsmessage.TypeSOA,
-				Class:  dnsmessage.ClassINET,
-				TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-				Length: 0,
-			}, SOAResource(q.Name.String()))
-			if err != nil {
-				return
-			}
-			logMessage += "SOA"
+			soaResource := SOAResource(q.Name)
+			response.Answers = append(response.Answers,
+				func(b *dnsmessage.Builder) error {
+					err = b.SOAResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeSOA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, soaResource)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+			return logMessage + soaLogMessage(soaResource), nil
 		}
 	case dnsmessage.TypeTXT:
 		{
-			// if the TXT record is customized, we return that
-			// if it's an "_acme-challenge." TXT, we return no answer but an NS authority not SOA authority
-			// otherwise we return the usual `noAnswerOnlySoaAuthority`
-			err = b.StartAnswers()
-			if err != nil {
-				return
+			// if it's an "_acme-challenge." TXT, we return no answer but an NS authority & not authoritative
+			// if it's customized records, we return them in the Answers
+			// otherwise we return no Answers and Authorities SOA
+			if IsAcmeChallenge(q.Name.String()) {
+				// No Answers, Not Authoritative, Authorities contain NS records
+				response.Header.Authoritative = false
+				nameServers := NSResources(q.Name.String())
+				var logMessages []string
+				for _, nameServer := range nameServers {
+					response.Authorities = append(response.Authorities,
+						// 1 or more A records; A records > 1 only available via Customizations
+						func(b *dnsmessage.Builder) error {
+							err = b.NSResource(dnsmessage.ResourceHeader{
+								Name:   q.Name,
+								Type:   dnsmessage.TypeNS,
+								Class:  dnsmessage.ClassINET,
+								TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+								Length: 0,
+							}, nameServer)
+							if err != nil {
+								return err
+							}
+							return nil
+						})
+					logMessages = append(logMessages, nameServer.NS.String())
+				}
+				return logMessage + "nil, NS " + strings.Join(logMessages, ", "), nil
 			}
 			var txts []dnsmessage.TXTResource
-			txts, err = TXTResources(q.Name.String())
-			if err != nil {
-				if IsAcmeChallenge(q.Name.String()) {
-					err = noAnswerOnlyNsAuthority(q, b, &logMessage)
-					return
-				}
-				err = noAnswerOnlySoaAuthority(q, b, &logMessage)
-				return
+			txts = TXTResources(q.Name.String())
+			if len(txts) == 0 {
+				// No Answers, only 1 Authorities
+				soaHeader, soaResource := SOAAuthority(q.Name)
+				response.Authorities = append(response.Authorities,
+					func(b *dnsmessage.Builder) error {
+						if err = b.SOAResource(soaHeader, soaResource); err != nil {
+							return err
+						}
+						return nil
+					})
+				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
+			response.Answers = append(response.Answers,
+				// 1 or more TXT records via Customizations
+				// Technically there can be more than one TXT record, but practically there can only be one record
+				// but with multiple strings
+				func(b *dnsmessage.Builder) error {
+					for _, txt := range txts {
+						err = b.TXTResource(dnsmessage.ResourceHeader{
+							Name:   q.Name,
+							Type:   dnsmessage.TypeTXT,
+							Class:  dnsmessage.ClassINET,
+							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							Length: 0,
+						}, txt)
+						if err != nil {
+							return err
+						}
+					}
+					return nil
+				})
 			var logMessageTXTss []string
 			for _, txt := range txts {
-				err = b.TXTResource(dnsmessage.ResourceHeader{
-					Name:  q.Name,
-					Type:  dnsmessage.TypeTXT,
-					Class: dnsmessage.ClassINET,
-					// aggressively expire (5 mins) TXT records, long enough to obtain a Let's Encrypt cert,
-					// but short enough to free up frequently-used domains (e.g. 192.168.0.1.sslip.io) for the next user
-					TTL:    300,
-					Length: 0,
-				}, txt)
-				if err != nil {
-					return
-				}
 				var logMessageTXTs []string
 				for _, TXTstring := range txt.TXT {
 					logMessageTXTs = append(logMessageTXTs, TXTstring)
 				}
-				logMessageTXTss = append(logMessageTXTss, `TXT "`+strings.Join(logMessageTXTs, `", "`)+`"`)
+				logMessageTXTss = append(logMessageTXTss, `["`+strings.Join(logMessageTXTs, `", "`)+`"]`)
 			}
-			logMessage += strings.Join(logMessageTXTss, " ")
+			return logMessage + strings.Join(logMessageTXTss, ", "), nil
 		}
 	default:
 		{
 			// default is the same case as an A/AAAA record which is not found,
 			// i.e. we return no answers, but we return an authority section
-			err = noAnswerOnlySoaAuthority(q, b, &logMessage)
-			return
+			// No Answers, only 1 Authorities
+			soaHeader, soaResource := SOAAuthority(q.Name)
+			response.Authorities = append(response.Authorities,
+				func(b *dnsmessage.Builder) error {
+					if err = b.SOAResource(soaHeader, soaResource); err != nil {
+						return err
+					}
+					return nil
+				})
+			return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 		}
 	}
-	return
+	// The following is flagged as "Unreachable code" in Goland, and that's expected
+	return "", errors.New("unexpectedly fell through processQuestion()")
 }
 
-// ResponseHeader returns a pre-fab DNS response header. Note that we're always
-// authoritative and therefore recursion is never available.  We're able to
+// ResponseHeader returns a pre-fab DNS response header.
+// We are almost always authoritative (exception: _acme-challenge TXT records)
+// We are not recursing
+// servers, so recursion is never available.  We're able to
 // "white label" domains by indiscriminately matching every query that comes
 // our way. Not being recursive has the added benefit of not being usable as an
 // amplifier in a DDOS attack. We pass in the RCODE, which is normally RCodeSuccess
@@ -410,12 +492,12 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 	}
 }
 
-// NameToA returns either an []AResource that matched the hostname or ErrNotFound
-func NameToA(fqdnString string) ([]dnsmessage.AResource, error) {
+// NameToA returns an []AResource that matched the hostname
+func NameToA(fqdnString string) []dnsmessage.AResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
 	if domain, ok := Customizations[fqdnString]; ok && len(domain.A) > 0 {
-		return domain.A, nil
+		return domain.A
 	}
 	for _, ipv4RE := range []*regexp.Regexp{ipv4REDashes, ipv4REDots} {
 		if ipv4RE.Match(fqdn) {
@@ -424,22 +506,22 @@ func NameToA(fqdnString string) ([]dnsmessage.AResource, error) {
 			ipv4address := net.ParseIP(match).To4()
 			return []dnsmessage.AResource{
 				{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
-			}, nil
+			}
 		}
 	}
-	return nil, ErrNotFound
+	return []dnsmessage.AResource{}
 }
 
 // NameToAAAA returns either []AAAAResource that matched the hostname
 // or ErrNotFound
-func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, error) {
+func NameToAAAA(fqdnString string) []dnsmessage.AAAAResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized AAAA record? If so, return early
 	if domain, ok := Customizations[fqdnString]; ok && len(domain.AAAA) > 0 {
-		return domain.AAAA, nil
+		return domain.AAAA
 	}
 	if !ipv6RE.Match(fqdn) {
-		return nil, ErrNotFound
+		return []dnsmessage.AAAAResource{}
 	}
 
 	ipv6RE.Longest()
@@ -448,24 +530,27 @@ func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, error) {
 	ipv16address := net.ParseIP(match).To16()
 	if ipv16address == nil {
 		// We shouldn't reach here because `match` should always be valid, but we're not optimists
-		return nil, ErrNotFound
+		return []dnsmessage.AAAAResource{}
 	}
 
 	AAAAR := dnsmessage.AAAAResource{}
 	for i := range ipv16address {
 		AAAAR.AAAA[i] = ipv16address[i]
 	}
-	return []dnsmessage.AAAAResource{AAAAR}, nil
+	return []dnsmessage.AAAAResource{AAAAR}
 }
 
-func CNAMEResource(fqdnString string) (*dnsmessage.CNAMEResource, error) {
+// CNAMEResource returns the CNAME via Customizations, otherwise nil
+func CNAMEResource(fqdnString string) *dnsmessage.CNAMEResource {
 	if domain, ok := Customizations[fqdnString]; ok && domain.CNAME != (dnsmessage.CNAMEResource{}) {
-		return &domain.CNAME, nil
+		return &domain.CNAME
 	}
-	return nil, ErrNotFound
+	return nil
 }
 
-func MxResources(fqdnString string) []dnsmessage.MXResource {
+// MXResources returns either 1 or more MX records set via Customizations or
+// an MX record pointing to the queried record
+func MXResources(fqdnString string) []dnsmessage.MXResource {
 	if domain, ok := Customizations[fqdnString]; ok && len(domain.MX) > 0 {
 		return domain.MX
 	}
@@ -480,9 +565,9 @@ func MxResources(fqdnString string) []dnsmessage.MXResource {
 
 func IsAcmeChallenge(fqdnString string) bool {
 	if dns01ChallengeRE.MatchString(fqdnString) {
-		_, errIPv4 := NameToA(fqdnString)
-		_, errIPv6 := NameToAAAA(fqdnString)
-		if errIPv4 == nil || errIPv6 == nil {
+		ipv4s := NameToA(fqdnString)
+		ipv6s := NameToAAAA(fqdnString)
+		if len(ipv4s) > 0 || len(ipv6s) > 0 {
 			return true
 		}
 	}
@@ -498,13 +583,30 @@ func NSResources(fqdnString string) []dnsmessage.NSResource {
 	return NameServers
 }
 
+// TXTResources returns TXT records from Customizations
+func TXTResources(fqdnString string) []dnsmessage.TXTResource {
+	if domain, ok := Customizations[fqdnString]; ok {
+		return domain.TXT
+	}
+	return nil
+}
+
+func SOAAuthority(name dnsmessage.Name) (dnsmessage.ResourceHeader, dnsmessage.SOAResource) {
+	return dnsmessage.ResourceHeader{
+		Name:   name,
+		Type:   dnsmessage.TypeSOA,
+		Class:  dnsmessage.ClassINET,
+		TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+		Length: 0,
+	}, SOAResource(name)
+}
+
 // SOAResource returns the hard-coded (except MNAME) SOA
-func SOAResource(fqdnString string) dnsmessage.SOAResource {
-	mname, _ := dnsmessage.NewName(fqdnString)
+func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 	return dnsmessage.SOAResource{
-		NS:     mname,
+		NS:     name,
 		MBox:   mbox,
-		Serial: 2020122000,
+		Serial: 2021011400,
 		// cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
 		Retry:   900,
@@ -513,56 +615,13 @@ func SOAResource(fqdnString string) dnsmessage.SOAResource {
 	}
 }
 
-func TXTResources(fqdnString string) ([]dnsmessage.TXTResource, error) {
-	if domain, ok := Customizations[fqdnString]; ok {
-		return domain.TXT, nil
-	}
-	return nil, ErrNotFound
-}
-
-func noAnswerOnlySoaAuthority(q dnsmessage.Question, b *dnsmessage.Builder, logMessage *string) error {
-	err := b.StartAuthorities()
-	if err != nil {
-		return err
-	}
-	err = b.SOAResource(dnsmessage.ResourceHeader{
-		Name:   q.Name,
-		Type:   dnsmessage.TypeSOA,
-		Class:  dnsmessage.ClassINET,
-		TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
-		Length: 0,
-	}, SOAResource(q.Name.String()))
-	if err != nil {
-		return err
-	}
-	*logMessage += "nil, SOA"
-	return nil
-}
-
-// noAnswerOnlyNsAuthority is a corner-case when it's a query for a TXT record for
-// a domain that has "_acme-challenge." in it; in that case we return an NS record
-// to the domain queried, e.g. "127-0-0-1.sslip.io", which has the "_acme-challenge."
-// stripped.
-func noAnswerOnlyNsAuthority(q dnsmessage.Question, b *dnsmessage.Builder, logMessage *string) error {
-	err := b.StartAuthorities()
-	if err != nil {
-		return err
-	}
-	var nsNames []string
-	nses := NSResources(q.Name.String())
-	for _, ns := range nses {
-		nsNames = append(nsNames, ns.NS.String())
-		err = b.NSResource(dnsmessage.ResourceHeader{
-			Name:   q.Name,
-			Type:   dnsmessage.TypeNS,
-			Class:  dnsmessage.ClassINET,
-			TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
-			Length: 0,
-		}, ns)
-		if err != nil {
-			return err
-		}
-	}
-	*logMessage += "nil, NS " + strings.Join(nsNames, ", ")
-	return nil
+// soaLogMessage returns an easy-to-read string for logging SOA Answers/Authorities
+func soaLogMessage(soaResource dnsmessage.SOAResource) string {
+	return soaResource.NS.String() + " " +
+		soaResource.MBox.String() + " " +
+		strconv.Itoa(int(soaResource.Serial)) + " " +
+		strconv.Itoa(int(soaResource.Refresh)) + " " +
+		strconv.Itoa(int(soaResource.Retry)) + " " +
+		strconv.Itoa(int(soaResource.Expire)) + " " +
+		strconv.Itoa(int(soaResource.MinTTL))
 }
