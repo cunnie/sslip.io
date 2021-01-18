@@ -17,7 +17,7 @@ var txt = `Set this TXT record: curl -X POST http://localhost/update -d  '{"txt"
 
 // Txt is for parsing the JSON POST to set the DNS TXT record
 type Txt struct {
-	Txt string
+	Txt string `json:"txt"`
 }
 
 func main() {
@@ -111,26 +111,36 @@ func usageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateTxtHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
 	if r.Method != http.MethodPost {
-		err := errors.New("/update requires POST method, not " + r.Method + " method")
+		err = errors.New("/update requires POST method, not " + r.Method + " method")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		log.Println(err.Error())
 		return
 	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
+	var body []byte
+	if body, err = ioutil.ReadAll(r.Body); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Println(err.Error())
 		return
 	}
 	var updateTxt Txt
-	err = json.Unmarshal(body, &updateTxt)
-	if err != nil {
+	if err := json.Unmarshal(body, &updateTxt); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Println(err.Error())
 		return
 	}
-	// this is the money shot, where we update the DNS TXT record to what was in the POST request
+	if body, err = json.Marshal(updateTxt); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err.Error())
+		return
+	}
+	if _, err = fmt.Fprintf(w, string(body)); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err.Error())
+		return
+	}
 	log.Println("Updating TXT record from \"" + txt + "\" → \"" + updateTxt.Txt + "\".")
+	// this is the money shot, where we update the DNS TXT record to what was in the POST request
 	txt = updateTxt.Txt
 }
