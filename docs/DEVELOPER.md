@@ -1,11 +1,11 @@
 ## Updating BOSH Releases
 
 These instructions are meant primarily for me when deploying a new BOSH release;
-the might not make sense unless you're on my workstation.
+they might not make sense unless you're on my workstation.
 
-```
-export OLD_VERSION=1.3.0
-export VERSION=1.3.1
+```zsh
+export OLD_VERSION=1.3.1
+export VERSION=2.0.0
 cd ~/go/src/github.com/cunnie/sslip.io
 git pull -r
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html # update the download instructions on the website
