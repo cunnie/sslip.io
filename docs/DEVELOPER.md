@@ -41,7 +41,7 @@ bosh create-release \
   --version ${VERSION} --force
 git add -N releases/ .final_builds/
 git add -p
-git ci -v  # BOSH release: 1.3.0: CNAME records
+git ci -v  # BOSH release: 2.0.0: _acme-challenge delegation
 git tag $VERSION
 git push
 git push --tags
