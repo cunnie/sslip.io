@@ -23,7 +23,7 @@ FROM alpine AS sslip.io
 
 LABEL maintainer="brian.cunnie@gmail.com"
 
-RUN wget https://github.com/cunnie/sslip.io/releases/download/1.3.1/sslip.io-dns-server-linux-amd64 -O /usr/sbin/sslip.io-dns-server; \
+RUN wget https://github.com/cunnie/sslip.io/releases/download/2.0.0/sslip.io-dns-server-linux-amd64 -O /usr/sbin/sslip.io-dns-server; \
   chmod 755 /usr/sbin/sslip.io-dns-server
 
 ENTRYPOINT ["/usr/sbin/sslip.io-dns-server"]
