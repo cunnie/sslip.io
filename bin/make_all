@@ -3,7 +3,7 @@
 # Build binaries for macOS, Windows, Linux, FreeBSD
 #
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd $DIR/../src
+cd $DIR/../src/sslip.io-dns-server
 
 export GOOS GOARCH
 for GOOS in darwin linux freebsd; do
