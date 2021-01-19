@@ -66,7 +66,38 @@ docker run --rm -it \
 ```
 
 Clean-up:
+
 ```
 gcloud compute firewall-rules delete sslip-io-allow-dns
 gcloud compute instances delete sslip
+```
+
+#### Troubleshooting / Debugging
+
+Run the server in one window so you can see the output, and then ssh into another window
+and watch the output in realtime.
+
+```
+gcloud compute ssh sslip -- -A
+docker run -it --rm --name wildcard \
+ -p 53:53/udp                       \
+ -p 80:80                           \
+ cunnie/wildcard-dns-http-server
+```
+
+Use `acme.sh`'s `--staging` flag to make sure it works (so you don't run into Let's Encrypt's [rate limits](https://letsencrypt.org/docs/rate-limits/) with failed attempts).
+
+```
+docker run --rm -it \
+  -v $PWD/tls:/acme.sh \
+  -e ACMEDNS_UPDATE_URL \
+  --net=host \
+  neilpang/acme.sh \
+    --issue \
+    --staging \
+    --debug \
+    -d $FQDN \
+    -d *.$FQDN \
+    --dns dns_acmedns
+
 ```
