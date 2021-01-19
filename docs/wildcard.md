@@ -60,7 +60,6 @@ docker run --rm -it \
     --issue \
     --staging \
     --debug \
-    -d $FQDN \
     -d *.$FQDN \
     --dns dns_acmedns
 ```
@@ -96,8 +95,6 @@ docker run --rm -it \
     --issue \
     --staging \
     --debug \
-    -d $FQDN \
     -d *.$FQDN \
     --dns dns_acmedns
-
 ```

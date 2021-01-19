@@ -59,63 +59,64 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(serverSession.Err).Should(Say(serverLogMessage))
 			},
 			Entry("A (customized) for sslip.io",
-				"+short sslip.io @localhost",
+				"@localhost sslip.io +short",
 				`\A78.46.204.247\n\z`,
 				`TypeA sslip.io. \? 78.46.204.247\n$`),
 			Entry("A (or lack thereof) for example.com",
-				"+short example.com @localhost",
+				"@localhost example.com +short",
 				`\A\z`,
 				`TypeA example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2021011400 900 900 1800 300\n$`),
 			Entry("A for www-127-0-0-1.sslip.io",
-				"+short www-127-0-0-1.sslip.io @localhost",
+				"@localhost www-127-0-0-1.sslip.io +short",
 				`\A127.0.0.1\n\z`,
 				`TypeA www-127-0-0-1.sslip.io. \? 127.0.0.1\n$`),
 			Entry("A for www.192.168.0.1.sslip.io",
-				"+short www.192.168.0.1.sslip.io @localhost",
+				"@localhost www.192.168.0.1.sslip.io +short",
 				`\A192.168.0.1\n\z`,
 				`TypeA www.192.168.0.1.sslip.io. \? 192.168.0.1\n$`),
 			Entry("AAAA (customized) for sslip.io",
-				"+short aaaa sslip.io @localhost",
+				"@localhost sslip.io aaaa +short",
 				`\A2a01:4f8:c17:b8f::2\n\z`,
 				`TypeAAAA sslip.io. \? 2a01:4f8:c17:b8f::2\n$`),
 			Entry("AAAA not found for example.com",
-				"+short aaaa example.com @localhost",
+				"@localhost example.com aaaa +short",
 				`\A\z`,
 				`TypeAAAA example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2021011400 900 900 1800 300\n$`),
 			Entry("AAAA for www-2601-646-100-69f0-1c09-bae7-aa42-146c.sslip.io",
-				"+short aaaa www-2601-646-100-69f0-1c09-bae7-aa42-146c.sslip.io @localhost",
+				"@localhost www-2601-646-100-69f0-1c09-bae7-aa42-146c.sslip.io aaaa +short",
 				`\A2601:646:100:69f0:1c09:bae7:aa42:146c\n\z`,
 				`TypeAAAA www-2601-646-100-69f0-1c09-bae7-aa42-146c.sslip.io. \? 2601:646:100:69f0:1c09:bae7:aa42:146c\n$`),
 			Entry("ALL (ANY) is NOT implemented",
-				"any sslip.io @localhost",
+				// `+notcp` required for dig 9.11.25-RedHat-9.11.25-2.fc32 to avoid "connection refused"
+				"@localhost sslip.io any +notcp",
 				` status: NOTIMP,`,
 				`TypeALL sslip.io. \? NotImplemented\n$`),
 			Entry("CNAME (customized) for protonmail._domainkey.sslip.io",
-				"+short cname protonmail._domainkey.sslip.io @localhost",
+				"@localhost protonmail._domainkey.sslip.io cname +short",
 				`\Aprotonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.\n\z`,
 				`TypeCNAME protonmail._domainkey.sslip.io. \? protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.\n$`),
 			Entry("CNAME not found for example.com",
-				"+short cname example.com @localhost",
+				"@localhost example.com cname +short",
 				`\A\z`,
 				`TypeCNAME example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2021011400 900 900 1800 300\n$`),
 			Entry("MX for example.com",
-				"+short mx example.com @localhost",
+				"@localhost example.com mx +short",
 				`\A0 example.com.\n\z`,
 				`TypeMX example.com. \? 0 example.com.\n$`),
 			Entry("SOA for sslip.io",
-				"+short soa sslip.io @localhost",
+				"@localhost sslip.io soa +short",
 				`\Asslip.io. briancunnie.gmail.com. 2021011400 900 900 1800 300\n\z`,
 				`TypeSOA sslip.io. \? sslip.io. briancunnie.gmail.com. 2021011400 900 900 1800 300\n$`),
 			Entry("SOA for example.com",
-				"+short soa example.com @localhost",
+				"@localhost example.com soa +short",
 				`\Aexample.com. briancunnie.gmail.com. 2021011400 900 900 1800 300\n\z`,
 				`TypeSOA example.com. \? example.com. briancunnie.gmail.com. 2021011400 900 900 1800 300\n$`),
 			Entry("SRV (or other record that we don't implement) for example.com",
-				"+short srv example.com @localhost",
+				"@localhost example.com srv +short",
 				`\A\z`,
 				`TypeSRV example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2021011400 900 900 1800 300\n$`),
 			Entry("TXT not found for example.com",
-				"+short txt example.com @localhost",
+				"@localhost example.com txt +short",
 				`\A\z`,
 				`TypeTXT example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2021011400 900 900 1800 300\n$`),
 		)
@@ -123,7 +124,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 	Describe("for more complex assertions", func() {
 		When("there are multiple MX records returned (e.g. sslip.io)", func() {
 			It("returns all the records", func() {
-				digArgs = "+short mx sslip.io @localhost"
+				digArgs = "@localhost sslip.io mx +short"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -135,7 +136,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When("there are multiple NS records returned (e.g. almost NS query)", func() {
 			It("returns all the records", func() {
-				digArgs = "ns example.com @localhost"
+				digArgs = "@localhost example.com ns"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -149,7 +150,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When(`the NS record for an "_acme-challenge" domain is queried`, func() {
 			It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
-				digArgs = "ns _acme-challenge.127-0-0-1.sslip.io @localhost"
+				digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io ns"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -161,7 +162,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
 			It("returns the custom TXT records", func() {
-				digArgs = "+short txt sslip.io @localhost"
+				digArgs = "@localhost sslip.io txt +short"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -173,7 +174,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
 			It("returns the custom TXT records", func() {
-				digArgs = "+short txt sslip.io @localhost"
+				digArgs = "@localhost sslip.io txt +short"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -185,7 +186,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When(`the TXT record for an "_acme-challenge" domain is queried`, func() {
 			It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
-				digArgs = "txt _acme-challenge.127-0-0-1.sslip.io @localhost"
+				digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io txt"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
