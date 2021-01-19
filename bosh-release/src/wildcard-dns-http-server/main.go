@@ -64,15 +64,15 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 		var txtAnswers = []dnsmessage.Resource{}
 		for _, txt := range txts {
 			txtAnswers = append(txtAnswers, dnsmessage.Resource{
-					Header: dnsmessage.ResourceHeader{
-						Name:  query.Questions[0].Name,
-						Type:  dnsmessage.TypeTXT,
-						Class: dnsmessage.ClassINET,
-						TTL: 60,
-					},
-					Body: &dnsmessage.TXTResource{TXT: []string{txt}},
-				})
-			}
+				Header: dnsmessage.ResourceHeader{
+					Name:  query.Questions[0].Name,
+					Type:  dnsmessage.TypeTXT,
+					Class: dnsmessage.ClassINET,
+					TTL:   60,
+				},
+				Body: &dnsmessage.TXTResource{TXT: []string{txt}},
+			})
+		}
 		reply := dnsmessage.Message{
 			Header: dnsmessage.Header{
 				ID:               query.ID,
@@ -81,7 +81,7 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 				RecursionDesired: query.RecursionDesired,
 			},
 			Questions: query.Questions,
-			Answers: txtAnswers,
+			Answers:   txtAnswers,
 		}
 		replyRaw, err := reply.Pack()
 		if err != nil {
