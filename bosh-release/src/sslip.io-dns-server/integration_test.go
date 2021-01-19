@@ -131,7 +131,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession).Should(Say(`10 mail.protonmail.ch.`))
 				Eventually(digSession).Should(Say(`20 mailsec.protonmail.ch.\n$`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(serverSession.Err).Should(Say(`TypeMX sslip.io. \? 10 mail.protonmail.ch., 20 mailsec.protonmail.ch.\n$`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeMX sslip.io. \? 10 mail.protonmail.ch., 20 mailsec.protonmail.ch.\n`))
 			})
 		})
 		When("there are multiple NS records returned (e.g. almost NS query)", func() {
@@ -145,7 +145,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession).Should(Say(`azure.nono.io.`))
 				Eventually(digSession).Should(Say(`gce.nono.io.`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(serverSession.Err).Should(Say(`TypeNS example.com. \? ns-aws.nono.io., ns-azure.nono.io., ns-gce.nono.io.\n$`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? ns-aws.nono.io., ns-azure.nono.io., ns-gce.nono.io.\n`))
 			})
 		})
 		When(`the NS record for an "_acme-challenge" domain is queried`, func() {
@@ -157,7 +157,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession).Should(Say(`flags: qr aa rd;`))
 				Eventually(digSession).Should(Say(`127-0-0-1.sslip.io.`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(serverSession.Err).Should(Say(`TypeNS _acme-challenge.127-0-0-1.sslip.io. \? 127-0-0-1.sslip.io.\n$`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS _acme-challenge.127-0-0-1.sslip.io. \? 127-0-0-1.sslip.io.\n`))
 			})
 		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
@@ -169,7 +169,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession).Should(Say(`"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"`))
 				Eventually(digSession).Should(Say(`"v=spf1 include:_spf.protonmail.ch mx ~all"`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(serverSession.Err).Should(Say(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n$`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n`))
 			})
 		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
@@ -181,7 +181,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession).Should(Say(`"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"`))
 				Eventually(digSession).Should(Say(`"v=spf1 include:_spf.protonmail.ch mx ~all"`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(serverSession.Err).Should(Say(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n$`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n`))
 			})
 		})
 		When(`the TXT record for an "_acme-challenge" domain is queried`, func() {
@@ -194,7 +194,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession).Should(Say(`;; AUTHORITY SECTION:\n`))
 				Eventually(digSession).Should(Say(`^_acme-challenge.127-0-0-1.sslip.io. 604800 IN NS 127-0-0-1.sslip.io.\n`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(serverSession.Err).Should(Say(`TypeTXT _acme-challenge.127-0-0-1.sslip.io. \? nil, NS 127-0-0-1.sslip.io.\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT _acme-challenge.127-0-0-1.sslip.io. \? nil, NS 127-0-0-1.sslip.io.\n`))
 			})
 		})
 	})
