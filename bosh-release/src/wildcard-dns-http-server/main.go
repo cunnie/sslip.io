@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-var txt = `Set this TXT record: curl -X POST http://localhost/update -d  '{"txt":"Certificate Authority validation token"}'`
+var txts = []string{`Set this TXT record: curl -X POST http://localhost/update -d  '{"txt":"Certificate Authority validation token"}'`}
 
 // Txt is for parsing the JSON POST to set the DNS TXT record
 type Txt struct {
@@ -61,6 +61,18 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 			log.Println("I expected a question for a TypeTXT record but got a question for a " + query.Questions[0].Type.String() + " record.")
 			continue
 		}
+		var txtAnswers = []dnsmessage.Resource{}
+		for _, txt := range txts {
+			txtAnswers = append(txtAnswers, dnsmessage.Resource{
+					Header: dnsmessage.ResourceHeader{
+						Name:  query.Questions[0].Name,
+						Type:  dnsmessage.TypeTXT,
+						Class: dnsmessage.ClassINET,
+						TTL: 60,
+					},
+					Body: &dnsmessage.TXTResource{TXT: []string{txt}},
+				})
+			}
 		reply := dnsmessage.Message{
 			Header: dnsmessage.Header{
 				ID:               query.ID,
@@ -69,16 +81,7 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 				RecursionDesired: query.RecursionDesired,
 			},
 			Questions: query.Questions,
-			Answers: []dnsmessage.Resource{
-				{
-					Header: dnsmessage.ResourceHeader{
-						Name:  query.Questions[0].Name,
-						Type:  dnsmessage.TypeTXT,
-						Class: dnsmessage.ClassINET,
-					},
-					Body: &dnsmessage.TXTResource{TXT: []string{txt}},
-				},
-			},
+			Answers: txtAnswers,
 		}
 		replyRaw, err := reply.Pack()
 		if err != nil {
@@ -90,7 +93,7 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 			log.Println(err.Error())
 			continue
 		}
-		log.Printf("%v.%d %s → \"%s\"\n", addr.IP, addr.Port, query.Questions[0].Type.String(), txt)
+		log.Printf("%v.%d %s → \"%v\"\n", addr.IP, addr.Port, query.Questions[0].Type.String(), txts)
 	}
 }
 
@@ -140,7 +143,7 @@ func updateTxtHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err.Error())
 		return
 	}
-	log.Println("Updating TXT record from \"" + txt + "\" → \"" + updateTxt.Txt + "\".")
-	// this is the money shot, where we update the DNS TXT record to what was in the POST request
-	txt = updateTxt.Txt
+	log.Println("Creating new TXT record \"" + updateTxt.Txt + "\".")
+	// this is the money shot, where we create a new DNS TXT record to what was in the POST request
+	txts = append(txts, updateTxt.Txt)
 }
