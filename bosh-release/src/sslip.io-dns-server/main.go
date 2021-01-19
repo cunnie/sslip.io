@@ -13,9 +13,8 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	query := make([]byte, 512)
-
 	for {
+		query := make([]byte, 512)
 		_, addr, err := conn.ReadFromUDP(query)
 		if err != nil {
 			log.Println(err.Error())
