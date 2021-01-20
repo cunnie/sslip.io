@@ -274,6 +274,14 @@ var _ = Describe("Xip", func() {
 					randomDomain = "_acme-challenge.fe80--1." + random8ByteString() + ".com."
 					Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
 				})
+				When("it has random capitalization", func() {
+					It("returns true", func() {
+						randomDomain := "_AcMe-ChAlLeNgE.127.0.0.1." + random8ByteString() + ".com."
+						Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
+						randomDomain = "_aCMe-cHAllENge.fe80--1." + random8ByteString() + ".com."
+						Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
+					})
+				})
 			})
 		})
 	})
