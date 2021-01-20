@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```zsh
-export OLD_VERSION=2.0.0
-export VERSION=2.1.0
+export OLD_VERSION=2.1.0
+export VERSION=2.1.1
 cd ~/go/src/github.com/cunnie/sslip.io
 git pull -r
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html # update the download instructions on the website
@@ -32,7 +32,7 @@ dig +short txt 127.0.0.1.sslip.io @$IP # no records
 dig +short cname sslip.io @$IP # no records
 dig +short cname protonmail._domainkey.sslip.io @$IP
 echo protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
-dig a _acme-challenge.127-0-0-1.sslip.io @$IP | grep "^127"
+dig a _Acme-ChallengE.127-0-0-1.sslip.io @$IP | grep "^127"
 echo "127-0-0-1.sslip.io.	604800	IN	A	127.0.0.1"
 bosh upload-blobs
 bosh create-release \
@@ -41,7 +41,7 @@ bosh create-release \
   --version ${VERSION} --force
 git add -N releases/ .final_builds/
 git add -p
-git ci -v  # BOSH release: 2.1.0: more _acme-challenge delegation
+git ci -v  # BOSH release: 2.1.1: case-insensitive _acme-challenge matching
 git tag $VERSION
 git push
 git push --tags
