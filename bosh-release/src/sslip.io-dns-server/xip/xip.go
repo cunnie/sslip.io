@@ -112,6 +112,7 @@ type Response struct {
 	Header      dnsmessage.Header
 	Answers     []func(*dnsmessage.Builder) error
 	Authorities []func(*dnsmessage.Builder) error
+	Additionals []func(*dnsmessage.Builder) error
 }
 
 // QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
@@ -167,6 +168,14 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 	}
 	for _, authority := range response.Authorities {
 		if err = authority(&b); err != nil {
+			return nil, "", err
+		}
+	}
+	if err = b.StartAdditionals(); err != nil {
+		return nil, "", err
+	}
+	for _, additionals := range response.Additionals {
+		if err = additionals(&b); err != nil {
 			return nil, "", err
 		}
 	}
@@ -338,7 +347,6 @@ func processQuestion(q dnsmessage.Question, response *Response) (string, error) 
 			nameServers := NSResources(q.Name.String())
 			var logMessages []string
 			response.Answers = append(response.Answers,
-				// 1 or more A records; A records > 1 only available via Customizations
 				func(b *dnsmessage.Builder) error {
 					for _, nameServer := range nameServers {
 						err = b.NSResource(dnsmessage.ResourceHeader{
@@ -350,6 +358,36 @@ func processQuestion(q dnsmessage.Question, response *Response) (string, error) 
 						}, nameServer)
 						if err != nil {
 							return err
+						}
+					}
+					return nil
+				})
+			response.Additionals = append(response.Additionals,
+				func(b *dnsmessage.Builder) error {
+					for _, nameServer := range nameServers {
+						for _, aResource := range NameToA(nameServer.NS.String()) {
+							err = b.AResource(dnsmessage.ResourceHeader{
+								Name:   nameServer.NS,
+								Type:   dnsmessage.TypeA,
+								Class:  dnsmessage.ClassINET,
+								TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+								Length: 0,
+							}, aResource)
+							if err != nil {
+								return err
+							}
+						}
+						for _, aaaaResource := range NameToAAAA(nameServer.NS.String()) {
+							err = b.AAAAResource(dnsmessage.ResourceHeader{
+								Name:   nameServer.NS,
+								Type:   dnsmessage.TypeAAAA,
+								Class:  dnsmessage.ClassINET,
+								TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+								Length: 0,
+							}, aaaaResource)
+							if err != nil {
+								return err
+							}
 						}
 					}
 					return nil
@@ -512,8 +550,7 @@ func NameToA(fqdnString string) []dnsmessage.AResource {
 	return []dnsmessage.AResource{}
 }
 
-// NameToAAAA returns either []AAAAResource that matched the hostname
-// or ErrNotFound
+// NameToAAAA returns an []AAAAResource that matched the hostname
 func NameToAAAA(fqdnString string) []dnsmessage.AAAAResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized AAAA record? If so, return early
