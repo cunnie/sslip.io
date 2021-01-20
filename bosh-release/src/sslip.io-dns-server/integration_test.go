@@ -134,30 +134,38 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeMX sslip.io. \? 10 mail.protonmail.ch., 20 mailsec.protonmail.ch.\n`))
 			})
 		})
-		When("there are multiple NS records returned (e.g. almost NS query)", func() {
+		When("there are multiple NS records returned (e.g. almost any NS query)", func() {
 			It("returns all the records", func() {
 				digArgs = "@localhost example.com ns"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`flags: qr aa rd;`))
-				Eventually(digSession).Should(Say(`aws.nono.io.`))
-				Eventually(digSession).Should(Say(`azure.nono.io.`))
-				Eventually(digSession).Should(Say(`gce.nono.io.`))
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 3`))
+				Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
+				Eventually(digSession).Should(Say(`ns-aws.nono.io.\n`))
+				Eventually(digSession).Should(Say(`ns-azure.nono.io.\n`))
+				Eventually(digSession).Should(Say(`ns-gce.nono.io.\n`))
+				Eventually(digSession).Should(Say(`;; ADDITIONAL SECTION:`))
+				Eventually(digSession).Should(Say(`ns-aws.nono.io..*52.0.56.137\n`))
+				Eventually(digSession).Should(Say(`ns-azure.nono.io..*52.187.42.158\n`))
+				Eventually(digSession).Should(Say(`ns-gce.nono.io..*104.155.144.4\n`))
 				Eventually(digSession, 1).Should(Exit(0))
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? ns-aws.nono.io., ns-azure.nono.io., ns-gce.nono.io.\n`))
 			})
 		})
 		When(`the NS record for an "_acme-challenge" domain is queried`, func() {
 			It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
-				digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io ns"
+				digArgs = "@localhost _acme-challenge.fe80--.sslip.io ns"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`flags: qr aa rd;`))
-				Eventually(digSession).Should(Say(`127-0-0-1.sslip.io.`))
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1`))
+				Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
+				Eventually(digSession).Should(Say(`fe80--.sslip.io.`))
+				Eventually(digSession).Should(Say(`;; ADDITIONAL SECTION:`))
+				Eventually(digSession).Should(Say(`fe80--.sslip.io..*fe80::\n`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS _acme-challenge.127-0-0-1.sslip.io. \? 127-0-0-1.sslip.io.\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS _acme-challenge.fe80--.sslip.io. \? fe80--.sslip.io.\n`))
 			})
 		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
