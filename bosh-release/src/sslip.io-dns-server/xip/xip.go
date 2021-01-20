@@ -31,6 +31,10 @@ type DomainCustomization struct {
 
 type DomainCustomizations map[string]DomainCustomization
 
+// There's nothing like global variables to make my heart pound with joy.
+// Some of these are global because they are, in essence, constants which
+// I don't want to waste time recreating with every function call.
+// But `Customizations` is a true global variable.
 var (
 	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])-){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
@@ -185,9 +189,15 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 	return responseBytes, logMessage, nil
 }
 
-func processQuestion(q dnsmessage.Question, response *Response) (string, error) {
+func processQuestion(q dnsmessage.Question, response *Response) (logMessage string, _ error) {
 	var err error
-	var logMessage = q.Type.String() + " " + q.Name.String() + " ? "
+	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
+	if IsAcmeChallenge(q.Name.String()) { // thanks @NormanR
+		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
+		// dig _acme-challenge.127-0-0-1.sslip.io mx → NS 127-0-0-1.sslip.io
+		response.Header.Authoritative = false // we're delegating, so we're not authoritative
+		return NSResponse(q.Name, response, logMessage)
+	}
 	switch q.Type {
 	case dnsmessage.TypeA:
 		{
@@ -344,58 +354,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (string, error) 
 		}
 	case dnsmessage.TypeNS:
 		{
-			nameServers := NSResources(q.Name.String())
-			var logMessages []string
-			response.Answers = append(response.Answers,
-				func(b *dnsmessage.Builder) error {
-					for _, nameServer := range nameServers {
-						err = b.NSResource(dnsmessage.ResourceHeader{
-							Name:   q.Name,
-							Type:   dnsmessage.TypeNS,
-							Class:  dnsmessage.ClassINET,
-							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-							Length: 0,
-						}, nameServer)
-						if err != nil {
-							return err
-						}
-					}
-					return nil
-				})
-			response.Additionals = append(response.Additionals,
-				func(b *dnsmessage.Builder) error {
-					for _, nameServer := range nameServers {
-						for _, aResource := range NameToA(nameServer.NS.String()) {
-							err = b.AResource(dnsmessage.ResourceHeader{
-								Name:   nameServer.NS,
-								Type:   dnsmessage.TypeA,
-								Class:  dnsmessage.ClassINET,
-								TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-								Length: 0,
-							}, aResource)
-							if err != nil {
-								return err
-							}
-						}
-						for _, aaaaResource := range NameToAAAA(nameServer.NS.String()) {
-							err = b.AAAAResource(dnsmessage.ResourceHeader{
-								Name:   nameServer.NS,
-								Type:   dnsmessage.TypeAAAA,
-								Class:  dnsmessage.ClassINET,
-								TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-								Length: 0,
-							}, aaaaResource)
-							if err != nil {
-								return err
-							}
-						}
-					}
-					return nil
-				})
-			for _, nameServer := range nameServers {
-				logMessages = append(logMessages, nameServer.NS.String())
-			}
-			return logMessage + strings.Join(logMessages, ", "), nil
+			return NSResponse(q.Name, response, logMessage)
 		}
 	case dnsmessage.TypeSOA:
 		{
@@ -507,6 +466,86 @@ func processQuestion(q dnsmessage.Question, response *Response) (string, error) 
 	}
 	// The following is flagged as "Unreachable code" in Goland, and that's expected
 	return "", errors.New("unexpectedly fell through processQuestion()")
+}
+
+// NSResponse sets the Answers/Authorities depending whether we're delegating or authoritative
+// (whether it's an "_acme-challenge." domain or not). Either way, it supplies the Additionals
+// (IP addresses of the nameservers).
+func NSResponse(name dnsmessage.Name, response *Response, logMessage string) (string, error) {
+	nameServers := NSResources(name.String())
+	var logMessages []string
+	if response.Header.Authoritative {
+		// we're authoritative, so we reply with the answers
+		response.Answers = append(response.Answers,
+			func(b *dnsmessage.Builder) error {
+				for _, nameServer := range nameServers {
+					err := b.NSResource(dnsmessage.ResourceHeader{
+						Name:   name,
+						Type:   dnsmessage.TypeNS,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, nameServer)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+	} else {
+		// we're NOT authoritative, so we reply who is authoritative
+		response.Authorities = append(response.Authorities,
+			func(b *dnsmessage.Builder) error {
+				for _, nameServer := range nameServers {
+					err := b.NSResource(dnsmessage.ResourceHeader{
+						Name:   name,
+						Type:   dnsmessage.TypeNS,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, nameServer)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+		logMessage += "nil, NS " // we're not supplying an answer; we're supplying the NS record that's authoritative
+	}
+	response.Additionals = append(response.Additionals,
+		func(b *dnsmessage.Builder) error {
+			for _, nameServer := range nameServers {
+				for _, aResource := range NameToA(nameServer.NS.String()) {
+					err := b.AResource(dnsmessage.ResourceHeader{
+						Name:   nameServer.NS,
+						Type:   dnsmessage.TypeA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, aResource)
+					if err != nil {
+						return err
+					}
+				}
+				for _, aaaaResource := range NameToAAAA(nameServer.NS.String()) {
+					err := b.AAAAResource(dnsmessage.ResourceHeader{
+						Name:   nameServer.NS,
+						Type:   dnsmessage.TypeAAAA,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, aaaaResource)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		})
+	for _, nameServer := range nameServers {
+		logMessages = append(logMessages, nameServer.NS.String())
+	}
+	return logMessage + strings.Join(logMessages, ", "), nil
 }
 
 // ResponseHeader returns a pre-fab DNS response header.
