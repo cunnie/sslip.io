@@ -41,7 +41,7 @@ bosh create-release \
   --version ${VERSION} --force
 git add -N releases/ .final_builds/
 git add -p
-git ci -v  # BOSH release: 2.0.0: _acme-challenge delegation
+git ci -v  # BOSH release: 2.1.0: more _acme-challenge delegation
 git tag $VERSION
 git push
 git push --tags
