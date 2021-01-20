@@ -153,21 +153,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? ns-aws.nono.io., ns-azure.nono.io., ns-gce.nono.io.\n`))
 			})
 		})
-		When(`the NS record for an "_acme-challenge" domain is queried`, func() {
-			It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
-				digArgs = "@localhost _acme-challenge.fe80--.sslip.io ns"
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1`))
-				Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
-				Eventually(digSession).Should(Say(`fe80--.sslip.io.`))
-				Eventually(digSession).Should(Say(`;; ADDITIONAL SECTION:`))
-				Eventually(digSession).Should(Say(`fe80--.sslip.io..*fe80::\n`))
-				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS _acme-challenge.fe80--.sslip.io. \? fe80--.sslip.io.\n`))
-			})
-		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
 			It("returns the custom TXT records", func() {
 				digArgs = "@localhost sslip.io txt +short"
@@ -192,17 +177,47 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n`))
 			})
 		})
-		When(`the TXT record for an "_acme-challenge" domain is queried`, func() {
-			It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
-				digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io txt"
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1,`))
-				Eventually(digSession).Should(Say(`;; AUTHORITY SECTION:\n`))
-				Eventually(digSession).Should(Say(`^_acme-challenge.127-0-0-1.sslip.io. 604800 IN NS 127-0-0-1.sslip.io.\n`))
-				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT _acme-challenge.127-0-0-1.sslip.io. \? nil, NS 127-0-0-1.sslip.io.\n`))
+		When(`a record for an "_acme-challenge" domain is queried`, func() {
+			When(`it's an NS record`, func() {
+				It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
+					digArgs = "@localhost _acme-challenge.fe80--.sslip.io ns"
+					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(digSession).Should(Say(`flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1`))
+					Eventually(digSession).Should(Say(`;; AUTHORITY SECTION:`))
+					Eventually(digSession).Should(Say(`fe80--.sslip.io.`))
+					Eventually(digSession).Should(Say(`;; ADDITIONAL SECTION:`))
+					Eventually(digSession).Should(Say(`fe80--.sslip.io..*fe80::\n`))
+					Eventually(digSession, 1).Should(Exit(0))
+					Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS _acme-challenge.fe80--.sslip.io. \? nil, NS fe80--.sslip.io.\n`))
+				})
+			})
+			When(`it's a TXT record`, func() {
+				It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
+					digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io txt"
+					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(digSession).Should(Say(`flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1,`))
+					Eventually(digSession).Should(Say(`;; AUTHORITY SECTION:\n`))
+					Eventually(digSession).Should(Say(`^_acme-challenge.127-0-0-1.sslip.io. 604800 IN NS 127-0-0-1.sslip.io.\n`))
+					Eventually(digSession, 1).Should(Exit(0))
+					Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT _acme-challenge.127-0-0-1.sslip.io. \? nil, NS 127-0-0-1.sslip.io.\n`))
+				})
+			})
+			When(`it's a A record`, func() {
+				It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
+					digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io a"
+					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(digSession).Should(Say(`flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1,`))
+					Eventually(digSession).Should(Say(`;; AUTHORITY SECTION:\n`))
+					Eventually(digSession).Should(Say(`^_acme-challenge.127-0-0-1.sslip.io. 604800 IN NS 127-0-0-1.sslip.io.\n`))
+					Eventually(digSession, 1).Should(Exit(0))
+					Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA _acme-challenge.127-0-0-1.sslip.io. \? nil, NS 127-0-0-1.sslip.io.\n`))
+				})
 			})
 		})
 	})
