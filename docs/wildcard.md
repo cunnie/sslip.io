@@ -1,9 +1,7 @@
 In the following example, we create a webserver on Google Cloud Platform (GCP)
 to acquire a wildcard certificate:
 
-**Do Not Use** these instructions; they don't work. They are a work in progress.
-
-```
+```bash
 gcloud auth login
  # set your project; mine is "blabbertabber"
 gcloud config set project blabbertabber
@@ -58,11 +56,16 @@ docker run --rm -it \
   --net=host \
   neilpang/acme.sh \
     --issue \
-    --staging \
     --debug \
+    -d $FQDN \
     -d *.$FQDN \
     --dns dns_acmedns
+ls tls/$FQDN  # you'll see the new cert, key, certificate
+openssl x509 -in tls/$FQDN/$FQDN.cer -noout -text # read the cert info
 ```
+
+Save the cert, key, certificate, intermediate ca, fullchain cert. They are in
+`tls/$FQDN/`.
 
 Clean-up:
 
@@ -73,8 +76,8 @@ gcloud compute instances delete sslip
 
 #### Troubleshooting / Debugging
 
-Run the server in one window so you can see the output, and then ssh into another window
-and watch the output in realtime.
+Run the server in one window so you can see the output, and then ssh into
+another window and watch the log output in realtime.
 
 ```
 gcloud compute ssh sslip -- -A
@@ -84,7 +87,13 @@ docker run -it --rm --name wildcard \
  cunnie/wildcard-dns-http-server
 ```
 
-Use `acme.sh`'s `--staging` flag to make sure it works (so you don't run into Let's Encrypt's [rate limits](https://letsencrypt.org/docs/rate-limits/) with failed attempts).
+Notes about the logging output: any line that has the string "`TypeTXT →`" is
+output from the DNS server; everything else is output from the HTTP server which
+is used to create TXT records which the DNS server serves.
+
+Use `acme.sh`'s `--staging` flag to make sure it works (so you don't run into
+Let's Encrypt's [rate limits](https://letsencrypt.org/docs/rate-limits/) with
+failed attempts).
 
 ```
 docker run --rm -it \
@@ -98,3 +107,10 @@ docker run --rm -it \
     -d *.$FQDN \
     --dns dns_acmedns
 ```
+
+Pro-tip: you can use your wildcard certificate for _internal_ servers (domains
+with non-routable (RFC 1918) addresses). For example, if you procured a wildcard
+certificate for `*.34-83-219-164.sslip.io`, and you had a webserver at
+`192.168.0.1`, you could install the certificate on the server and browse to it
+using the fully-qualified domain name, i.e.
+<https://www-192-168-0-1.34-83-219-164.sslip.io>.
