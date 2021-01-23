@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net"
+	"os"
+	"errors"
 
 	"xip/xip"
 )
@@ -10,6 +12,13 @@ import (
 func main() {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
 	if err != nil {
+		//  err is usually a net.OpError wrapping an os.SyscallError
+		var e *os.SyscallError
+		if errors.As(err, &e) {
+			if os.IsPermission(e) {
+				log.Println("Invoke me with `sudo` because I don't have permission to bind to port 53.")
+			}
+		}
 		log.Fatal(err.Error())
 	}
 
