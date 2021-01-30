@@ -107,9 +107,8 @@ func isErrorAddressAlreadyInUse(err error) bool {
 	if !errors.As(err, &eOsSyscall) {
 		return false
 	}
-	// errors.As(err, *syscall.Errno) doesn't work, so we fall back to old method
-	errErrno, ok := eOsSyscall.Err.(syscall.Errno)
-	if !ok {
+	var errErrno syscall.Errno // doesn't need a "*" (ptr) because it's already a ptr (uintptr)
+	if !errors.As(eOsSyscall, &errErrno) {
 		return false
 	}
 	if errErrno == syscall.EADDRINUSE {
