@@ -573,7 +573,7 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 func NameToA(fqdnString string) []dnsmessage.AResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
-	if domain, ok := Customizations[fqdnString]; ok && len(domain.A) > 0 {
+	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.A) > 0 {
 		return domain.A
 	}
 	for _, ipv4RE := range []*regexp.Regexp{ipv4REDashes, ipv4REDots} {
@@ -593,7 +593,7 @@ func NameToA(fqdnString string) []dnsmessage.AResource {
 func NameToAAAA(fqdnString string) []dnsmessage.AAAAResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized AAAA record? If so, return early
-	if domain, ok := Customizations[fqdnString]; ok && len(domain.AAAA) > 0 {
+	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.AAAA) > 0 {
 		return domain.AAAA
 	}
 	if !ipv6RE.Match(fqdn) {
@@ -618,7 +618,7 @@ func NameToAAAA(fqdnString string) []dnsmessage.AAAAResource {
 
 // CNAMEResource returns the CNAME via Customizations, otherwise nil
 func CNAMEResource(fqdnString string) *dnsmessage.CNAMEResource {
-	if domain, ok := Customizations[fqdnString]; ok && domain.CNAME != (dnsmessage.CNAMEResource{}) {
+	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && domain.CNAME != (dnsmessage.CNAMEResource{}) {
 		return &domain.CNAME
 	}
 	return nil
@@ -627,7 +627,7 @@ func CNAMEResource(fqdnString string) *dnsmessage.CNAMEResource {
 // MXResources returns either 1 or more MX records set via Customizations or
 // an MX record pointing to the queried record
 func MXResources(fqdnString string) []dnsmessage.MXResource {
-	if domain, ok := Customizations[fqdnString]; ok && len(domain.MX) > 0 {
+	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.MX) > 0 {
 		return domain.MX
 	}
 	mx, _ := dnsmessage.NewName(fqdnString)
@@ -661,7 +661,7 @@ func NSResources(fqdnString string) []dnsmessage.NSResource {
 
 // TXTResources returns TXT records from Customizations
 func TXTResources(fqdnString string) []dnsmessage.TXTResource {
-	if domain, ok := Customizations[fqdnString]; ok {
+	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok {
 		return domain.TXT
 	}
 	return nil

@@ -55,7 +55,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("querying one of sslip.io's DKIM CNAME's", func() {
 			It("returns the CNAME", func() {
-				cname := xip.CNAMEResource("protonmail._domainkey.sslip.io.")
+				cname := xip.CNAMEResource("protonmail._domainkey.SSlip.Io.")
 				Expect(cname.CNAME.String()).To(MatchRegexp("^protonmail\\.domainkey.*.domains\\.proton\\.ch\\.$"))
 			})
 		})
@@ -99,7 +99,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("sslip.io is the domain being queried", func() {
 			It("returns sslip.io's custom MX records", func() {
-				mx := xip.MXResources("sslip.io.")
+				mx := xip.MXResources("sslIP.iO.")
 				Expect(len(mx)).To(Equal(2))
 				Expect(mx[0].MX.Data).To(Equal(xip.Customizations["sslip.io."].MX[0].MX.Data))
 			})
@@ -155,7 +155,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("queried for the sslip.io domain", func() {
 			It("returns mail-related TXT resources for the sslip.io domain", func() {
-				domain := "sslip.io."
+				domain := "ssLip.iO."
 				txts := xip.TXTResources(domain)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(2))
@@ -182,7 +182,7 @@ var _ = Describe("Xip", func() {
 				Expect(ipv4Answers[0]).To(Equal(expectedA))
 			},
 			// sslip.io website
-			Entry("sslip.io", "sslip.io.", dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}}),
+			Entry("sslip.io", "ssLIP.io.", dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}}),
 			// nameservers
 			Entry("ns-aws", "ns-aws.nono.io.", dnsmessage.AResource{A: [4]byte{52, 0, 56, 137}}),
 			Entry("ns-azure", "ns-azure.nono.io.", dnsmessage.AResource{A: [4]byte{52, 187, 42, 158}}),
@@ -190,7 +190,7 @@ var _ = Describe("Xip", func() {
 			// dots
 			Entry("loopback", "127.0.0.1", dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}}),
 			Entry("255 with domain", "255.254.253.252.com", dnsmessage.AResource{A: [4]byte{255, 254, 253, 252}}),
-			Entry(`"This" network, pre-and-post`, "nono.io.0.1.2.3.sslip.io", dnsmessage.AResource{A: [4]byte{0, 1, 2, 3}}),
+			Entry(`"This" network, pre-and-post`, "nono.io.0.1.2.3.ssLIp.IO", dnsmessage.AResource{A: [4]byte{0, 1, 2, 3}}),
 			Entry("private network, two IPs, grabs the leftmost", "nono.io.172.16.0.30.172.31.255.255.sslip.io", dnsmessage.AResource{A: [4]byte{172, 16, 0, 30}}),
 			// dashes
 			Entry("shared address with dashes", "100-64-1-2", dnsmessage.AResource{A: [4]byte{100, 64, 1, 2}}),
@@ -199,7 +199,7 @@ var _ = Describe("Xip", func() {
 			// dots-and-dashes, mix-and-matches
 			Entry("Pandaxin's paradox", "minio-01.192-168-1-100.sslip.io", dnsmessage.AResource{A: [4]byte{192, 168, 1, 100}}),
 		)
-		DescribeTable("when it does not match an IP address",
+		DescribeTable("when it does NOT match an IP address",
 			func(fqdn string) {
 				ipv4Answers := xip.NameToA(fqdn)
 				Expect(len(ipv4Answers)).To(Equal(0))
@@ -294,7 +294,7 @@ var _ = Describe("Xip", func() {
 				Expect(ipv6Answers[0]).To(Equal(expectedAAAA))
 			},
 			// sslip.io website
-			Entry("sslip.io", "sslip.io.", xip.Customizations["sslip.io."].AAAA[0]),
+			Entry("sslip.io", "SSLip.io.", xip.Customizations["sslip.io."].AAAA[0]),
 			// dashes only
 			Entry("loopback", "--1", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
 			Entry("ff with domain", "fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),
