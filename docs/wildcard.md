@@ -1,5 +1,72 @@
+### Procuring a Wildcard Certificate
+
+You can procure a [wildcard](https://en.wikipedia.org/wiki/Wildcard_certificate)
+certificate (e.g. `*.52-0-56-137.sslip.io`) from a certificate authority (e.g.
+Let's Encrypt) using the [DNS-01
+challenge](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge).
+
+You'll need the following:
+
+- An internet-accessible DNS server that's authoritative for its `sslip.io`
+  subdomain For example, if the DNS server's IP address is `52.187.42.158`, the
+  DNS server would need to be authoritative for the domain
+  `52-187-42-158.sslip.io`.  Pro-tip: it only needs to be authoritative for the
+  `_acme-challenge` subdomain, e.g. `_acme-challenge.52-187-42-158.sslip.io`;
+  furthermore, it only needs to return TXT records.
+
+  How to test that your DNS server is working properly (assuming you've set a
+  TXT record, "I love my dog":
+
+  ```
+  dig _acme-challenge.52-187-42-158.sslip.io txt
+  ...
+  _acme-challenge.52-187-42-158.sslip.io	604800	IN	TXT	"I love my dog"
+  ...
+  ```
+
+- An [ACME
+  v2](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment)
+  protocol client; I use [acme.sh](https://github.com/acmesh-official/acme.sh).
+  The ACME client must be able to update the TXT records of your DNS server.
+
+### Using the Wildcard Certificate
+
+Once you've procured the wildcard certificate, you can install it on your
+internal webservers for URLS of the following format:
+<https://*internal-ip.external-ip*.sslip.io> (e.g.
+<https://www-192-168-0-10.52-187-42-158.sslip.io>). Note that the _internal-ip_
+portion of the URL _must_ be dash-separated, not dot-separated, for the wildcard
+certificate to work properly.
+
+Tech note: wildcard certificates can be used for development for machines behind
+a firewall using non-routable IP addresses (10/8, 172.16/12, 192.168/16) by
+taking advantage of the manner which `sslip.io` parses hostnames with embedded
+IP addresses: left-to-right. The internal IP address is parsed first and
+returned as the IP address of the hostname.
+
+### How Do I Set Up an External DNS Server?
+
+The external IP might be from your local network (forward port 53 at your
+router), or from a cloud provider (GCP, AWS, etc). It might even be from a
+public DNS service (e.g. [Cloudflare](https://www.cloudflare.com/), [AWS Route
+53](https://aws.amazon.com/route53/), my perennial favorite
+[easyDNS](https://easydns.com/), etc).  If not using a public DNS service, you
+need to run your own DNS server (e.g.
+[acme-dns](https://github.com/joohoi/acme-dns), the venerable
+[BIND](https://en.wikipedia.org/wiki/BIND), the opinionated
+[djbdns](https://cr.yp.to/djbdns.html), or my personal
+[wildcard-dns-http-server](https://github.com/cunnie/sslip.io/tree/master/bosh-release/src/wildcard-dns-http-server)
+etc).  You can use any ACME client
+([acme.sh](https://github.com/acmesh-official/acme.sh),
+[Certbot](https://certbot.eff.org/), etc), but you must configure it to request
+a wildcard certificate for \*.${external}.sslip.io, which requires configuring
+the DNS-01 challenge to use DNS server chosen.
+
+#### Example
+
 In the following example, we create a webserver on Google Cloud Platform (GCP)
-to acquire a wildcard certificate:
+to acquire a wildcard certificate. We use the ACME client acme.sh and the
+DNS server wildcard-dns-http-server:
 
 ```bash
 gcloud auth login
@@ -107,10 +174,3 @@ docker run --rm -it \
     -d *.$FQDN \
     --dns dns_acmedns
 ```
-
-Pro-tip: you can use your wildcard certificate for _internal_ servers (domains
-with non-routable (RFC 1918) addresses). For example, if you procured a wildcard
-certificate for `*.34-83-219-164.sslip.io`, and you had a webserver at
-`192.168.0.1`, you could install the certificate on the server and browse to it
-using the fully-qualified domain name, i.e.
-<https://www-192-168-0-1.34-83-219-164.sslip.io>.

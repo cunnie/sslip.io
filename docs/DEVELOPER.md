@@ -43,7 +43,7 @@ bosh create-release \
   --version ${VERSION}
 git add -N releases/ .final_builds/
 git add -p
-git ci -v  # BOSH release: 2.1.1: case-insensitive _acme-challenge matching
+git ci -v  # BOSH release: 2.1.2: case-insensitive custom records matching
 git tag $VERSION
 git push
 git push --tags
@@ -61,8 +61,8 @@ shasum ~/Downloads/sslip.io-release-${VERSION}.tgz
 z deployments
 nvim sslip.io.yml
 bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
-dig +short 127-0-0-1.sslip.io # output should be 127.0.0.1
-dig +short ns _ACMe-chALLengE.127-0-0-1.ssLIP.iO # should be 127-0-0-1.sslip.io.
+dig 127-0-0-1.sslip.io +short  # output should be 127.0.0.1
+dig @ns-aws.nono.io ns _ACMe-chALLengE.127-0-0-1.ssLIP.iO +short # 127-0-0-1.ssLIP.iO.
 git add -p
 git ci -v -m"Bump sslip.io: $OLD_VERSION → $VERSION"
 git push
