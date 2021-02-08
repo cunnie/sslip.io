@@ -15,7 +15,7 @@ You'll need the following:
   furthermore, it only needs to return TXT records.
 
   How to test that your DNS server is working properly (assuming you've set a
-  TXT record, "I love my dog":
+  TXT record, "I love my dog"):
 
   ```
   dig _acme-challenge.52-187-42-158.sslip.io txt
@@ -33,7 +33,7 @@ You'll need the following:
 
 Once you've procured the wildcard certificate, you can install it on your
 internal webservers for URLS of the following format:
-<https://*internal-ip.external-ip*.sslip.io> (e.g.
+https://*internal-ip.external-ip*.sslip.io (e.g.
 <https://www-192-168-0-10.52-187-42-158.sslip.io>). Note that the _internal-ip_
 portion of the URL _must_ be dash-separated, not dot-separated, for the wildcard
 certificate to work properly.
@@ -47,19 +47,19 @@ returned as the IP address of the hostname.
 ### How Do I Set Up an External DNS Server?
 
 The external IP might be from your local network (forward port 53 at your
-router), or from a cloud provider (GCP, AWS, etc). It might even be from a
+router), or from a cloud provider (GCP, AWS, etc.). It might even be from a
 public DNS service (e.g. [Cloudflare](https://www.cloudflare.com/), [AWS Route
 53](https://aws.amazon.com/route53/), my perennial favorite
-[easyDNS](https://easydns.com/), etc).  If not using a public DNS service, you
+[easyDNS](https://easydns.com/), etc.).  If not using a public DNS service, you
 need to run your own DNS server (e.g.
 [acme-dns](https://github.com/joohoi/acme-dns), the venerable
 [BIND](https://en.wikipedia.org/wiki/BIND), the opinionated
 [djbdns](https://cr.yp.to/djbdns.html), or my personal
-[wildcard-dns-http-server](https://github.com/cunnie/sslip.io/tree/master/bosh-release/src/wildcard-dns-http-server)
-etc).  You can use any ACME client
+[wildcard-dns-http-server](https://github.com/cunnie/sslip.io/tree/master/bosh-release/src/wildcard-dns-http-server),
+etc.).  You can use any ACME client
 ([acme.sh](https://github.com/acmesh-official/acme.sh),
-[Certbot](https://certbot.eff.org/), etc), but you must configure it to request
-a wildcard certificate for \*.${external}.sslip.io, which requires configuring
+[Certbot](https://certbot.eff.org/), etc.), but you must configure it to request
+a wildcard certificate for \*._external-ip_.sslip.io, which requires configuring
 the DNS-01 challenge to use DNS server chosen.
 
 #### Example
