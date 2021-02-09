@@ -38,27 +38,27 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 	var query dnsmessage.Message
 
 	defer group.Done()
-	log.Println("I'm firing up the DNS server.")
+	log.Println("DNS: starting up.")
 	queryRaw := make([]byte, 512)
 	for {
 		_, addr, err := conn.ReadFromUDP(queryRaw)
 		if err != nil {
-			log.Println(err.Error())
+			log.Println("DNS: " + err.Error())
 			continue
 		}
 		err = query.Unpack(queryRaw)
 		if err != nil {
-			log.Println(err.Error())
+			log.Println("DNS: " + err.Error())
 			continue
 		}
 		// Technically, there can be multiple questions in a DNS message; practically, there's only one
 		if len(query.Questions) != 1 {
-			log.Printf("I expected one question but got %d.\n", len(query.Questions))
+			log.Printf("DNS: I expected one question but got %d.\n", len(query.Questions))
 			continue
 		}
 		// We only return answers to TXT queries, nothing else
 		if query.Questions[0].Type != dnsmessage.TypeTXT {
-			log.Println("I expected a question for a TypeTXT record but got a question for a " + query.Questions[0].Type.String() + " record.")
+			log.Println("DNS: I expected a question for a TypeTXT record but got a question for a " + query.Questions[0].Type.String() + " record.")
 			continue
 		}
 		var txtAnswers = []dnsmessage.Resource{}
@@ -85,31 +85,31 @@ func dnsServer(conn *net.UDPConn, group *sync.WaitGroup) {
 		}
 		replyRaw, err := reply.Pack()
 		if err != nil {
-			log.Println(err.Error())
+			log.Println("DNS: " + err.Error())
 			continue
 		}
 		_, err = conn.WriteToUDP(replyRaw, addr)
 		if err != nil {
-			log.Println(err.Error())
+			log.Println("DNS: " + err.Error())
 			continue
 		}
-		log.Printf("%v.%d %s → \"%v\"\n", addr.IP, addr.Port, query.Questions[0].Type.String(), txts)
+		log.Printf("DNS: %v.%d %s → \"%v\"\n", addr.IP, addr.Port, query.Questions[0].Type.String(), txts)
 	}
 }
 
 func httpServer(group *sync.WaitGroup) {
 	defer group.Done()
-	log.Println("I'm firing up the HTTP server.")
+	log.Println("HTTP: starting up.")
 	http.HandleFunc("/", usageHandler)
 	http.HandleFunc("/update", updateTxtHandler)
-	log.Fatal(http.ListenAndServe(":80", nil))
+	log.Fatal("HTTP: " + http.ListenAndServe(":80", nil).Error())
 }
 
 func usageHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintln(w, `Set the TXT record: curl -X POST http://localhost/update -d  '{"txt":"Certificate Authority's validation token"}'`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err.Error())
+		log.Println("HTTP: " + err.Error())
 	}
 }
 
@@ -118,29 +118,29 @@ func updateTxtHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		err = errors.New("/update requires POST method, not " + r.Method + " method")
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Println(err.Error())
+		log.Println("HTTP: " + err.Error())
 		return
 	}
 	var body []byte
 	if body, err = ioutil.ReadAll(r.Body); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err.Error())
+		log.Println("HTTP: " + err.Error())
 		return
 	}
 	var updateTxt Txt
 	if err := json.Unmarshal(body, &updateTxt); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err.Error())
+		log.Println("HTTP: " + err.Error())
 		return
 	}
 	if body, err = json.Marshal(updateTxt); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err.Error())
+		log.Println("HTTP: " + err.Error())
 		return
 	}
 	if _, err = fmt.Fprintf(w, string(body)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err.Error())
+		log.Println("HTTP: " + err.Error())
 		return
 	}
 	log.Println("Creating new TXT record \"" + updateTxt.Txt + "\".")
