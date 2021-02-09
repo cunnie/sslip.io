@@ -147,21 +147,44 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
         </tbody>
       </table>
       <p>Let’s test it from the command line using <code>dig</code>:</p>
-      <pre><code>dig +short 169-254-169-254.xip.example.com @ns-gce.nono.io.</code></pre>
+      <pre><code>dig @ns-gce.nono.io. 169-254-169-254.xip.example.com +short</code></pre>
       <p>Yields, hopefully: <sup><a href="#timeout" class="alert-link">[connection timed out]</a></sup></p>
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
       <p>If you want to run your own DNS server, it's simple: you can compile from <a href=
-      "https://github.com/cunnie/sslip.io">source</a> or you can use one of our <a href=
-      "https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we install & run
-      our server within a docker container:</p>
+      "https://github.com/cunnie/sslip.io/tree/master/bosh-release/src/sslip.io-dns-server">source</a> or you can use
+      one of our <a href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following
+      example, we install & run our server within a docker container:</p>
       <pre>
 docker run -it --rm fedora
 curl -L https://github.com/cunnie/sslip.io/releases/download/2.1.2/sslip.io-dns-server-linux-amd64 -o dns-server
 chmod +x dns-server
 ./dns-server 2&gt; dns-server.log &
 dnf install -y bind-utils
-dig +short 127-0-0-1.sslip.io @localhost # returns "127.0.0.1"</pre>
+dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
+      <h3 id="tls">TLS</h3>
+      <p>You can acquire TLS certificates for your externally-accessible hosts from certificate authorities (CAs) such
+      as Let's Encrypt. The easiest mechanism to acquire a certificate would be to use the <a href=
+      "https://letsencrypt.org/docs/challenge-types/#http-01-challenge">HTTP-01 challenge</a>. It requires, at a
+      minimum, a web server running on your machine. The <a href="https://caddyserver.com/">Caddy</a> web server is one
+      of the most popular examples. For example, if you had a webserver with the IP address 52.0.56.137, you could
+      obtain a TLS certificate for "52.0.56.137.sslip.io", or "www.52.0.56.137.sslip.io", or
+      "prod.www-52-0-56-137.sslip.io".</p>
+      <p>If you have procured a wildcard certificate for your branded / white label / custom sslip.io-style subdomain,
+      you may install it on your machines for TLS-verified connections.</p>
+      <div class="alert alert-warning" data-role="alert">
+        <p>When using a TLS wildcard certificate in conjunction with your branded sslip.io style subdomain, you must
+        <b>use dashes not dots</b> as separators. For example, if you have the TLS certificate for
+        <i>*.xip.example.com</i>, you could browse to https://www-52-0-56-137.xip.example.com/ but not
+        https://www.52.0.56.137.xip.example.com/.</p>
+      </div>
+      <p>Acquiring wildcard certificates for "sslip.io" (not white-labeled) subdomains, e.g. "*.52-0-56-137.sslip.io",
+      is possible but more complicated. For those interested, the procedure is described <a href=
+      "https://github.com/cunnie/sslip.io/blob/master/docs/wildcard.md">here</a>.</p>
+      <p>For a real-world example of a TLS wildcard cert and sslip.io domain, browse <a href=
+      "https://52-0-56-137.sslip.io" class="uri">https://52-0-56-137.sslip.io</a>.</p>
+      <p>VMware employees can download the <i>*.sslip.io</i> TLS private key <a href=
+      "https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">here</a>.</p>
       <h3 id="related">Related Services</h3>
       <ul>
         <li>
@@ -175,19 +198,6 @@ dig +short 127-0-0-1.sslip.io @localhost # returns "127.0.0.1"</pre>
           local addresses.
         </li>
       </ul>
-      <h4 id="tls-transport-layer-security">TLS (Transport Layer Security)</h4>
-      <p>If you have a wildcard certificate for your sslip.io-style subdomain, you may install it on your machines for
-      TLS-verified connections.</p>
-      <div class="alert alert-warning" data-role="alert">
-        <p>When using a TLS wildcard certificate in conjunction with your branded sslip.io style subdomain, you must
-        <b>use dashes not dots</b> as separators. For example, if you have the TLS certificate for
-        <i>*.xip.example.com</i>, you could browse to https://52-0-56-137.xip.example.com/ but not
-        https://52.0.56.137.xip.example.com/.</p>
-      </div>
-      <p>For a real-world example of a TLS wildcard cert and sslip.io domain, browse <a href=
-      "https://52-0-56-137.sslip.io" class="uri">https://52-0-56-137.sslip.io</a>.</p>
-      <p>VMware employees can download the <i>*.sslip.io</i> TLS private key <a href=
-      "https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">here</a>.</p>
       <hr>
       <h4 id="footnotes">Footnotes</h4>
       <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
