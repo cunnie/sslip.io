@@ -178,13 +178,12 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
         <i>*.xip.example.com</i>, you could browse to https://www-52-0-56-137.xip.example.com/ but not
         https://www.52.0.56.137.xip.example.com/.</p>
       </div>
-      <p>Acquiring wildcard certificates for "sslip.io" (not white-labeled) subdomains, e.g. "*.52-0-56-137.sslip.io",
-      is possible but more complicated. For those interested, the procedure is described <a href=
+      <p>Unless you're a VMware employee, I can't release the private key for the "*.sslip.io" wildcard certificate
+      (VMware employees can download the <i>*.sslip.io</i> TLS private key <a href=
+      "https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">here</a>); however, acquiring wildcard
+      certificates for "sslip.io" subdomains, e.g. "*.52-0-56-137.sslip.io", is possible but more complicated. For
+      those interested, the procedure is described <a href=
       "https://github.com/cunnie/sslip.io/blob/master/docs/wildcard.md">here</a>.</p>
-      <p>For a real-world example of a TLS wildcard cert and sslip.io domain, browse <a href=
-      "https://52-0-56-137.sslip.io" class="uri">https://52-0-56-137.sslip.io</a>.</p>
-      <p>VMware employees can download the <i>*.sslip.io</i> TLS private key <a href=
-      "https://drive.google.com/open?id=0ByweFu4TspftMWJPdE1US0hQTGc">here</a>.</p>
       <h3 id="related">Related Services</h3>
       <ul>
         <li>
@@ -236,6 +235,7 @@ IE10 viewport hack for Surface/desktop Windows 8 bug -->
 Google Analytics -->
    
   <script>
+
     (function(i, s, o, g, r, a, m) {
       i['GoogleAnalyticsObject'] = r;
       i[r] = i[r] || function() {
