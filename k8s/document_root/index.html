@@ -170,6 +170,12 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
       of the most popular examples. For example, if you had a webserver with the IP address 52.0.56.137, you could
       obtain a TLS certificate for "52.0.56.137.sslip.io", or "www.52.0.56.137.sslip.io", or
       "prod.www-52-0-56-137.sslip.io".</p>
+      <div class="alert alert-warning" role="alert">
+        <b>2021-02-12 Let's Encrypt Rate Limits</b> If your request for an "sslip.io" certificate is <a href=
+        "https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please open a <a href=
+        "https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and we'll request a rate-limit
+        increase.
+      </div>
       <p>If you have procured a wildcard certificate for your branded / white label / custom sslip.io-style subdomain,
       you may install it on your machines for TLS-verified connections.</p>
       <div class="alert alert-warning" data-role="alert">
