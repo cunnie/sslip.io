@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sslip.io
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sslip.io
+  template:
+    metadata:
+      name: sslip.io-pod
+      labels:
+        app: sslip.io
+    spec:
+      containers:
+      - name: sslip-container
+        image: cunnie/sslip.io-dns-server
+        ports:
+        - containerPort: 53
+          protocol: TCP
+        - containerPort: 53
+          protocol: UDP
+        resources:
+          requests:
+            memory: 16Mi
+        livenessProbe:
+          exec:
+            command:
+            - dig
+            - "@localhost"
+            - 127.0.0.1.sslip.io
+            - +short
+        readinessProbe:
+          exec:
+            command:
+            - dig
+            - "@localhost"
+            - 127.0.0.1.sslip.io
+            - +short
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sslip-io-nodeport-service # must be DNS-compliant
+spec:
+  type: NodePort
+  ports:
+  - protocol: UDP
+    name: dns-udp
+    port: 53
+    # targetPort: 53
+    nodePort: 32767
+  selector:
+    app: sslip.io
