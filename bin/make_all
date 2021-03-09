@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #
 # Build binaries for macOS, Windows, Linux, FreeBSD
 #
@@ -6,12 +6,13 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd $DIR/../src/sslip.io-dns-server
 
 export GOOS GOARCH
-for GOOS in darwin linux freebsd; do
-  for GOARCH in amd64; do
+# Bring in ARM64 for my AWS Graviton2 instance
+for GOARCH in amd64 arm64; do
+  for GOOS in darwin linux freebsd; do
     go build -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH main.go
   done
 done
 
-# Windows has a custom extension
+# Windows has a custom extension, can't do arm64 yet
 GOOS=windows GOARCH=amd64
 go build -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH.exe main.go
