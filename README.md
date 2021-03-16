@@ -79,3 +79,10 @@ following:
 ```
 2020/11/22 03:45:44 ::1.62302 TypeA 127.0.0.1.sslip.io. ? 127.0.0.1
 ```
+
+### Acknowledgements
+
+- Sam Stephenson (xip.io), Roopinder Singh (nip.io), and the other DNS developers out there
+- The contributors (@normanr, @jpambrun come to mind) who improved sslip.io
+- Jenessa Petersen of Let's Encrypt who bumped the rate limits
+- Natalia Ershova of JetBrains who provided a free license for [open source development](https://www.jetbrains.com/community/opensource/#support)
