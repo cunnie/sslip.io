@@ -13,6 +13,7 @@ spec:
       name: sslip.io-pod
       labels:
         app: sslip.io
+        iaas: aws
     spec:
       containers:
       - name: sslip-container
@@ -39,6 +40,8 @@ spec:
             - "@localhost"
             - 127.0.0.1.sslip.io
             - +short
+      nodeSelector:
+        iaas: aws
 ---
 apiVersion: v1
 kind: Service
@@ -51,6 +54,7 @@ spec:
     name: dns-udp
     port: 53
     # targetPort: 53
+    # dig @worker-3.nono.io 127.0.0.1.sslip.io +short -p 32767
     nodePort: 32767
   selector:
     app: sslip.io
