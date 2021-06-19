@@ -677,7 +677,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 	return dnsmessage.SOAResource{
 		NS:     name,
 		MBox:   mbox,
-		Serial: 2021011400,
+		Serial: 2021061900,
 		// cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
 		Retry:   900,
