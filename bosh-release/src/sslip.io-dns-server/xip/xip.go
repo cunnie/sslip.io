@@ -134,7 +134,7 @@ type Response struct {
 //   78.46.204.247.33654: TypeNS www.example.com ? NS
 //   78.46.204.247.33654: TypeSOA www.example.com ? SOA
 //   2600::.33654: TypeAAAA --1.sslip.io ? ::1
-func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, err error) {
+func QueryResponse(queryBytes []byte, sourceAddr net.IP) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
 	var p dnsmessage.Parser
 	var response = &Response{}
@@ -149,7 +149,7 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 		return nil, "", err
 	}
 	response.Header = ResponseHeader(queryHeader, dnsmessage.RCodeSuccess)
-	logMessage, err = processQuestion(q, response)
+	logMessage, err = processQuestion(q, response, sourceAddr)
 	if err != nil {
 		return nil, "", err
 	}
@@ -192,7 +192,7 @@ func QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, 
 	return responseBytes, logMessage, nil
 }
 
-func processQuestion(q dnsmessage.Question, response *Response) (logMessage string, _ error) {
+func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.IP) (logMessage string, _ error) {
 	var err error
 	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
 	if IsAcmeChallenge(q.Name.String()) { // thanks @NormanR
@@ -411,16 +411,8 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 			var txts []dnsmessage.TXTResource
 			txts = TXTResources(q.Name.String())
 			if len(txts) == 0 {
-				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
-				response.Authorities = append(response.Authorities,
-					func(b *dnsmessage.Builder) error {
-						if err = b.SOAResource(soaHeader, soaResource); err != nil {
-							return err
-						}
-						return nil
-					})
-				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+				// If there are no txt resources, return the source IP addr
+				txts = []dnsmessage.TXTResource{{TXT: []string{sourceAddr.String()}}}
 			}
 			response.Answers = append(response.Answers,
 				// 1 or more TXT records via Customizations
