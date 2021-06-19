@@ -71,7 +71,7 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup) {
 		}
 
 		go func() {
-			response, logMessage, err := xip.QueryResponse(query)
+			response, logMessage, err := xip.QueryResponse(query, addr.IP)
 			if err != nil {
 				log.Println(err.Error())
 				return
