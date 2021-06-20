@@ -203,6 +203,27 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
           local addresses.
         </li>
       </ul>
+      <h3 id="whatismyip">Determining Your External IP Address</h3>
+      <p>You can use sslip.io's DNS servers (ns-aws.nono.io, ns-azure.nono.io, ns-gce.nono.io) to determine your public
+      IP address by querying the `TXT` record of the root domain:</p>
+      <pre>
+dig @ns-aws.nono.io txt . +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
+dig @ns-aws.nono.io txt . +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
+dig @ns-aws.nono.io txt . +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
+      <p>This feature was inspired by Google's DNS lookup, i.e. <code>dig txt o-o.myaddr.l.google.com @8.8.8.8
+      +short</code>. There are also popular HTTP-based services for determining your public IP address:</p>
+      <ul>
+        <li>
+          <a href="http://icanhazip.com/">icanhazip.com</a> (<a href=
+          "https://major.io/2021/06/06/a-new-future-for-icanhazip/">backstory</a>)
+        </li>
+        <li>
+          <a href="https://ipify.org/">ipify.org</a>
+        </li>
+        <li>
+          <a href="https://ipinfo.io/">ipinfo.io (commercial)</a>
+        </li>
+      </ul>
       <hr>
       <h4 id="footnotes">Footnotes</h4>
       <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
@@ -229,16 +250,15 @@ Bootstrap core JavaScript ================================================== -->
 Placed at the end of the document so the pages load faster -->
   <!-- jQuery
 (necessary for Bootstrap's JavaScript plugins) -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script> <!--
-Latest compiled and minified JavaScript -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script> 
+  <!-- Latest compiled and minified JavaScript -->
    
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> <!--
-IE10 viewport hack for Surface/desktop Windows 8 bug -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> 
+  <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
    
   <script src=
   "https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script> 
-  <!--
-Google Analytics -->
+  <!-- Google Analytics -->
    
   <script>
 
