@@ -190,22 +190,10 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
       certificates for "sslip.io" subdomains, e.g. "*.52-0-56-137.sslip.io", is possible but more complicated. For
       those interested, the procedure is described <a href=
       "https://github.com/cunnie/sslip.io/blob/master/docs/wildcard.md">here</a>.</p>
-      <h3 id="related">Related Services</h3>
-      <ul>
-        <li>
-          <a href="http://xip.io/">xip.io</a>: the inspiration for sslip.io
-        </li>
-        <li>
-          <a href="http://nip.io">nip.io</a>: similar to xip.io, but the PowerDNS backend is written in elegant Python
-        </li>
-        <li>
-          <a href="https://github.com/Corollarium/localtls">localtls</a>: A DNS server + webserver to provide TLS to on
-          local addresses.
-        </li>
-      </ul>
-      <h3 id="whatismyip">Determining Your External IP Address</h3>
+      <h3 id="whatismyip">Determining Your External IP Address via DNS Lookup</h3>
       <p>You can use sslip.io's DNS servers (ns-aws.nono.io, ns-azure.nono.io, ns-gce.nono.io) to determine your public
-      IP address by querying the `TXT` record of the root domain:</p>
+      IP address by querying the `TXT` record of the root domain. We recommend querying `ns-aws.nono.io`, for it has
+      both IPv4 and IPv6 addresses:</p>
       <pre>
 dig @ns-aws.nono.io txt . +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
 dig @ns-aws.nono.io txt . +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
@@ -221,7 +209,20 @@ dig @ns-aws.nono.io txt . +short -6 # forces IPv6 lookup; sample reply "2607:fb9
           <a href="https://ipify.org/">ipify.org</a>
         </li>
         <li>
-          <a href="https://ipinfo.io/">ipinfo.io (commercial)</a>
+          <a href="https://ipinfo.io/">ipinfo.io</a> (commercial)
+        </li>
+      </ul>
+      <h3 id="related">Related Services</h3>
+      <ul>
+        <li>
+          <a href="http://xip.io/">xip.io</a>: the inspiration for sslip.io
+        </li>
+        <li>
+          <a href="http://nip.io">nip.io</a>: similar to xip.io, but the PowerDNS backend is written in elegant Python
+        </li>
+        <li>
+          <a href="https://github.com/Corollarium/localtls">localtls</a>: A DNS server + webserver to provide TLS to on
+          local addresses.
         </li>
       </ul>
       <hr>
@@ -261,7 +262,6 @@ Placed at the end of the document so the pages load faster -->
   <!-- Google Analytics -->
    
   <script>
-
     (function(i, s, o, g, r, a, m) {
       i['GoogleAnalyticsObject'] = r;
       i[r] = i[r] || function() {
