@@ -191,9 +191,10 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
       those interested, the procedure is described <a href=
       "https://github.com/cunnie/sslip.io/blob/master/docs/wildcard.md">here</a>.</p>
       <h3 id="whatismyip">Determining Your External IP Address via DNS Lookup</h3>
-      <p>You can use sslip.io's DNS servers (ns-aws.nono.io, ns-azure.nono.io, ns-gce.nono.io) to determine your public
-      IP address by querying the `TXT` record of the root domain. We recommend querying `ns-aws.nono.io`, for it has
-      both IPv4 and IPv6 addresses:</p>
+      <p>You can use sslip.io's DNS servers (<code>ns-aws.nono.io</code>, <code>ns-azure.nono.io</code>,
+      <code>ns-gce.nono.io</code>) to determine your public IP address by querying the <code>TXT</code> record of the
+      root domain. If you're curious about your public IPv6 address, use the DNS server <code>ns-aws.nono.io</code>,
+      for it has both IPv4 and IPv6 addresses:</p>
       <pre>
 dig @ns-aws.nono.io txt . +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
 dig @ns-aws.nono.io txt . +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
