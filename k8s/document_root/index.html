@@ -213,6 +213,11 @@ dig @ns-aws.nono.io txt . +short -6 # forces IPv6 lookup; sample reply "2607:fb9
           <a href="https://ipinfo.io/">ipinfo.io</a> (commercial)
         </li>
       </ul>
+      <p>A big advantage of using DNS queries instead of HTTP queries is bandwidth: querying
+      <code>ns-aws.nono.io</code> requires a mere 592 bytes spread over 2 packets; Querying <a href=
+      "https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over 14 times
+      as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
+      service.</p>
       <h3 id="related">Related Services</h3>
       <ul>
         <li>
