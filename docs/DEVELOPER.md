@@ -4,10 +4,10 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```zsh
-export OLD_VERSION=2.1.1
-export VERSION=2.1.2
+export OLD_VERSION=2.1.2
+export VERSION=2.2.0
 cd ~/go/src/github.com/cunnie/sslip.io
-git pull -r
+git pull -r --autostash
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html # update the download instructions on the website
 cd bosh-release/
 lpass show a # refresh LastPass token
@@ -35,7 +35,11 @@ echo protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.
 dig a _Acme-ChallengE.127-0-0-1.sslip.io @$IP | grep "^127"
 echo "127-0-0-1.sslip.io.	604800	IN	A	127.0.0.1"
 dig +short sSlIp.Io
-78.46.204.247
+echo 78.46.204.247
+dig @ns-aws.nono.io txt . +short | tr -d '"'
+curl curlmyip.org; echo
+git add -p
+git ci -vm"BOSH release: 2.2.0: TXT records return IP addrs"
 bosh upload-blobs
 bosh create-release \
   --final \
@@ -43,7 +47,7 @@ bosh create-release \
   --version ${VERSION}
 git add -N releases/ .final_builds/
 git add -p
-git ci -v  # BOSH release: 2.1.2: case-insensitive custom records matching
+git ci --amend
 git tag $VERSION
 git push
 git push --tags
