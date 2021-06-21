@@ -53,6 +53,9 @@ git push
 git push --tags
 cd ..
 bin/make_all
+scp bin/sslip.io-dns-server-linux-arm64 ns-aws:
+ssh ns-aws sudo install sslip.io-dns-server-linux-arm64 /usr/bin/sslip.io-dns-server
+ssh ns-aws sudo shutdown -r now
 ```
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
 - Drag and drop `~/Downloads/sslip.io-release-${VERSION}.tgz` to the _Attach
@@ -62,13 +65,16 @@ bin/make_all
 Prepare the BOSH release
 ```
 shasum ~/Downloads/sslip.io-release-${VERSION}.tgz
+lpass show a # refresh LastPass token so we don't get stuck next step
 z deployments
+git pull -r
 nvim sslip.io.yml
 bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
 dig 127-0-0-1.sslip.io +short  # output should be 127.0.0.1
 dig @ns-aws.nono.io ns _ACMe-chALLengE.127-0-0-1.ssLIP.iO +short # 127-0-0-1.ssLIP.iO.
+bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
 git add -p
-git ci -v -m"Bump sslip.io: $OLD_VERSION → $VERSION"
+git ci -v -m"Bump sslip.io BOSH release: $OLD_VERSION → $VERSION"
 git push
 popd
 ```
