@@ -90,6 +90,6 @@ sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/Dockerfile-sslip.io-dns-server
 docker build k8s/ -f k8s/Dockerfile-sslip.io-dns-server -t cunnie/sslip.io-dns-server:$VERSION -t cunnie/sslip.io-dns-server:latest
 docker push cunnie/sslip.io-dns-server -a
 git add -p
-git ci -m"Dockerfile: cunnie/sslip.io-dns-server → $VERSION"
+git ci -m"Dockerfile cunnie/sslip.io-dns-server: bump $OLD_VERSION → $VERSION"
 git push
 ```
