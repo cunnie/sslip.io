@@ -40,8 +40,6 @@ spec:
             - "@localhost"
             - 127.0.0.1.sslip.io
             - +short
-      nodeSelector:
-        iaas: aws
 ---
 apiVersion: v1
 kind: Service
