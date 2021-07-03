@@ -7,13 +7,12 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      app: sslip.io
+      app: sslip.io-dns
   template:
     metadata:
       name: sslip.io-pod
       labels:
-        app: sslip.io
-        iaas: aws
+        app: sslip.io-dns
     spec:
       containers:
       - name: sslip-container
@@ -44,15 +43,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: sslip-io-nodeport-service # must be DNS-compliant
+  name: sslip-io-dns-service # must be DNS-compliant
 spec:
-  type: NodePort
   ports:
   - protocol: UDP
     name: dns-udp
     port: 53
-    # targetPort: 53
     # dig @worker-3.nono.io 127.0.0.1.sslip.io +short -p 32767
-    nodePort: 32767
+    # targetPort: 53
   selector:
-    app: sslip.io
+    app: sslip.io-dns
