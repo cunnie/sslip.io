@@ -32,6 +32,7 @@ spec:
             - "@localhost"
             - 127.0.0.1.sslip.io
             - +short
+          periodSeconds: 3600
         readinessProbe:
           exec:
             command:
