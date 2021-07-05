@@ -44,7 +44,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: sslip-io-dns-service # must be DNS-compliant
+  name: sslip-io-dns-cluster # must be DNS-compliant
 spec:
   ports:
   - protocol: UDP
@@ -52,5 +52,23 @@ spec:
     port: 53
     # dig @worker-3.nono.io 127.0.0.1.sslip.io +short -p 32767
     # targetPort: 53
+  selector:
+    app: sslip.io-dns
+---
+# Source: ingress-nginx/templates/controller-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sslip-io-dns
+  namespace: default
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  loadBalancerIP: 34.70.157.237
+  ports:
+  - name: dns
+    port: 53
+    protocol: UDP
+    targetPort: 53
   selector:
     app: sslip.io-dns
