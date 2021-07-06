@@ -19,8 +19,6 @@ spec:
         image: cunnie/sslip.io-dns-server
         ports:
         - containerPort: 53
-          protocol: TCP
-        - containerPort: 53
           protocol: UDP
         resources:
           requests:
@@ -64,7 +62,7 @@ metadata:
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
-  loadBalancerIP: 34.70.157.237
+  loadBalancerIP: 104.155.144.4
   ports:
   - name: dns
     port: 53
