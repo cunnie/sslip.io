@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: sslip.io
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: sslip.io-dns
@@ -30,14 +30,7 @@ spec:
             - "@localhost"
             - 127.0.0.1.sslip.io
             - +short
-          periodSeconds: 3600
-        readinessProbe:
-          exec:
-            command:
-            - dig
-            - "@localhost"
-            - 127.0.0.1.sslip.io
-            - +short
+          periodSeconds: 300
 ---
 apiVersion: v1
 kind: Service
