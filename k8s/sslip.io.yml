@@ -31,6 +31,47 @@ spec:
             - 127.0.0.1.sslip.io
             - +short
           periodSeconds: 300
+# NTP
+# Thank you https://goglides.io/manage-ntp-using-kubernetes/90/
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: sslip.io-ntp
+spec:
+  selector:
+    matchLabels:
+      app: sslip.io-ntp
+  template:
+    metadata:
+      labels:
+        app: sslip.io-ntp
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: sslip-io-ntp
+        image: cunnie/sslip.io-ntp
+        resources:
+          limits:
+            memory: 20Mi
+            cpu: 20m
+          requests:
+            cpu: 10m
+            memory: 10Mi
+        securityContext:
+          privileged: true
+        env:
+        - name: NTP_CONF_FILE
+          value: /app/ntpd.conf
+        volumeMounts:
+        - name: ntp-config
+          mountPath: /app/
+      volumes:
+      - name: ntp-config
+        configMap:
+          name: ntp-config
 ---
 apiVersion: v1
 kind: Service
@@ -42,11 +83,23 @@ spec:
     name: dns-udp
     port: 53
     # dig @worker-3.nono.io 127.0.0.1.sslip.io +short -p 32767
-    # targetPort: 53
   selector:
     app: sslip.io-dns
 ---
-# Source: ingress-nginx/templates/controller-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sslip-io-ntp-cluster # must be DNS-compliant
+spec:
+  ports:
+  - protocol: UDP
+    name: ntp-udp
+    port: 123
+    # ntpdate ( LoadBalancer IP | Cluster IP | Pod IP )
+    # sntp ( LoadBalancer IP | Cluster IP | Pod IP )
+  selector:
+    app: sslip.io-ntp
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -63,3 +116,34 @@ spec:
     targetPort: 53
   selector:
     app: sslip.io-dns
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sslip-io-ntp
+  namespace: default
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  loadBalancerIP: 104.155.144.4
+  ports:
+  - name: ntp
+    port: 123
+    protocol: UDP
+    targetPort: 123
+  selector:
+    app: sslip.io-ntp
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ntp-config
+data:
+  ntpd.conf: |
+    # This is a config file for OpenNTPD, not NTP, nor chrony, nor NTPsec
+    listen on *
+    # Our upstream timekeepers; thank you Google
+    server time1.google.com
+    server time2.google.com
+    server time3.google.com
+    server time4.google.com
