@@ -31,35 +31,6 @@ spec:
             - 127.0.0.1.sslip.io
             - +short
           periodSeconds: 300
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: sslip.io-nginx
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: sslip.io-nginx
-  template:
-    metadata:
-      name: sslip.io-nginx-pod
-      labels:
-        app: sslip.io-nginx
-    spec:
-      containers:
-      - name: sslip-nginx-container
-        image: cunnie/sslip.io-nginx
-        ports:
-        - containerPort: 80
-          protocol: TCP
-        resources:
-          requests:
-            memory: 32Mi
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 80
 # NTP
 # Thank you https://goglides.io/manage-ntp-using-kubernetes/90/
 ---
@@ -102,6 +73,35 @@ spec:
         configMap:
           name: ntp-config
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sslip.io-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sslip.io-nginx
+  template:
+    metadata:
+      name: sslip.io-nginx
+      labels:
+        app: sslip.io-nginx
+    spec:
+      containers:
+      - name: sslip-nginx-container
+        image: cunnie/sslip.io-nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            memory: 32Mi
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -109,7 +109,6 @@ metadata:
 spec:
   ports:
   - protocol: UDP
-    name: dns-udp
     port: 53
     # dig @worker-3.nono.io 127.0.0.1.sslip.io +short -p 32767
   selector:
@@ -122,12 +121,21 @@ metadata:
 spec:
   ports:
   - protocol: UDP
-    name: ntp-udp
     port: 123
     # ntpdate ( LoadBalancer IP | Cluster IP | Pod IP )
     # sntp ( LoadBalancer IP | Cluster IP | Pod IP )
   selector:
     app: sslip.io-ntp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sslip-io-nginx-cluster
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: sslip.io-nginx
 ---
 apiVersion: v1
 kind: Service
