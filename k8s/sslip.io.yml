@@ -183,7 +183,7 @@ spec:
   - hosts:
     - 104-155-144-4.sslip.io
     - 104.155.144.4.sslip.io
-    secretName: quickstart-sslip.io-tls
+    secretName: 104-155-144-4.sslip.io
   rules:
   - host: 104-155-144-4.sslip.io
     http:
