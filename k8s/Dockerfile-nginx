@@ -20,7 +20,7 @@ LABEL maintainer="brian.cunnie@gmail.com"
 
 RUN dnf install -y iproute bind-utils neovim
 
-RUN dnf install -y procps-ng nmap-ncat net-tools lsof
+RUN dnf install -y procps-ng nmap-ncat net-tools lsof less
 
 RUN dnf install -y nginx
 
