@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: sslip.io
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: sslip.io-dns
@@ -78,7 +78,7 @@ kind: Deployment
 metadata:
   name: sslip.io-nginx
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: sslip.io-nginx
