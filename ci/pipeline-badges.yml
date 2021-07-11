@@ -25,7 +25,7 @@ jobs:
         source:
           repository: fedora
       run:
-        path: true
+        path: "true"
 - name: failing
   # `false` always fails
   plan:
@@ -37,7 +37,7 @@ jobs:
         source:
           repository: fedora
       run:
-        path: false
+        path: "false"
 - name: unknown
   # never run this job and it will always be "unknown"
   plan:
