@@ -115,14 +115,14 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@localhost example.com srv +short",
 				`\A\z`,
 				`TypeSRV example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2021061900 900 900 1800 300\n$`),
-			Entry("TXT is the querier's IP address when there are no custom/acme records",
-				"@localhost example.com txt +short -4",
+			Entry("TXT is the querier's IPv4 address when there are no custom/acme records",
+				"@127.0.0.1 ip. txt +short",
 				`127.0.0.1`,
-				`TypeTXT example.com. \? \["127.0.0.1"\]`),
-			Entry("TXT is the querier's IP address when there are no custom/acme records",
-				"@localhost example.com txt +short -6",
+				`TypeTXT ip\. \? \["127.0.0.1"\]`),
+			Entry("TXT is the querier's IPv6 address when there are no custom/acme records",
+				"@::1 ip. txt +short",
 				`::1`,
-				`TypeTXT example.com. \? \["::1"\]`),
+				`TypeTXT ip\. \? \["::1"\]`),
 		)
 	})
 	Describe("for more complex assertions", func() {
