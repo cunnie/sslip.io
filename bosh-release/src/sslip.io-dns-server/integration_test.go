@@ -26,7 +26,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		serverCmd = exec.Command(serverPath)
 		serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
-		// If you get a "listen udp :53: bind: address already in use" and you're on Linux, enter
 		// "sudo systemctl sudo systemctl stop systemd-resolved" and then try again
 		// TODO: bind to unprivileged port (NOT 53) for non-macOS users (e.g. port 35353)
 		Expect(err).ToNot(HaveOccurred())
@@ -57,6 +56,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession, 1).Should(Exit(0))
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(digResults))
 				Eventually(serverSession.Err).Should(Say(serverLogMessage))
+				Expect(digSession).Should(Exit())
 			},
 			Entry("A (customized) for sslip.io",
 				"@localhost sslip.io +short",
