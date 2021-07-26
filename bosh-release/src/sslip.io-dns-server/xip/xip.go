@@ -82,6 +82,15 @@ var (
 				{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},                        // Sender Policy Framework
 			},
 		},
+		// a global nameserver for sslip.io, a conglomeration of ns-{aws,azure,gce}.nono.io
+		"ns.sslip.io.": {
+			A: []dnsmessage.AResource{
+				{A: [4]byte{52, 0, 56, 137}},
+				{A: [4]byte{52, 187, 42, 158}},
+				{A: [4]byte{104, 155, 144, 4}},
+			},
+			AAAA: []dnsmessage.AAAAResource{{AAAA: [16]byte{0x26, 0, 0x1f, 0x18, 0x0a, 0xaf, 0x69, 0, 0, 0, 0, 0, 0, 0, 0, 0xa}}},
+		},
 		// nameserver addresses; we get queries for those every once in a while
 		"ns-aws.nono.io.": {
 			A:    []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}},
