@@ -126,6 +126,28 @@ var _ = Describe("sslip.io-dns-server", func() {
 		)
 	})
 	Describe("for more complex assertions", func() {
+		When("ns.sslip.io is queried", func() {
+			It("returns all the A records", func() {
+				digArgs = "@localhost ns.sslip.io +short"
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`52.0.56.137`))
+				Eventually(digSession).Should(Say(`52.187.42.158`))
+				Eventually(digSession).Should(Say(`104.155.144.4`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA ns.sslip.io. \? 52.0.56.137, 52.187.42.158, 104.155.144.4\n`))
+			})
+			It("returns all the AAAA records", func() {
+				digArgs = "@localhost aaaa ns.sslip.io +short"
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`2600:1f18:aaf:6900::a`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeAAAA ns.sslip.io. \? 2600:1f18:aaf:6900::a\n`))
+			})
+		})
 		When("there are multiple MX records returned (e.g. sslip.io)", func() {
 			It("returns all the records", func() {
 				digArgs = "@localhost sslip.io mx +short"
