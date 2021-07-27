@@ -118,10 +118,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 ip. txt +short",
 				`127.0.0.1`,
 				`TypeTXT ip\. \? \["127.0.0.1"\]`),
-			Entry("TXT is the querier's IPv6 address when there are no custom/acme records",
-				"@::1 ip. txt +short",
-				`::1`,
-				`TypeTXT ip\. \? \["::1"\]`),
 		)
 	})
 	Describe("for more complex assertions", func() {
