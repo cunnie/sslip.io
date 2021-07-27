@@ -56,7 +56,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession, 1).Should(Exit(0))
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(digResults))
 				Eventually(serverSession.Err).Should(Say(serverLogMessage))
-				Expect(digSession).Should(Exit())
 			},
 			Entry("A (customized) for sslip.io",
 				"@localhost sslip.io +short",
@@ -126,6 +125,21 @@ var _ = Describe("sslip.io-dns-server", func() {
 		)
 	})
 	Describe("for more complex assertions", func() {
+		When("our test is run on a machine which has IPv6", func() {
+			cmd := exec.Command("ping6", "-c", "1", "::1")
+			err := cmd.Run() // if the command succeeds, we have IPv6
+			if err == nil {
+				It("returns a TXT of the querier's IPv6 address when there are no custom/acme records", func() {
+					digCmd = exec.Command("dig", "@::1", "ip.", "txt", "+short")
+					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(digSession, 1).Should(Exit(0))
+					Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`::1`))
+					Eventually(serverSession.Err).Should(Say(`TypeTXT ip\. \? \["::1"\]`))
+					Expect(digSession).To(Exit())
+				})
+			}
+		})
 		When("ns.sslip.io is queried", func() {
 			It("returns all the A records", func() {
 				digArgs = "@localhost ns.sslip.io +short"
