@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-// DomainCustomization are values that are returned for specific queries.
+// DomainCustomization is a value that is returned for a specific query.
 // The map key is the the domain in question, e.g. "sslip.io." (always include trailing dot).
 // For example, when querying for MX records for "sslip.io", return the protonmail servers,
 // but when querying for MX records for generic queries, e.g. "127.0.0.1.sslip.io", return the
@@ -41,7 +41,7 @@ var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`)
-	ipDomainRE       = regexp.MustCompile(`ip\.$`)
+	ipDomainRE       = regexp.MustCompile(`(^|\.)ip\.$`)
 	nsAws, _         = dnsmessage.NewName("ns-aws.nono.io.")
 	nsAzure, _       = dnsmessage.NewName("ns-azure.nono.io.")
 	nsGce, _         = dnsmessage.NewName("ns-gce.nono.io.")
