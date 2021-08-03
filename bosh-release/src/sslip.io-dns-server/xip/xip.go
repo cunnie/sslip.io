@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-// DomainCustomizations are values that are returned for specific queries.
+// DomainCustomization are values that are returned for specific queries.
 // The map key is the the domain in question, e.g. "sslip.io." (always include trailing dot).
 // For example, when querying for MX records for "sslip.io", return the protonmail servers,
 // but when querying for MX records for generic queries, e.g. "127.0.0.1.sslip.io", return the
@@ -41,6 +41,7 @@ var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`)
+	ipDomainRE       = regexp.MustCompile(`ip\.$`)
 	nsAws, _         = dnsmessage.NewName("ns-aws.nono.io.")
 	nsAzure, _       = dnsmessage.NewName("ns-azure.nono.io.")
 	nsGce, _         = dnsmessage.NewName("ns-gce.nono.io.")
@@ -419,8 +420,8 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 			}
 			var txts []dnsmessage.TXTResource
 			txts = TXTResources(q.Name.String())
-			if len(txts) == 0 {
-				// If there are no txt resources, return the source IP addr
+			if len(txts) == 0 && ipDomainRE.MatchString(q.Name.String()) {
+				// If there are no custom txt resources & TLD is `ip.`, return the source IP addr
 				txts = []dnsmessage.TXTResource{{TXT: []string{sourceAddr.String()}}}
 			}
 			response.Answers = append(response.Answers,
@@ -449,6 +450,9 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 					logMessageTXTs = append(logMessageTXTs, TXTstring)
 				}
 				logMessageTXTss = append(logMessageTXTss, `["`+strings.Join(logMessageTXTs, `", "`)+`"]`)
+			}
+			if len(logMessageTXTss) == 0 {
+				return logMessage + "nil, SOA " + soaLogMessage(SOAResource(q.Name)), nil
 			}
 			return logMessage + strings.Join(logMessageTXTss, ", "), nil
 		}
@@ -686,7 +690,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 	return dnsmessage.SOAResource{
 		NS:     name,
 		MBox:   mbox,
-		Serial: 2021061900,
+		Serial: 2021080200,
 		// cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
 		Retry:   900,
