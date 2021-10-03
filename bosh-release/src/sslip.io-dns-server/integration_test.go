@@ -26,22 +26,17 @@ var _ = Describe("sslip.io-dns-server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		serverCmd = exec.Command(serverPath)
 		serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
-		// "sudo systemctl sudo systemctl stop systemd-resolved" and then try again
 		// TODO: bind to unprivileged port (NOT 53) for non-macOS users (e.g. port 35353)
 		Expect(err).ToNot(HaveOccurred())
-		time.Sleep(455 * time.Millisecond) // takes 0.455s to start up on macOS Big Sur 4-core Xeon
+		// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)
+		// takes 1.312s to start up on macOS Big Sur 2.0GHz quad-core 10th-generation Intel Core i5 processor (2020 13" MacBook Pro)
+		// round up to 3 seconds to account for slow machines
+		time.Sleep(3 * time.Second) // takes 0.455s to start up on macOS Big Sur 4-core Xeon
 	})
 
 	AfterSuite(func() {
 		serverSession.Terminate()
 		Eventually(serverSession).Should(Exit())
-	})
-
-	JustBeforeEach(func() {
-		args := strings.Split(digArgs, " ")
-		digCmd = exec.Command("dig", args...)
-		digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("Integration tests", func() {
