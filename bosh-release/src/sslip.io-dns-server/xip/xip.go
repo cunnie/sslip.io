@@ -14,7 +14,7 @@ import (
 )
 
 // DomainCustomization is a value that is returned for a specific query.
-// The map key is the the domain in question, e.g. "sslip.io." (always include trailing dot).
+// The map key is the domain in question, e.g. "sslip.io." (always include trailing dot).
 // For example, when querying for MX records for "sslip.io", return the protonmail servers,
 // but when querying for MX records for generic queries, e.g. "127.0.0.1.sslip.io", return the
 // default (which happens to be no MX records).
@@ -51,12 +51,17 @@ var (
 		{NS: nsGce},
 	}
 
-	mbox, _        = dnsmessage.NewName("briancunnie.gmail.com.")
-	mx1, _         = dnsmessage.NewName("mail.protonmail.ch.")
-	mx2, _         = dnsmessage.NewName("mailsec.protonmail.ch.")
-	dkim1, _       = dnsmessage.NewName("protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
-	dkim2, _       = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
-	dkim3, _       = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	mbox, _  = dnsmessage.NewName("briancunnie.gmail.com.")
+	mx1, _   = dnsmessage.NewName("mail.protonmail.ch.")
+	mx2, _   = dnsmessage.NewName("mailsec.protonmail.ch.")
+	dkim1, _ = dnsmessage.NewName("protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	dkim2, _ = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	dkim3, _ = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+
+	VersionSemantic = "dev"
+	VersionDate     = "today"
+	VersionGitHash  = "xxx"
+
 	Customizations = DomainCustomizations{
 		"sslip.io.": {
 			A: []dnsmessage.AResource{
@@ -113,6 +118,13 @@ var (
 		"protonmail3._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
 				CNAME: dkim3,
+			},
+		},
+		"version.sslip.io.": {
+			TXT: []dnsmessage.TXTResource{
+				{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
+				{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
+				{TXT: []string{VersionGitHash}},  // e.g. "9339c0d"
 			},
 		},
 	}

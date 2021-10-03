@@ -6,9 +6,12 @@ they might not make sense unless you're on my workstation.
 ```zsh
 export OLD_VERSION=2.1.2
 export VERSION=2.2.0
-cd ~/go/src/github.com/cunnie/sslip.io
+cd ~/workspace/sslip.io
 git pull -r --autostash
-sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html # update the download instructions on the website
+# update the version number for the TXT record for version.sslip.io
+sed -i '' "s/$OLD_VERSION/$VERSION/g" bin/make_all
+# update the download instructions on the website
+sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html
 cd bosh-release/
 lpass show a # refresh LastPass token
 . ~/workspace/deployments/.envrc # set BOSH auth

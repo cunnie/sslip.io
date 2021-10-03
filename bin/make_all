@@ -4,12 +4,18 @@
 #
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd $DIR/../src/sslip.io-dns-server
-
+ldflags="-X xip/xip.VersionSemantic=2.2.0 \
+         -X xip/xip.VersionDate=$(date +%Y/%m/%d-%H:%M:%S%z) \
+         -X xip/xip.VersionGitHash=$(git rev-parse --short HEAD)"
 export GOOS GOARCH
+
 # Bring in ARM64 for my AWS Graviton2 instance
 for GOARCH in amd64 arm64; do
   for GOOS in darwin linux freebsd; do
-    go build -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH main.go
+    go build \
+      -ldflags="$ldflags" \
+      -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH \
+      main.go
   done
 done
 
