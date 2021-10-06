@@ -14,9 +14,11 @@ spec:
       labels:
         app: sslip.io-dns
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: sslip-container
-        image: cunnie/sslip.io-dns-server
+        image: cunnie/sslip.io-dns-server:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 53
           protocol: UDP
