@@ -61,6 +61,7 @@ git ci --amend
 git tag $VERSION
 git push
 git push --tags
+bosh upload-release
 cd ..
 bin/make_all
 scp bin/sslip.io-dns-server-linux-arm64 ns-aws:
@@ -71,6 +72,7 @@ ssh ns-aws sudo shutdown -r now
 - Drag and drop `~/Downloads/sslip.io-release-${VERSION}.tgz` to the _Attach
   binaries..._ section
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
+- Drag and drop the BOSH release in `~/Downloads/` to the _Attach binaries..._ section.
 
 Prepare the BOSH release
 ```
@@ -80,9 +82,8 @@ z deployments
 git pull -r
 nvim sslip.io.yml
 bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
-dig 127-0-0-1.sslip.io +short  # output should be 127.0.0.1
-dig @ns-aws.nono.io ns _ACMe-chALLengE.127-0-0-1.ssLIP.iO +short # 127-0-0-1.ssLIP.iO.
-bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
+dig @ns-azure 127-0-0-1.sslip.io +short  # output should be 127.0.0.1
+dig @ns-azure.nono.io txt version.sslip.io
 git add -p
 git ci -v -m"Bump sslip.io BOSH release: $OLD_VERSION → $VERSION"
 git push
