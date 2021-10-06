@@ -103,4 +103,5 @@ docker push cunnie/sslip.io-dns-server -a
 git add -p
 git ci -m"Dockerfile cunnie/sslip.io-dns-server: bump $OLD_VERSION → $VERSION"
 git push
+kubectl rollout restart deployment/sslip.io
 ```
