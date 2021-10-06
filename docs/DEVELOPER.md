@@ -4,14 +4,19 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```zsh
-export OLD_VERSION=2.1.2
-export VERSION=2.2.0
+export OLD_VERSION=2.2.0
+export VERSION=2.2.1
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.sslip.io
-sed -i '' "s/$OLD_VERSION/$VERSION/g" bin/make_all
+sed -i '' "s/$OLD_VERSION/$VERSION/g" \
+  bin/make_all \
+  bosh-release/packages/sslip.io-dns-server/packaging
 # update the download instructions on the website
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/document_root/index.html
+# update the git hash for the TXT record for version.sslip.io for BOSH release
+sed -i '' "s/VersionGitHash=[0-9a-fA-F]*/VersionGitHash=$(git rev-parse --short HEAD)/g" \
+  bosh-release/packages/sslip.io-dns-server/packaging
 cd bosh-release/
 lpass show a # refresh LastPass token
 . ~/workspace/deployments/.envrc # set BOSH auth
@@ -20,7 +25,7 @@ bosh create-release --force
 bosh upload-release
 bosh -n -d sslip.io-dns-server deploy ~/workspace/deployments/sslip.io-dns-server.yml --recreate
 bosh instances # record the IP address of the instance
-IP=10.0.250.22
+IP=10.0.250.3
 dig +short 127.0.0.1.example.com @$IP
 echo 127.0.0.1
 dig +short ns example.com @$IP
@@ -41,6 +46,8 @@ dig +short sSlIp.Io
 echo 78.46.204.247
 dig @ns-aws.nono.io txt . +short | tr -d '"'
 curl curlmyip.org; echo
+dig @$IP txt version.sslip.io +short | grep $VERSION
+echo "\"$VERSION\""
 git add -p
 git ci -vm"BOSH release: 2.2.0: TXT records return IP addrs"
 bosh upload-blobs
