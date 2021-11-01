@@ -113,11 +113,11 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 version.sslip.io txt +short",
 				`\A"dev"\n"today"\n"xxx"\n\z`,
 				`TypeTXT version.sslip.io. \? \["dev"\], \["today"\], \["xxx"\]`),
-			Entry(`TXT is the querier's IPv4 address and the TLD is "ip."`,
-				"@127.0.0.1 blah.blah.ip txt +short",
+			Entry(`TXT is the querier's IPv4 address and the domain "ip.sslip.io"`,
+				"@127.0.0.1 ip.sslip.io txt +short",
 				`127.0.0.1`,
-				`TypeTXT blah.blah.ip. \? \["127.0.0.1"\]`),
-			Entry(`TXT is the querier's IPv4 address and the TLD is NOT "ip."`,
+				`TypeTXT ip.sslip.io. \? \["127.0.0.1"\]`),
+			Entry(`TXT is the querier's IPv4 address and the domain is NOT "ip.sslip.io"`,
 				"@127.0.0.1 example.com txt +short",
 				`\A\z`,
 				`TypeTXT example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2021080200 900 900 1800 300\n$`),
@@ -128,13 +128,13 @@ var _ = Describe("sslip.io-dns-server", func() {
 			cmd := exec.Command("ping6", "-c", "1", "::1")
 			err := cmd.Run() // if the command succeeds, we have IPv6
 			if err == nil {
-				It("returns a TXT of the querier's IPv6 address when there are no custom/acme records", func() {
-					digCmd = exec.Command("dig", "@::1", "ip.", "txt", "+short")
+				It("returns a TXT of the querier's IPv6 address when querying ip.sslip.io", func() {
+					digCmd = exec.Command("dig", "@::1", "ip.sslip.io", "txt", "+short")
 					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(digSession, 1).Should(Exit(0))
 					Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`::1`))
-					Eventually(serverSession.Err).Should(Say(`TypeTXT ip\. \? \["::1"\]`))
+					Eventually(serverSession.Err).Should(Say(`TypeTXT ip\.sslip\.io\. \? \["::1"\]`))
 					Expect(digSession).To(Exit())
 				})
 			}
