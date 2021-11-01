@@ -50,7 +50,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       "https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/dns-servers/badge" alt="ci.nono.io"></a> <sup><a href=
       "#status" class="alert-link">[Status]</a></sup></p>
       <p><em>sslip.io</em> is a DNS (<a href="https://en.wikipedia.org/wiki/Domain_Name_System">Domain Name System</a>)
-      service that, when queried with a hostname with an embedded IP address, returns that IP Address. It was inspired
+      service that, when queried with a hostname with an embedded IP address, returns that IP address. It was inspired
       by <a href="http://xip.io">xip.io</a>, which was created by <a href="https://github.com/sstephenson">Sam
       Stephenson</a>.</p>
       <div class="alert alert-success" role="alert">
@@ -160,7 +160,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       example, we install & run our server within a docker container:</p>
       <pre>
 docker run -it --rm fedora
-curl -L https://github.com/cunnie/sslip.io/releases/download/2.2.1/sslip.io-dns-server-linux-amd64 -o dns-server
+curl -L https://github.com/cunnie/sslip.io/releases/download/2.2.2/sslip.io-dns-server-linux-amd64 -o dns-server
 chmod +x dns-server
 ./dns-server 2&gt; dns-server.log &
 dnf install -y bind-utils
@@ -190,15 +190,21 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
       <p>if you're interested in acquiring a wildcard certificate for your sslip.io domain, e.g.
       "*.52-0-56-137.sslip.io", the procedure is described <a href=
       "https://github.com/cunnie/sslip.io/blob/master/docs/wildcard.md">here</a>.</p>
-      <h3 id="whatismyip">Determining Your External IP Address via DNS Lookup</h3>
+      <h3 id="experimental">Experimental Features</h3>
+      <p>Experimental features can change; don't depend on them.</p>
+      <h4 id="whatismyip">Determining Your External IP Address via DNS Lookup</h4>
       <p>You can use sslip.io's DNS servers (<code>ns-aws.nono.io</code>, <code>ns-azure.nono.io</code>,
-      <code>ns-gce.nono.io</code>) to determine your public IP address by querying the <code>TXT</code> record of the
-      root domain. If you're curious about your public IPv6 address, use the DNS server <code>ns-aws.nono.io</code>,
-      for it has both IPv4 and IPv6 addresses:</p>
+      <code>ns-gce.nono.io</code>) to determine your public IP address by querying the <code>TXT</code> record of
+      <code>ip.sslip.io</code>. If you're curious about your public IPv6 address, use the DNS server
+      <code>ns-aws.nono.io</code>, for it has both IPv4 and IPv6 addresses:</p>
       <pre>
-dig @ns-aws.nono.io txt . +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
-dig @ns-aws.nono.io txt . +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
-dig @ns-aws.nono.io txt . +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
+dig @ns-aws.nono.io txt ip.sslip.io +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
+dig @ns-aws.nono.io txt ip.sslip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
+dig @ns-aws.nono.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
+      <div class="alert alert-warning" role="alert">
+        When querying for your IP address, always <b>include the sslip.io nameserver</b> (e.g. <i>@ns-aws.nono.io</i>).
+        If omitted, you won't get your IP address; instead, you'll get the IP address of your upstream nameserver.
+      </div>
       <p>This feature was inspired by Google's DNS lookup, i.e. <code>dig txt o-o.myaddr.l.google.com @8.8.8.8
       +short</code>. There are also popular HTTP-based services for determining your public IP address:</p>
       <ul>
@@ -227,6 +233,17 @@ dig @ns-aws.nono.io txt . +short -6 # forces IPv6 lookup; sample reply "2607:fb9
       "https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over 14 times
       as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
       service.</p>
+      <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
+      sslip.io software by querying the TXT record of <code>version.sslip.io</code>:
+      <pre>
+dig @ns-aws.nono.io txt version.sslip.io +short
+            "2.2.1"
+            "2021/10/06-05:17:18-0700"
+            "7bef649"
+</pre>
+      <p>The first number, ("2.2.1"), is the version of the sslip.io DNS software, and is most relevant. The other two
+      numbers are the date compiled and the most recent git hash, but those values can differ across servers due to the
+      manner in which the software is deployed.</p>
       <h3 id="related">Related Services</h3>
       <ul>
         <li>

@@ -26,7 +26,9 @@ type DomainCustomization struct {
 	AAAA  []dnsmessage.AAAAResource
 	CNAME dnsmessage.CNAMEResource
 	MX    []dnsmessage.MXResource
-	TXT   []dnsmessage.TXTResource
+	TXT   func(string) ([]dnsmessage.TXTResource, error)
+	// Unlike the other record types, TXT is a function in order to enable more complex behavior
+	// e.g. IP address of the query's source
 }
 
 type DomainCustomizations map[string]DomainCustomization
@@ -41,7 +43,6 @@ var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`)
-	ipDomainRE       = regexp.MustCompile(`(^|\.)ip\.$`)
 	nsAws, _         = dnsmessage.NewName("ns-aws.nono.io.")
 	nsAzure, _       = dnsmessage.NewName("ns-azure.nono.io.")
 	nsGce, _         = dnsmessage.NewName("ns-gce.nono.io.")
@@ -80,12 +81,14 @@ var (
 					MX:   mx2,
 				},
 			},
-			// Although multiple TXT records with multiple strings are allowed, we're sticking
-			// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
-			// and that's what google.com does.
-			TXT: []dnsmessage.TXTResource{
-				{TXT: []string{"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"}}, // ProtonMail verification; don't delete
-				{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},                        // Sender Policy Framework
+			TXT: func(_ string) ([]dnsmessage.TXTResource, error) {
+				// Although multiple TXT records with multiple strings are allowed, we're sticking
+				// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
+				// and that's what google.com does.
+				return []dnsmessage.TXTResource{
+					{TXT: []string{"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"}}, // ProtonMail verification; don't delete
+					{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},
+				}, nil // Sender Policy Framework
 			},
 		},
 		// a global nameserver for sslip.io, a conglomeration of ns-{aws,azure,gce}.nono.io
@@ -120,11 +123,17 @@ var (
 				CNAME: dkim3,
 			},
 		},
+		// Special-purpose TXT records
+		"ip.sslip.io.": {
+			TXT: ipSslipIo,
+		},
 		"version.sslip.io.": {
-			TXT: []dnsmessage.TXTResource{
-				{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
-				{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
-				{TXT: []string{VersionGitHash}},  // e.g. "9339c0d"
+			TXT: func(_ string) ([]dnsmessage.TXTResource, error) {
+				return []dnsmessage.TXTResource{
+					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
+					{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
+					{TXT: []string{VersionGitHash}},  // e.g. "9339c0d"
+				}, nil
 			},
 		},
 	}
@@ -214,8 +223,7 @@ func QueryResponse(queryBytes []byte, sourceAddr net.IP) (responseBytes []byte, 
 	return responseBytes, logMessage, nil
 }
 
-func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.IP) (logMessage string, _ error) {
-	var err error
+func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.IP) (logMessage string, err error) {
 	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
 	if IsAcmeChallenge(q.Name.String()) { // thanks @NormanR
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
@@ -431,10 +439,9 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 				return logMessage + "nil, NS " + strings.Join(logMessages, ", "), nil
 			}
 			var txts []dnsmessage.TXTResource
-			txts = TXTResources(q.Name.String())
-			if len(txts) == 0 && ipDomainRE.MatchString(q.Name.String()) {
-				// If there are no custom txt resources & TLD is `ip.`, return the source IP addr
-				txts = []dnsmessage.TXTResource{{TXT: []string{sourceAddr.String()}}}
+			txts, err = TXTResources(q.Name.String(), sourceAddr.String())
+			if err != nil {
+				return "", err
 			}
 			response.Answers = append(response.Answers,
 				// 1 or more TXT records via Customizations
@@ -680,11 +687,11 @@ func NSResources(fqdnString string) []dnsmessage.NSResource {
 }
 
 // TXTResources returns TXT records from Customizations
-func TXTResources(fqdnString string) []dnsmessage.TXTResource {
-	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok {
-		return domain.TXT
+func TXTResources(fqdn, querier string) ([]dnsmessage.TXTResource, error) {
+	if domain, ok := Customizations[strings.ToLower(fqdn)]; ok {
+		return domain.TXT(querier)
 	}
-	return nil
+	return nil, nil
 }
 
 func SOAAuthority(name dnsmessage.Name) (dnsmessage.ResourceHeader, dnsmessage.SOAResource) {
@@ -709,6 +716,11 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 		Expire:  1800,
 		MinTTL:  300,
 	}
+}
+
+// when TXT for "ip.sslip.io" is queried, return the IP address of the querier
+func ipSslipIo(sourceIP string) ([]dnsmessage.TXTResource, error) {
+	return []dnsmessage.TXTResource{{TXT: []string{sourceIP}}}, nil
 }
 
 // soaLogMessage returns an easy-to-read string for logging SOA Answers/Authorities
