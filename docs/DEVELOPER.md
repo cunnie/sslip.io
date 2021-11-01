@@ -74,7 +74,6 @@ ssh ns-aws sudo shutdown -r now
 - Drag and drop `~/Downloads/sslip.io-release-${VERSION}.tgz` to the _Attach
   binaries..._ section
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
-- Drag and drop the BOSH release in `~/Downloads/` to the _Attach binaries..._ section.
 
 Prepare the BOSH release
 ```
@@ -97,9 +96,8 @@ ssh nono.io
 curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/master/k8s/document_root/index.html
 exit
 ```
-Update the Dockefile with the new release:
+Update the Dockerfile with the new release:
 ```
-sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" k8s/Dockerfile-sslip.io-dns-server
 docker build k8s/ -f k8s/Dockerfile-sslip.io-dns-server -t cunnie/sslip.io-dns-server:$VERSION -t cunnie/sslip.io-dns-server:latest
 docker push cunnie/sslip.io-dns-server -a
 git add -p
