@@ -18,6 +18,7 @@ def get_whois_nameservers(domain)
 end
 
 domain = ENV['DOMAIN'] || 'example.com'
+sslip_version = '2.2.2'
 whois_nameservers = get_whois_nameservers(domain)
 
 describe domain do
@@ -97,6 +98,10 @@ describe domain do
 
     it "resolves 2601-646-100-69f0--24.#{domain}' to eq 2601:646:100:69f0::24)}" do
       expect(`dig +short AAAA 2601-646-100-69f0--24.#{domain} @#{whois_nameserver}`.chomp).to eq("2601:646:100:69f0::24")
+    end
+
+    it "gets the expected version number, #{sslip_version}" do
+      expect(`dig @#{whois_nameserver} TXT version.#{domain} +short`).to include(sslip_version)
     end
   end
   # check the website

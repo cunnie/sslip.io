@@ -11,7 +11,8 @@ git pull -r --autostash
 # update the version number for the TXT record for version.sslip.io
 sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   bin/make_all \
-  bosh-release/packages/sslip.io-dns-server/packaging
+  bosh-release/packages/sslip.io-dns-server/packaging \
+  spec/check-dns_spec.rb
 # update the download instructions on the website
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
   k8s/document_root/index.html \
