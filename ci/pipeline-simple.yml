@@ -20,7 +20,7 @@ jobs:
         source:
           repository: fedora
       run:
-        path: true
+        path: "true"
 
 - name: integration
   plan:
@@ -35,7 +35,7 @@ jobs:
         source:
           repository: fedora
       run:
-        path: false
+        path: "false"
 
 resources:
 - name: src
