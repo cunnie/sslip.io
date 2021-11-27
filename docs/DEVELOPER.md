@@ -85,7 +85,7 @@ git pull -r
 nvim sslip.io.yml
 bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
 dig @ns-azure 127-0-0-1.sslip.io +short  # output should be 127.0.0.1
-dig @ns-azure.nono.io txt version.sslip.io
+dig @ns-azure.nono.io txt version.sslip.io +short
 git add -p
 git ci -v -m"Bump sslip.io BOSH release: $OLD_VERSION → $VERSION"
 git push

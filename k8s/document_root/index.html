@@ -53,11 +53,6 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       service that, when queried with a hostname with an embedded IP address, returns that IP address. It was inspired
       by <a href="http://xip.io">xip.io</a>, which was created by <a href="https://github.com/sstephenson">Sam
       Stephenson</a>.</p>
-      <div class="alert alert-success" role="alert">
-        <b>2020-12-01 New Software!</b> We've replaced our original PowerDNS + Bash script backend with a customized
-        DNS server written in Golang. <a href="https://github.com/cunnie/sslip.io/issues/new/choose">Let us know</a> if
-        anything breaks.
-      </div>
       <p>Here are some examples:</p>
       <table class="table">
         <thead>
@@ -237,11 +232,11 @@ dig @ns-aws.nono.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply
       sslip.io software by querying the TXT record of <code>version.sslip.io</code>:
       <pre>
 dig @ns-aws.nono.io txt version.sslip.io +short
-            "2.2.1"
-            "2021/10/06-05:17:18-0700"
-            "7bef649"
+            "2.2.3"
+            "2021/11/27-11:35:50-0800"
+            "074f0a8"
 </pre>
-      <p>The first number, ("2.2.1"), is the version of the sslip.io DNS software, and is most relevant. The other two
+      <p>The first number, ("2.2.3"), is the version of the sslip.io DNS software, and is most relevant. The other two
       numbers are the date compiled and the most recent git hash, but those values can differ across servers due to the
       manner in which the software is deployed.</p>
       <h3 id="related">Related Services</h3>
