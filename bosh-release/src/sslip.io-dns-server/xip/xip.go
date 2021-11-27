@@ -46,10 +46,16 @@ var (
 	nsAws, _         = dnsmessage.NewName("ns-aws.nono.io.")
 	nsAzure, _       = dnsmessage.NewName("ns-azure.nono.io.")
 	nsGce, _         = dnsmessage.NewName("ns-gce.nono.io.")
+	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
+	nsAzureSslip, _  = dnsmessage.NewName("ns-azure.sslip.io.")
+	nsGceSslip, _    = dnsmessage.NewName("ns-gce.sslip.io.")
 	NameServers      = []dnsmessage.NSResource{
 		{NS: nsAws},
 		{NS: nsAzure},
 		{NS: nsGce},
+		{NS: nsAwsSslip},
+		{NS: nsAzureSslip},
+		{NS: nsGceSslip},
 	}
 
 	mbox, _  = dnsmessage.NewName("briancunnie.gmail.com.")
@@ -107,6 +113,12 @@ var (
 		},
 		"ns-azure.nono.io.": {A: []dnsmessage.AResource{{A: [4]byte{52, 187, 42, 158}}}},
 		"ns-gce.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{104, 155, 144, 4}}}},
+		"ns-aws.sslip.io.": {
+			A:    []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}},
+			AAAA: []dnsmessage.AAAAResource{{AAAA: [16]byte{0x26, 0, 0x1f, 0x18, 0x0a, 0xaf, 0x69, 0, 0, 0, 0, 0, 0, 0, 0, 0xa}}},
+		},
+		"ns-azure.sslip.io.": {A: []dnsmessage.AResource{{A: [4]byte{52, 187, 42, 158}}}},
+		"ns-gce.sslip.io.":   {A: []dnsmessage.AResource{{A: [4]byte{104, 155, 144, 4}}}},
 		// CNAMEs for sslip.io for DKIM signing
 		"protonmail._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
