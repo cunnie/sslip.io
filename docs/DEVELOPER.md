@@ -3,7 +3,7 @@
 These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
-```zsh
+```bash
 export OLD_VERSION=2.2.2
 export VERSION=2.2.3
 cd ~/workspace/sslip.io
@@ -77,7 +77,7 @@ ssh ns-aws sudo shutdown -r now
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
 
 Prepare the BOSH release
-```
+```bash
 shasum ~/Downloads/sslip.io-release-${VERSION}.tgz
 lpass show a # refresh LastPass token so we don't get stuck next step
 z deployments
@@ -92,17 +92,13 @@ git push
 popd
 ```
 Update the webserver with the HTML with new versions:
-```
+```bash
 ssh nono.io
 curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/master/k8s/document_root/index.html
 exit
 ```
-Update the Dockerfile with the new release:
-```
-docker build k8s/ -f k8s/Dockerfile-sslip.io-dns-server -t cunnie/sslip.io-dns-server:$VERSION -t cunnie/sslip.io-dns-server:latest
-docker push cunnie/sslip.io-dns-server -a
-git add -p
-git ci -m"Dockerfile cunnie/sslip.io-dns-server: bump $OLD_VERSION → $VERSION"
-git push
+Update GCP/GKE with the new executable:
+```bash
 kubectl rollout restart deployment/sslip.io
+kubectl rollout restart deployment/sslip.io-nginx
 ```
