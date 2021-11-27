@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```zsh
-export OLD_VERSION=2.2.1
-export VERSION=2.2.2
+export OLD_VERSION=2.2.2
+export VERSION=2.2.3
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.sslip.io
@@ -32,7 +32,7 @@ IP=10.0.250.3
 dig +short 127.0.0.1.example.com @$IP
 echo 127.0.0.1
 dig +short ns example.com @$IP
-printf "ns-aws.nono.io.\nns-azure.nono.io.\nns-gce.nono.io.\n"
+printf "ns-aws.nono.io.\nns-azure.nono.io.\nns-gce.nono.io.ns-aws.sslip.io.\nns-azure.sslip.io.\nns-gce.sslip.io.\n"
 dig +short mx example.com @$IP
 echo "0 example.com."
 dig +short mx sslip.io @$IP
@@ -52,7 +52,7 @@ curl curlmyip.org; echo
 dig @$IP txt version.sslip.io +short | grep $VERSION
 echo "\"$VERSION\""
 git add -p
-git ci -vm"BOSH release: 2.2.2: TXT records return IP addrs"
+git ci -vm"BOSH release: $VERSION: Include sslip.io nameservers"
 bosh upload-blobs
 bosh create-release \
   --final \
