@@ -3,12 +3,6 @@
 # fly -t nono sp -p sslip.io -c pipeline-sslip.io.yml
 # fly -t nono expose-pipeline -p sslip.io
 # fly -t nono unpause-pipeline -p sslip.io
-groups:
-- name: sslip.io
-  jobs:
-  - dns-servers
-  - unit
-
 jobs:
 - name: unit
   public: true
@@ -44,10 +38,11 @@ jobs:
 resources:
 - name: sslip.io
   type: git
+  icon: github
   source:
     uri: https://github.com/cunnie/sslip.io
-    branch: master
 
 - name: every-six-hours
   type: time
+  icon: clock
   source: {interval: 6h}
