@@ -111,13 +111,10 @@ var _ = Describe("Xip", func() {
 		It("returns an array of hard-coded name servers", func() {
 			randomDomain := random8ByteString() + ".com."
 			ns := xip.NSResources(randomDomain)
-			Expect(len(ns)).To(Equal(6))
-			Expect(string(ns[0].NS.String())).To(Equal("ns-aws.nono.io."))
-			Expect(string(ns[1].NS.String())).To(Equal("ns-azure.nono.io."))
-			Expect(string(ns[2].NS.String())).To(Equal("ns-gce.nono.io."))
-			Expect(string(ns[3].NS.String())).To(Equal("ns-aws.sslip.io."))
-			Expect(string(ns[4].NS.String())).To(Equal("ns-azure.sslip.io."))
-			Expect(string(ns[5].NS.String())).To(Equal("ns-gce.sslip.io."))
+			Expect(len(ns)).To(Equal(3))
+			Expect(string(ns[0].NS.String())).To(Equal("ns-aws.sslip.io."))
+			Expect(string(ns[1].NS.String())).To(Equal("ns-azure.sslip.io."))
+			Expect(string(ns[2].NS.String())).To(Equal("ns-gce.sslip.io."))
 		})
 		When(`the domain name contains "_acme-challenge."`, func() {
 			When("the domain name has an embedded IP", func() {
@@ -136,7 +133,7 @@ var _ = Describe("Xip", func() {
 				It("returns the default trinity of nameservers", func() {
 					randomDomain := "_acme-challenge." + random8ByteString() + ".com."
 					ns := xip.NSResources(randomDomain)
-					Expect(len(ns)).To(Equal(6))
+					Expect(len(ns)).To(Equal(3))
 				})
 			})
 		})
@@ -198,9 +195,6 @@ var _ = Describe("Xip", func() {
 			// sslip.io website
 			Entry("sslip.io", "ssLIP.io.", dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}}),
 			// nameservers
-			Entry("ns-aws.nono.io.", "ns-aws.nono.io.", dnsmessage.AResource{A: [4]byte{52, 0, 56, 137}}),
-			Entry("ns-azure.nono.io.", "ns-azure.nono.io.", dnsmessage.AResource{A: [4]byte{52, 187, 42, 158}}),
-			Entry("ns-gce.nono.io.", "ns-gce.nono.io.", dnsmessage.AResource{A: [4]byte{104, 155, 144, 4}}),
 			Entry("ns-aws.sslip.io.", "ns-aws.sslip.io.", dnsmessage.AResource{A: [4]byte{52, 0, 56, 137}}),
 			Entry("ns-azure.sslip.io.", "ns-azure.sslip.io.", dnsmessage.AResource{A: [4]byte{52, 187, 42, 158}}),
 			Entry("ns-gce.sslip.io.", "ns-gce.sslip.io.", dnsmessage.AResource{A: [4]byte{104, 155, 144, 4}}),
@@ -227,8 +221,8 @@ var _ = Describe("Xip", func() {
 			Entry("www", "www.sslip.io"),
 			Entry("a lone number", "538.sslip.io"),
 			Entry("too big", "256.254.253.252"),
-			Entry("NS but no dot", "ns-aws.nono.io"),
-			Entry("NS + cruft at beginning", "p-ns-aws.nono.io"),
+			Entry("NS but no dot", "ns-aws.sslip.io"),
+			Entry("NS + cruft at beginning", "p-ns-aws.sslip.io"),
 			Entry("test-net address with dots-and-dashes mixed", "www-192.0-2.3.example-me.com"),
 		)
 		When("There is more than one A record", func() {
@@ -313,7 +307,6 @@ var _ = Describe("Xip", func() {
 			// sslip.io website
 			Entry("sslip.io", "SSLip.io.", xip.Customizations["sslip.io."].AAAA[0]),
 			// nameservers
-			Entry("ns-aws.nono.io.", "ns-aws.nono.io.", xip.Customizations["ns-aws.nono.io."].AAAA[0]),
 			Entry("ns-aws.sslip.io.", "ns-aws.sslip.io.", xip.Customizations["ns-aws.sslip.io."].AAAA[0]),
 			// dashes only
 			Entry("loopback", "--1", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
