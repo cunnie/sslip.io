@@ -113,10 +113,10 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
       accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
       <div class="alert alert-warning" role="alert">
-        2021-11-27 For your information, we've switched to using our own nameservers (sslip.io) instead of the old
-        nono.io nameservers. Don't worry if you're pointing to the old nameservers—they'll continue to work properly.
-        In fact, under the hood they are the same nameservers; the change is merely cosmetic: we've created sslip.io
-        DNS records for them.
+        2021-11-27 FYI (for your information), we've switched to using our own nameservers (sslip.io) instead of the
+        old nono.io nameservers. <b>You don't need to change anything.</b> Don't worry if you're pointing to the old
+        nameservers—they'll continue to work properly. In fact, under the hood they are the same nameservers; the
+        change is merely cosmetic: we've created sslip.io DNS records for them.
       </div>
       <table class="table">
         <thead>
@@ -189,17 +189,15 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
       <h3 id="experimental">Experimental Features</h3>
       <p>Experimental features can change; don't depend on them.</p>
       <h4 id="whatismyip">Determining Your External IP Address via DNS Lookup</h4>
-      <p>You can use sslip.io's DNS servers (<code>ns-aws.sslip.io</code>, <code>ns-azure.sslip.io</code>,
-      <code>ns-gce.sslip.io</code>) to determine your public IP address by querying the <code>TXT</code> record of
-      <code>ip.sslip.io</code>. If you're curious about your public IPv6 address, use the DNS server
-      <code>ns-aws.sslip.io</code>, for it has both IPv4 and IPv6 addresses:</p>
+      <p>You can use sslip.io's DNS servers (<code>ns.sslip.io</code>) to determine your public IP address by querying
+      the <code>TXT</code> record of <code>ip.sslip.io</code>:</p>
       <pre>
-dig @ns-aws.sslip.io txt ip.sslip.io +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
-dig @ns-aws.sslip.io txt ip.sslip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
-dig @ns-aws.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
+dig @ns.sslip.io txt ip.sslip.io +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
+dig @ns.sslip.io txt ip.sslip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
+dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
       <div class="alert alert-warning" role="alert">
-        When querying for your IP address, always <b>include the sslip.io nameserver</b> (e.g. <i>@ns-aws.sslip.io</i>).
-        If omitted, you won't get your IP address; instead, you'll get the IP address of your upstream nameserver.
+        When querying for your IP address, always <b>include the sslip.io nameserver</b> (e.g. <i>@ns.sslip.io</i>). If
+        omitted, you won't get your IP address; instead, you'll get the IP address of your upstream nameserver.
       </div>
       <p>This feature was inspired by Google's DNS lookup, i.e. <code>dig txt o-o.myaddr.l.google.com @8.8.8.8
       +short</code>. There are also popular HTTP-based services for determining your public IP address:</p>
