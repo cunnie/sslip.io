@@ -43,16 +43,10 @@ var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`)
-	nsAws, _         = dnsmessage.NewName("ns-aws.nono.io.")
-	nsAzure, _       = dnsmessage.NewName("ns-azure.nono.io.")
-	nsGce, _         = dnsmessage.NewName("ns-gce.nono.io.")
 	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
 	nsAzureSslip, _  = dnsmessage.NewName("ns-azure.sslip.io.")
 	nsGceSslip, _    = dnsmessage.NewName("ns-gce.sslip.io.")
 	NameServers      = []dnsmessage.NSResource{
-		{NS: nsAws},
-		{NS: nsAzure},
-		{NS: nsGce},
 		{NS: nsAwsSslip},
 		{NS: nsAzureSslip},
 		{NS: nsGceSslip},
@@ -97,7 +91,7 @@ var (
 				}, nil // Sender Policy Framework
 			},
 		},
-		// a global nameserver for sslip.io, a conglomeration of ns-{aws,azure,gce}.nono.io
+		// a global nameserver for sslip.io, a conglomeration of ns-{aws,azure,gce}.sslip.io
 		"ns.sslip.io.": {
 			A: []dnsmessage.AResource{
 				{A: [4]byte{52, 0, 56, 137}},
@@ -107,12 +101,6 @@ var (
 			AAAA: []dnsmessage.AAAAResource{{AAAA: [16]byte{0x26, 0, 0x1f, 0x18, 0x0a, 0xaf, 0x69, 0, 0, 0, 0, 0, 0, 0, 0, 0xa}}},
 		},
 		// nameserver addresses; we get queries for those every once in a while
-		"ns-aws.nono.io.": {
-			A:    []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}},
-			AAAA: []dnsmessage.AAAAResource{{AAAA: [16]byte{0x26, 0, 0x1f, 0x18, 0x0a, 0xaf, 0x69, 0, 0, 0, 0, 0, 0, 0, 0, 0xa}}},
-		},
-		"ns-azure.nono.io.": {A: []dnsmessage.AResource{{A: [4]byte{52, 187, 42, 158}}}},
-		"ns-gce.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{104, 155, 144, 4}}}},
 		"ns-aws.sslip.io.": {
 			A:    []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}},
 			AAAA: []dnsmessage.AAAAResource{{AAAA: [16]byte{0x26, 0, 0x1f, 0x18, 0x0a, 0xaf, 0x69, 0, 0, 0, 0, 0, 0, 0, 0, 0xa}}},
