@@ -95,11 +95,10 @@ git ci -v -m"Bump sslip.io BOSH release: $OLD_VERSION → $VERSION"
 git push
 popd
 ```
-Update the webserver with the HTML with new versions:
+Update the webservers with the HTML with new versions:
 ```bash
-ssh nono.io
-curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/master/k8s/document_root/index.html
-exit
+ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/master/k8s/document_root/index.html
+ssh ns-aws.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/master/k8s/document_root/index.html
 ```
 Update GCP/GKE with the new executable:
 ```bash
