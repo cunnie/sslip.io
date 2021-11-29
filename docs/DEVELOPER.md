@@ -77,7 +77,9 @@ ssh ns-aws sudo shutdown -r now
 - Drag and drop `~/Downloads/sslip.io-release-${VERSION}.tgz` to the _Attach
   binaries..._ section
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
-
+```bash
+fly -t nono trigger-job -j dockerfiles/build-and-push-sslip.io-dns-server
+```
 Prepare the BOSH release
 ```bash
 shasum ~/Downloads/sslip.io-release-${VERSION}.tgz
