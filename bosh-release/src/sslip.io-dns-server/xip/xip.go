@@ -31,6 +31,9 @@ type DomainCustomization struct {
 	// e.g. IP address of the query's source
 }
 
+// The string key should always be lower-cased
+// DomainCustomizations{"sslip.io": ...} NOT DomainCustomizations{"sSLip.iO": ...}
+// DNS hostnames are technically case-insensitive
 type DomainCustomizations map[string]DomainCustomization
 
 // There's nothing like global variables to make my heart pound with joy.

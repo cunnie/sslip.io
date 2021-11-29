@@ -72,7 +72,7 @@ var _ = Describe("Xip", func() {
 		When("a domain has been customized with CNAMES", func() {
 			It("returns CNAME resources", func() {
 				customizedDomain := random8ByteString() + ".com."
-				xip.Customizations[customizedDomain] = xip.DomainCustomization{
+				xip.Customizations[strings.ToLower(customizedDomain)] = xip.DomainCustomization{
 					CNAME: dnsmessage.CNAMEResource{
 						CNAME: dnsmessage.Name{
 							// google.com.
@@ -112,9 +112,9 @@ var _ = Describe("Xip", func() {
 			randomDomain := random8ByteString() + ".com."
 			ns := xip.NSResources(randomDomain)
 			Expect(len(ns)).To(Equal(3))
-			Expect(string(ns[0].NS.String())).To(Equal("ns-aws.sslip.io."))
-			Expect(string(ns[1].NS.String())).To(Equal("ns-azure.sslip.io."))
-			Expect(string(ns[2].NS.String())).To(Equal("ns-gce.sslip.io."))
+			Expect(ns[0].NS.String()).To(Equal("ns-aws.sslip.io."))
+			Expect(ns[1].NS.String()).To(Equal("ns-azure.sslip.io."))
+			Expect(ns[2].NS.String()).To(Equal("ns-gce.sslip.io."))
 		})
 		When(`the domain name contains "_acme-challenge."`, func() {
 			When("the domain name has an embedded IP", func() {
@@ -228,7 +228,7 @@ var _ = Describe("Xip", func() {
 		When("There is more than one A record", func() {
 			It("returns them all", func() {
 				fqdn := random8ByteString()
-				xip.Customizations[fqdn] = xip.DomainCustomization{
+				xip.Customizations[strings.ToLower(fqdn)] = xip.DomainCustomization{
 					A: []dnsmessage.AResource{
 						{A: [4]byte{1}},
 						{A: [4]byte{2}},
@@ -342,7 +342,7 @@ var _ = Describe("Xip", func() {
 		When("There is more than one AAAA record", func() {
 			It("returns them all", func() {
 				fqdn := random8ByteString()
-				xip.Customizations[fqdn] = xip.DomainCustomization{
+				xip.Customizations[strings.ToLower(fqdn)] = xip.DomainCustomization{
 					AAAA: []dnsmessage.AAAAResource{
 						{AAAA: [16]byte{1}},
 						{AAAA: [16]byte{2}},
@@ -376,12 +376,12 @@ func randomIPv6Address() net.IP {
 	return ipv6
 }
 
-// random8ByteString() returns an 8-char string consisting solely of the letters a-z.
+// random8ByteString() returns an 8-char mixed-case string consisting solely of the letters a-z.
 func random8ByteString() string {
 	var randomString []byte
 	for i := 0; i < 8; i++ {
-		// 97 == ascii 'a', and there are 26 letters in the alphabet
-		randomString = append(randomString, byte(97+rand.Intn(26)))
+		// 65 == ascii 'A', +32 (96) == ascii 'a', there are 26 letters in the alphabet. Mix upper case, too.
+		randomString = append(randomString, byte(65+32*rand.Intn(2)+rand.Intn(26)))
 	}
 	return string(randomString)
 }
