@@ -31,10 +31,17 @@ type DomainCustomization struct {
 	// e.g. IP address of the query's source
 }
 
+// DomainCustomizations is a lookup table for specially-crafted records
+// e.g. MX records for sslip.io.
 // The string key should always be lower-cased
 // DomainCustomizations{"sslip.io": ...} NOT DomainCustomizations{"sSLip.iO": ...}
 // DNS hostnames are technically case-insensitive
 type DomainCustomizations map[string]DomainCustomization
+
+// KvCustomizations is a lookup table for custom TXT records
+// e.g. KvCustomizations["my-key"] = []dnsmessage.TXTResource{ TXT: { "my-value" } }
+// The key should NOT include ".kv.sslip.io."
+type KvCustomizations map[string][]dnsmessage.TXTResource
 
 // There's nothing like global variables to make my heart pound with joy.
 // Some of these are global because they are, in essence, constants which
@@ -46,6 +53,7 @@ var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`)
+	kvRE             = regexp.MustCompile(`\.kv\.sslip\.io\.$`)
 	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
 	nsAzureSslip, _  = dnsmessage.NewName("ns-azure.sslip.io.")
 	nsGceSslip, _    = dnsmessage.NewName("ns-gce.sslip.io.")
@@ -66,7 +74,8 @@ var (
 	VersionDate     = "today"
 	VersionGitHash  = "xxx"
 
-	Customizations = DomainCustomizations{
+	TxtKvCustomizations = KvCustomizations{}
+	Customizations      = DomainCustomizations{
 		"sslip.io.": {
 			A: []dnsmessage.AResource{
 				{A: [4]byte{78, 46, 204, 247}},
@@ -691,6 +700,9 @@ func NSResources(fqdnString string) []dnsmessage.NSResource {
 
 // TXTResources returns TXT records from Customizations
 func TXTResources(fqdn, querier string) ([]dnsmessage.TXTResource, error) {
+	if kvRE.MatchString(fqdn) {
+		return kvTXTResources(fqdn)
+	}
 	if domain, ok := Customizations[strings.ToLower(fqdn)]; ok {
 		return domain.TXT(querier)
 	}
@@ -724,6 +736,57 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 // when TXT for "ip.sslip.io" is queried, return the IP address of the querier
 func ipSslipIo(sourceIP string) ([]dnsmessage.TXTResource, error) {
 	return []dnsmessage.TXTResource{{TXT: []string{sourceIP}}}, nil
+}
+
+// when TXT for "kv.sslip.io" is queried, return the key-value pair
+func kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
+	// "labels" => official RFC 1035 term
+	// kv.sslip.io. => ["kv", "sslip", "io"] are labels
+	var (
+		verb  string // i.e. "get", "put", "delete"
+		key   string // e.g. "my-key" as in "my-key.kv.sslip.io"
+		value string // e.g. "my-value" as in "put.my-value.my-key.kv.sslip.io"
+	)
+	labels := strings.Split(fqdn, ".")
+	labels = labels[:len(labels)-4]              // strip ".kv.sslip.io"
+	key = strings.ToLower(labels[len(labels)-1]) // key is always present, always first subdomain of "kv.sslip.io"
+	switch {
+	case len(labels) == 1:
+		verb = "get" // default action if only key, not verb, is not present
+	case len(labels) == 2:
+		verb = strings.ToLower(labels[0]) // verb, if present, is leftmost, "put.value.key.kv.sslip.io"
+	case len(labels) > 2:
+		verb = strings.ToLower(labels[0])
+		// concatenate multiple labels to create value, especially useful for version numbers
+		value = strings.Join(labels[1:len(labels)-1], ".") // e.g. "put.94.0.2.firefox-version.kv.sslip.io"
+	}
+	switch verb {
+	case "get":
+		if txtRecord, ok := TxtKvCustomizations[key]; ok {
+			return txtRecord, nil
+		}
+		return nil, nil
+	case "put":
+		if len(labels) == 2 {
+			return []dnsmessage.TXTResource{{[]string{"422: no value provided"}}}, nil
+		}
+		if len(value) > 63 { // too-long TXT records can be used in DNS amplification attacks; Truncate!
+			value = value[:63]
+		}
+		TxtKvCustomizations[key] = []dnsmessage.TXTResource{
+			{
+				[]string{value},
+			},
+		}
+		return TxtKvCustomizations[key], nil
+	case "delete":
+		if deletedKey, ok := TxtKvCustomizations[key]; ok {
+			delete(TxtKvCustomizations, key)
+			return deletedKey, nil
+		}
+		return nil, nil
+	}
+	return []dnsmessage.TXTResource{{[]string{"422: valid verbs are get, put, delete"}}}, nil
 }
 
 // soaLogMessage returns an easy-to-read string for logging SOA Answers/Authorities
