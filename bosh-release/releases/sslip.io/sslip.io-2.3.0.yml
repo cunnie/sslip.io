@@ -1,0 +1,23 @@
+name: sslip.io
+version: 2.3.0
+commit_hash: 6a22928
+uncommitted_changes: false
+jobs:
+- name: sslip.io-dns-server
+  version: 308acb7c186a042bc2ca4c28b83c9fe7589a64c48ab6a11869c442bcaea8fdf9
+  fingerprint: 308acb7c186a042bc2ca4c28b83c9fe7589a64c48ab6a11869c442bcaea8fdf9
+  sha1: sha256:6ca6f2c11816a82ecb3cf9300ea59369977cbaa7c39eddca35628a7c6b9b5b45
+  packages:
+  - sslip.io-dns-server
+packages:
+- name: golang-1-linux
+  version: 92655dbac2d36906f0d761ab03f2eb6bfa9a22730d8f1591a1acb7a6de875ed4
+  fingerprint: 92655dbac2d36906f0d761ab03f2eb6bfa9a22730d8f1591a1acb7a6de875ed4
+  sha1: sha256:e09c7eb7e88462113fdf2095d1ab0d4b9aed0dfd26cdda19744a47f006f6fe7c
+  dependencies: []
+- name: sslip.io-dns-server
+  version: 663565b31241fbac61a1cf3e756b573103d15cc541676e7076cbb24affc4cb16
+  fingerprint: 663565b31241fbac61a1cf3e756b573103d15cc541676e7076cbb24affc4cb16
+  sha1: sha256:7f4a32260a0d254ba9bbbdb4ad9f42618e600579618acd60dd23a8f45b783f04
+  dependencies:
+  - golang-1-linux
