@@ -108,6 +108,22 @@ describe domain do
       # Look on my Regular Expressions, ye mighty, and despair!
       expect(`dig @#{whois_nameserver} TXT ip.#{domain} +short`).to match(/^"([0-9]+\.[0-9]+\.[0-9]+\.[0-9+])|(([0-9a-fA-F]*:){2,7}[0-9a-fA-F]*)"$/)
     end
+
+    it "sets a key-value @#{whois_nameserver} sslipio-spec.kv.sslip.io" do
+      expect(`dig @#{whois_nameserver} put.MyKey.sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
+    end
+
+    it "gets a key-value @#{whois_nameserver} sslipio-spec.kv.sslip.io" do
+      expect(`dig @#{whois_nameserver} sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
+    end
+
+    it "deletes a key-value @#{whois_nameserver} sslipio-spec.kv.sslip.io" do
+      expect(`dig @#{whois_nameserver} delete.sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
+    end
+
+    it "gets a key-value @#{whois_nameserver} sslipio-spec.kv.sslip.io" do
+      expect(`dig @#{whois_nameserver} sslipio-spec.kv.#{domain} TXT +short`).to match(/^$/)
+    end
   end
   # check the website
   it "is able to reach https://#{domain} and get a valid response (2xx)" do
