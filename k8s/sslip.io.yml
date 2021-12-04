@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: sslip.io
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: sslip.io-dns
