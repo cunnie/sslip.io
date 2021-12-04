@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.2.3
-export VERSION=2.2.4
+export OLD_VERSION=2.2.4
+export VERSION=2.3.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.sslip.io
@@ -28,7 +28,7 @@ bosh create-release --force
 bosh upload-release
 bosh -n -d sslip.io-dns-server deploy ~/workspace/deployments/sslip.io-dns-server.yml --recreate
 bosh instances # record the IP address of the instance
-IP=10.0.250.3
+IP=10.0.250.22
 dig +short 127.0.0.1.example.com @$IP
 echo 127.0.0.1
 dig +short ns example.com @$IP
@@ -51,9 +51,21 @@ dig @$IP txt ip.sslip.io +short | tr -d '"'
 curl curlmyip.org; echo
 dig @$IP txt version.sslip.io +short | grep $VERSION
 echo "\"$VERSION\""
+dig @$IP my-key.kv.sslip.io txt +short # returns nothing
+echo " ===" # separator because the results are too similar
+dig @$IP put.MyValue.my-key.kv.sslip.io txt +short
+echo "\"MyValue\""
+echo " ===" # separator because the results are too similar
+dig @$IP MY-KEY.kv.sslip.io txt +short
+echo "\"MyValue\""
+echo " ===" # separator because the results are too similar
+dig @$IP delete.my-key.kv.sslip.io txt +short
+echo "\"MyValue\""
+echo " ===" # separator because the results are too similar
+dig @$IP my-key.kv.sslip.io txt +short # returns nothing
 pushd ..
 git add -p
-git ci -vm"BOSH release: $VERSION: Deprecate nono.io nameservers"
+git ci -vm"BOSH release: $VERSION: kv.sslip.io key-value store"
 popd
 bosh upload-blobs
 bosh create-release \
