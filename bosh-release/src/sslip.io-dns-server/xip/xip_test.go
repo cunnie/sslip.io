@@ -15,38 +15,9 @@ import (
 
 var _ = Describe("Xip", func() {
 	var (
-		err      error
-		headerId uint16
+		err error
 	)
 	rand.Seed(GinkgoRandomSeed()) // Set to ginkgo's seed so that it's different each test & we can reproduce failures if necessary
-
-	Describe("ResponseHeader()", func() {
-		It("returns a header with the ID", func() {
-			headerId = uint16(rand.Int31())
-			Expect(xip.ResponseHeader(dnsmessage.Header{
-				ID:                 headerId,
-				Response:           false,
-				OpCode:             0,
-				Authoritative:      false,
-				Truncated:          false,
-				RecursionDesired:   false,
-				RecursionAvailable: false,
-			}, dnsmessage.RCodeSuccess)).To(Equal(dnsmessage.Header{
-				ID:                 headerId, // taken from the query
-				Response:           true,
-				OpCode:             0,
-				Authoritative:      true,
-				Truncated:          false,
-				RecursionDesired:   false, // taken from the query
-				RecursionAvailable: false,
-				RCode:              0,
-			}))
-		})
-		It("returns the header with the passed-in RCode", func() {
-			Expect(xip.ResponseHeader(dnsmessage.Header{}, dnsmessage.RCodeNotImplemented).
-				RCode).To(Equal(dnsmessage.RCodeNotImplemented))
-		})
-	})
 
 	Describe("CNAMEResources()", func() {
 		It("returns nil by default", func() {
