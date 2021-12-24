@@ -180,7 +180,7 @@ type Response struct {
 func QueryResponse(queryBytes []byte, sourceAddr net.IP) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
 	var p dnsmessage.Parser
-	var response = &Response{}
+	var response Response
 
 	if queryHeader, err = p.Start(queryBytes); err != nil {
 		return nil, "", err
@@ -191,11 +191,12 @@ func QueryResponse(queryBytes []byte, sourceAddr net.IP) (responseBytes []byte, 
 	if q, err = p.Question(); err != nil {
 		return nil, "", err
 	}
-	response.Header = ResponseHeader(queryHeader, dnsmessage.RCodeSuccess)
-	logMessage, err = processQuestion(q, response, sourceAddr)
+	response, logMessage, err = processQuestion(q, sourceAddr)
 	if err != nil {
 		return nil, "", err
 	}
+	response.Header.ID = queryHeader.ID
+	response.Header.RecursionDesired = queryHeader.RecursionDesired
 
 	b := dnsmessage.NewBuilder(nil, response.Header)
 	b.EnableCompression()
@@ -235,8 +236,20 @@ func QueryResponse(queryBytes []byte, sourceAddr net.IP) (responseBytes []byte, 
 	return responseBytes, logMessage, nil
 }
 
-func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.IP) (logMessage string, err error) {
+func processQuestion(q dnsmessage.Question, sourceAddr net.IP) (response Response, logMessage string, err error) {
 	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
+	response = Response{
+		Header: dnsmessage.Header{
+			ID:                 0, // this will later be replaced with query.ID
+			Response:           true,
+			OpCode:             0,
+			Authoritative:      true, // We're able to white label domains by always being authoritative
+			Truncated:          false,
+			RecursionDesired:   false,                   // this will later be replaced with query.RecursionDesired
+			RecursionAvailable: false,                   // We are not recursing servers, so recursion is never available. Prevents DDOS
+			RCode:              dnsmessage.RCodeSuccess, // assume success, may be replaced later
+		},
+	}
 	if IsAcmeChallenge(q.Name.String()) { // thanks @NormanR
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
 		// dig _acme-challenge.127-0-0-1.sslip.io mx → NS 127-0-0-1.sslip.io
@@ -258,7 +271,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 						}
 						return nil
 					})
-				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
 			response.Answers = append(response.Answers,
 				// 1 or more A records; A records > 1 only available via Customizations
@@ -282,7 +295,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 				ip := net.IP(nameToA.A[:])
 				logMessages = append(logMessages, ip.String())
 			}
-			return logMessage + strings.Join(logMessages, ", "), nil
+			return response, logMessage + strings.Join(logMessages, ", "), nil
 		}
 	case dnsmessage.TypeAAAA:
 		{
@@ -298,7 +311,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 						}
 						return nil
 					})
-				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
 			response.Answers = append(response.Answers,
 				// 1 or more AAAA records; AAAA records > 1 only available via Customizations
@@ -322,7 +335,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 				ip := net.IP(nameToAAAA.AAAA[:])
 				logMessages = append(logMessages, ip.String())
 			}
-			return logMessage + strings.Join(logMessages, ", "), nil
+			return response, logMessage + strings.Join(logMessages, ", "), nil
 		}
 	case dnsmessage.TypeALL:
 		{
@@ -330,7 +343,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 			// https://blog.cloudflare.com/rfc8482-saying-goodbye-to-any/
 			// Google (8.8.8.8) returns every record they can find (A, AAAA, SOA, NS, MX, ...).
 			response.Header.RCode = dnsmessage.RCodeNotImplemented
-			return logMessage + "NotImplemented", nil
+			return response, logMessage + "NotImplemented", nil
 		}
 	case dnsmessage.TypeCNAME:
 		{
@@ -347,7 +360,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 						}
 						return nil
 					})
-				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
 			response.Answers = append(response.Answers,
 				// 1 CNAME record, via Customizations
@@ -364,7 +377,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 					}
 					return nil
 				})
-			return logMessage + cname.CNAME.String(), nil
+			return response, logMessage + cname.CNAME.String(), nil
 		}
 	case dnsmessage.TypeMX:
 		{
@@ -373,7 +386,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 
 			// We can be sure that len(mailExchangers) > 1, but we check anyway
 			if len(mailExchangers) == 0 {
-				return "", errors.New("no MX records, but there should be one")
+				return response, "", errors.New("no MX records, but there should be one")
 			}
 			response.Answers = append(response.Answers,
 				// 1 or more A records; A records > 1 only available via Customizations
@@ -395,7 +408,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 			for _, mailExchanger := range mailExchangers {
 				logMessages = append(logMessages, strconv.Itoa(int(mailExchanger.Pref))+" "+mailExchanger.MX.String())
 			}
-			return logMessage + strings.Join(logMessages, ", "), nil
+			return response, logMessage + strings.Join(logMessages, ", "), nil
 		}
 	case dnsmessage.TypeNS:
 		{
@@ -418,7 +431,7 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 					}
 					return nil
 				})
-			return logMessage + soaLogMessage(soaResource), nil
+			return response, logMessage + soaLogMessage(soaResource), nil
 		}
 	case dnsmessage.TypeTXT:
 		{
@@ -448,12 +461,12 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 						})
 					logMessages = append(logMessages, nameServer.NS.String())
 				}
-				return logMessage + "nil, NS " + strings.Join(logMessages, ", "), nil
+				return response, logMessage + "nil, NS " + strings.Join(logMessages, ", "), nil
 			}
 			var txts []dnsmessage.TXTResource
 			txts, err = TXTResources(q.Name.String(), sourceAddr.String())
 			if err != nil {
-				return "", err
+				return response, "", err
 			}
 			response.Answers = append(response.Answers,
 				// 1 or more TXT records via Customizations
@@ -483,9 +496,9 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 				logMessageTXTss = append(logMessageTXTss, `["`+strings.Join(logMessageTXTs, `", "`)+`"]`)
 			}
 			if len(logMessageTXTss) == 0 {
-				return logMessage + "nil, SOA " + soaLogMessage(SOAResource(q.Name)), nil
+				return response, logMessage + "nil, SOA " + soaLogMessage(SOAResource(q.Name)), nil
 			}
-			return logMessage + strings.Join(logMessageTXTss, ", "), nil
+			return response, logMessage + strings.Join(logMessageTXTss, ", "), nil
 		}
 	default:
 		{
@@ -500,17 +513,17 @@ func processQuestion(q dnsmessage.Question, response *Response, sourceAddr net.I
 					}
 					return nil
 				})
-			return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+			return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 		}
 	}
 	// The following is flagged as "Unreachable code" in Goland, and that's expected
-	return "", errors.New("unexpectedly fell through processQuestion()")
+	return response, "", errors.New("unexpectedly fell through processQuestion()")
 }
 
 // NSResponse sets the Answers/Authorities depending whether we're delegating or authoritative
 // (whether it's an "_acme-challenge." domain or not). Either way, it supplies the Additionals
 // (IP addresses of the nameservers).
-func NSResponse(name dnsmessage.Name, response *Response, logMessage string) (string, error) {
+func NSResponse(name dnsmessage.Name, response Response, logMessage string) (Response, string, error) {
 	nameServers := NSResources(name.String())
 	var logMessages []string
 	if response.Header.Authoritative {
@@ -584,28 +597,7 @@ func NSResponse(name dnsmessage.Name, response *Response, logMessage string) (st
 	for _, nameServer := range nameServers {
 		logMessages = append(logMessages, nameServer.NS.String())
 	}
-	return logMessage + strings.Join(logMessages, ", "), nil
-}
-
-// ResponseHeader returns a pre-fab DNS response header.
-// We are almost always authoritative (exception: _acme-challenge TXT records)
-// We are not recursing
-// servers, so recursion is never available.  We're able to
-// "white label" domains by indiscriminately matching every query that comes
-// our way. Not being recursive has the added benefit of not being usable as an
-// amplifier in a DDOS attack. We pass in the RCODE, which is normally RCodeSuccess
-// but can also be a failure (e.g. ANY type we return RCodeNotImplemented)
-func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.Header {
-	return dnsmessage.Header{
-		ID:                 query.ID,
-		Response:           true,
-		OpCode:             0,
-		Authoritative:      true,
-		Truncated:          false,
-		RecursionDesired:   query.RecursionDesired,
-		RecursionAvailable: false,
-		RCode:              rcode,
-	}
+	return response, logMessage + strings.Join(logMessages, ", "), nil
 }
 
 // NameToA returns an []AResource that matched the hostname
