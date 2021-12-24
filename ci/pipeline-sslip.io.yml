@@ -31,7 +31,7 @@ jobs:
   - {get: every-six-hours,         trigger: true}
   - task: check-dns
     file: sslip.io/ci/tasks/check-dns.yml
-    attempts: 10
+    attempts: 2
     params:
       DOMAIN: sslip.io
 
