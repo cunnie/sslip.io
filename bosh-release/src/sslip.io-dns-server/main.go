@@ -9,19 +9,33 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-
+	"time"
 	"xip/xip"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 func main() {
 	var wg sync.WaitGroup
+	// connect to `etcd` on localhost
+	etcdEndpoints := []string{"localhost:2379"}
+	etcdCli, err := clientv3.New(clientv3.Config{
+		Endpoints:   etcdEndpoints,
+		DialTimeout: 250 * time.Millisecond,
+	})
+	if err != nil {
+		log.Printf("Couldn't connect to the etcd endpoints: %s. %v\n", strings.Join(etcdEndpoints, ", "), err)
+		os.Exit(1)
+	}
+	defer etcdCli.Close()
+
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {
 	case err == nil:
 		log.Println(`Successfully bound to all interfaces, port 53.`)
 		wg.Add(1)
-		readFrom(conn, &wg)
+		readFrom(conn, etcdCli, &wg)
 	case isErrorPermissionsError(err):
 		log.Println("Try invoking me with `sudo` because I don't have permission to bind to port 53.")
 		log.Fatal(err.Error())
@@ -45,7 +59,7 @@ func main() {
 			} else {
 				wg.Add(1)
 				boundIPsPorts = append(boundIPsPorts, conn.LocalAddr().String())
-				go readFrom(conn, &wg)
+				go readFrom(conn, etcdCli, &wg)
 			}
 		}
 		if len(boundIPsPorts) > 0 {
@@ -60,7 +74,7 @@ func main() {
 	wg.Wait()
 }
 
-func readFrom(conn *net.UDPConn, wg *sync.WaitGroup) {
+func readFrom(conn *net.UDPConn, etcdCli *clientv3.Client, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
 		query := make([]byte, 512)
@@ -69,9 +83,8 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup) {
 			log.Println(err.Error())
 			continue
 		}
-
 		go func() {
-			response, logMessage, err := xip.QueryResponse(query, addr.IP)
+			response, logMessage, err := xip.Xip{SrcAddr: addr.IP, Etcd: etcdCli}.QueryResponse(query)
 			if err != nil {
 				log.Println(err.Error())
 				return
