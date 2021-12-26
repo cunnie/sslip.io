@@ -120,16 +120,17 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("TXTResources()", func() {
+		var x xip.Xip
 		It("returns an empty array for a random domain", func() {
 			randomDomain := random8ByteString() + ".com."
-			txts, err := xip.TXTResources(randomDomain, "9.9.9.9")
+			txts, err := x.TXTResources(randomDomain)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(len(txts)).To(Equal(0))
 		})
 		When("queried for the sslip.io domain", func() {
 			It("returns mail-related TXT resources for the sslip.io domain", func() {
 				domain := "ssLip.iO."
-				txts, err := xip.TXTResources(domain, "8.8.8.8")
+				txts, err := x.TXTResources(domain)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(2))
 				Expect(txts[0].TXT[0]).To(MatchRegexp("protonmail-verification="))
@@ -140,15 +141,18 @@ var _ = Describe("Xip", func() {
 			customizedDomain := random8ByteString() + ".com."
 			xip.Customizations[customizedDomain] = xip.DomainCustomization{}
 			It("returns no TXT resources", func() {
-				txts, err := xip.TXTResources(customizedDomain, "1.1.1.1")
+				txts, err := x.TXTResources(customizedDomain)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(0))
 			})
 			delete(xip.Customizations, customizedDomain) // clean-up
 		})
 		When(`the domain "ip.sslip.io" is queried`, func() {
+			BeforeEach(func() {
+				x.SrcAddr = net.IP{1, 1, 1, 1}
+			})
 			It("returns the IP address of the querier", func() {
-				txts, err := xip.TXTResources("ip.sslip.io.", "1.1.1.1")
+				txts, err := x.TXTResources("ip.sslip.io.")
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(1))
 				Expect(txts[0].TXT[0]).To(MatchRegexp("^1.1.1.1$"))
@@ -156,7 +160,7 @@ var _ = Describe("Xip", func() {
 		})
 		DescribeTable(`the domain "kv.sslip.io" is queried`,
 			func(fqdn string, txts []string) {
-				txtResources, err := xip.TXTResources(fqdn, "querier's IP address doesn't matter")
+				txtResources, err := x.TXTResources(fqdn)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(txtResources)).To(Equal(len(txts)))
 				for i, txtResource := range txtResources {
@@ -377,6 +381,8 @@ func randomIPv6Address() net.IP {
 			}
 		}
 	}
+	// avoid pathological case: an IPv4 address []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, ?, ?, ?, ?})
+	ipv6[10] &= 0xfe
 	return ipv6
 }
 

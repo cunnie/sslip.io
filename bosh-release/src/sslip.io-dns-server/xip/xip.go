@@ -10,8 +10,17 @@ import (
 	"strconv"
 	"strings"
 
+	v3client "go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/dns/dnsmessage"
 )
+
+// Xip contains info that the routines need to answer a query that I don't want to plumb
+// through the call hierarchy
+// (the source address for `ip.sslip.io`, and the etcd client for `kv.sslip.io`)
+type Xip struct {
+	SrcAddr net.IP
+	Etcd    *v3client.Client
+}
 
 // DomainCustomization is a value that is returned for a specific query.
 // The map key is the domain in question, e.g. "sslip.io." (always include trailing dot).
@@ -177,7 +186,7 @@ type Response struct {
 //   78.46.204.247.33654: TypeNS www.example.com ? NS
 //   78.46.204.247.33654: TypeSOA www.example.com ? SOA
 //   2600::.33654: TypeAAAA --1.sslip.io ? ::1
-func QueryResponse(queryBytes []byte, sourceAddr net.IP) (responseBytes []byte, logMessage string, err error) {
+func (x Xip) QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
 	var p dnsmessage.Parser
 	var response Response
@@ -191,7 +200,7 @@ func QueryResponse(queryBytes []byte, sourceAddr net.IP) (responseBytes []byte, 
 	if q, err = p.Question(); err != nil {
 		return nil, "", err
 	}
-	response, logMessage, err = processQuestion(q, sourceAddr)
+	response, logMessage, err = x.processQuestion(q)
 	if err != nil {
 		return nil, "", err
 	}
@@ -236,7 +245,7 @@ func QueryResponse(queryBytes []byte, sourceAddr net.IP) (responseBytes []byte, 
 	return responseBytes, logMessage, nil
 }
 
-func processQuestion(q dnsmessage.Question, sourceAddr net.IP) (response Response, logMessage string, err error) {
+func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessage string, err error) {
 	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
 	response = Response{
 		Header: dnsmessage.Header{
@@ -464,7 +473,7 @@ func processQuestion(q dnsmessage.Question, sourceAddr net.IP) (response Respons
 				return response, logMessage + "nil, NS " + strings.Join(logMessages, ", "), nil
 			}
 			var txts []dnsmessage.TXTResource
-			txts, err = TXTResources(q.Name.String(), sourceAddr.String())
+			txts, err = x.TXTResources(q.Name.String())
 			if err != nil {
 				return response, "", err
 			}
@@ -517,7 +526,7 @@ func processQuestion(q dnsmessage.Question, sourceAddr net.IP) (response Respons
 		}
 	}
 	// The following is flagged as "Unreachable code" in Goland, and that's expected
-	return response, "", errors.New("unexpectedly fell through processQuestion()")
+	return response, "", errors.New("unexpectedly fell through x.processQuestion()")
 }
 
 // NSResponse sets the Answers/Authorities depending whether we're delegating or authoritative
@@ -690,13 +699,15 @@ func NSResources(fqdnString string) []dnsmessage.NSResource {
 	return NameServers
 }
 
-// TXTResources returns TXT records from Customizations
-func TXTResources(fqdn, querier string) ([]dnsmessage.TXTResource, error) {
+// TXTResources returns TXT records from Customizations or KvCustomizations
+func (x Xip) TXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	if kvRE.MatchString(fqdn) {
 		return kvTXTResources(fqdn)
 	}
 	if domain, ok := Customizations[strings.ToLower(fqdn)]; ok {
-		return domain.TXT(querier)
+		// Customizations[strings.ToLower(fqdn)] returns a _function_,
+		// we call that function, which has the same return signature as this method
+		return domain.TXT(x.SrcAddr.String())
 	}
 	return nil, nil
 }
