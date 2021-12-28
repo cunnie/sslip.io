@@ -478,7 +478,7 @@ func processQuestion(q dnsmessage.Question, sourceAddr net.IP) (response Respons
 							Name:   q.Name,
 							Type:   dnsmessage.TypeTXT,
 							Class:  dnsmessage.ClassINET,
-							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							TTL:    180, // 3 minutes to allow key-value to propagate
 							Length: 0,
 						}, txt)
 						if err != nil {

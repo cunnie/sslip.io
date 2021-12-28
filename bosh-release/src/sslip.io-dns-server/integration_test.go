@@ -225,6 +225,35 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n`))
 			})
 		})
+		When(`a TXT record for a host under the "kv.sslip.io" domain is queried`, func() {
+			It(`the PUT has a three-minute TTL`, func() {
+				digArgs = "@localhost put.a.b.kv.sslip.io txt"
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`put.a.b.kv.sslip.io.	180	IN	TXT	"a"`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT put.a.b.kv.sslip.io. \? \["a"\]`))
+			})
+			It(`the GET has a three-minute TTL`, func() {
+				digArgs = "@localhost b.kv.sslip.io txt"
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`b.kv.sslip.io.		180	IN	TXT	"a"`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT b.kv.sslip.io. \? \["a"\]`))
+			})
+			It(`the DELETE has a three-minute TTL`, func() {
+				digArgs = "@localhost delete.b.kv.sslip.io txt"
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`delete.b.kv.sslip.io.	180	IN	TXT	"a"`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.b.kv.sslip.io. \? \["a"\]`))
+			})
+		})
 		When(`a record for an "_acme-challenge" domain is queried`, func() {
 			When(`it's an NS record`, func() {
 				It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
