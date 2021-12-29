@@ -5,7 +5,10 @@ import (
 	"math/rand"
 	"net"
 	"strings"
+	"time"
 	"xip/xip"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -118,7 +121,6 @@ var _ = Describe("Xip", func() {
 			Expect(soa.NS.Data).To(Equal(randomDomainName.Data))
 		})
 	})
-
 	Describe("TXTResources()", func() {
 		var x xip.Xip
 		It("returns an empty array for a random domain", func() {
@@ -158,39 +160,52 @@ var _ = Describe("Xip", func() {
 				Expect(txts[0].TXT[0]).To(MatchRegexp("^1.1.1.1$"))
 			})
 		})
-		DescribeTable(`the domain "kv.sslip.io" is queried`,
-			func(fqdn string, txts []string) {
-				txtResources, err := x.TXTResources(fqdn)
+		When(`etcd is backing the kv store`, func() {
+			BeforeEach(func() {
+				etcdCli, err := clientv3.New(clientv3.Config{
+					Endpoints:   []string{"localhost:2379"},
+					DialTimeout: 250 * time.Millisecond,
+				})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(len(txtResources)).To(Equal(len(txts)))
-				for i, txtResource := range txtResources {
-					Expect(len(txtResource.TXT)).To(Equal(1)) // each TXT record has 1 & only 1 string
-					Expect(txtResource.TXT[0]).To(Equal(txts[i]))
-				}
-			},
-			// simple tests: get, put, delete with single label value
-			Entry("no arguments → empty array", "kv.sslip.io.", []string{}),
-			Entry("putting a value → that value", "PUT.MyValue.my-key.kv.sslip.io.", []string{"MyValue"}),
-			Entry("getting that value → that value", "my-key.kv.sslip.io.", []string{"MyValue"}),
-			Entry("getting that value with an UPPERCASE key → that value", "MY-KEY.kv.sslip.io.", []string{"MyValue"}),
-			Entry("explicitly getting that value → that value", "GeT.my-key.kv.sslip.io.", []string{"MyValue"}),
-			Entry("deleting that value → the deleted value", "DelETe.my-key.kv.sslip.io.", []string{"MyValue"}),
-			Entry("getting that deleted value → empty array", "my-key.kv.sslip.io.", []string{}),
-			// errors
-			Entry("getting a non-existent key → empty array", "nonexistent.kv.sslip.io.", []string{}),
-			Entry("putting but skipping the value → error txt", "put.my-key.kv.sslip.io.", []string{"422: no value provided"}),
-			Entry("deleting a non-existent key → silently succeeds", "delete.non-existent.kv.sslip.io.", []string{}),
-			Entry("using a garbage verb → error txt", "post.my-key.kv.sslip.io.", []string{"422: valid verbs are get, put, delete"}),
-			// others
-			Entry("putting a multi-label value", "put.96.0.4664.55.chrome-version.kv.sslip.io.", []string{"96.0.4664.55"}),
-			Entry("putting a super-long multi-label value to use in a DNS amplification attack gets truncated to 63 characters",
-				"put"+
-					".IReturnedAndSawUnderTheSunThatTheRaceIsNotToTheSwiftNotThe"+
-					".BattleToTheStrongNeitherYetBreadToTheWiseNorYetRichesToMenOf"+
-					".amplify.kv.sslip.io.",
-				[]string{"IReturnedAndSawUnderTheSunThatTheRaceIsNotToTheSwiftNotThe.Batt"},
-			),
-		)
+				x.Etcd = etcdCli
+			})
+			AfterEach(func() {
+				x.Etcd.Close()
+			})
+			DescribeTable(`the domain "kv.sslip.io" is queried`,
+				func(fqdn string, txts []string) {
+					txtResources, err := x.TXTResources(fqdn)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(len(txtResources)).To(Equal(len(txts)))
+					for i, txtResource := range txtResources {
+						Expect(len(txtResource.TXT)).To(Equal(1)) // each TXT record has 1 & only 1 string
+						Expect(txtResource.TXT[0]).To(Equal(txts[i]))
+					}
+				},
+				// simple tests: get, put, delete with single label value
+				Entry("no arguments → empty array", "kv.sslip.io.", []string{}),
+				Entry("putting a value → that value", "PUT.MyValue.my-key.kv.sslip.io.", []string{"MyValue"}),
+				Entry("getting that value → that value", "my-key.kv.sslip.io.", []string{"MyValue"}),
+				Entry("getting that value with an UPPERCASE key → that value", "MY-KEY.kv.sslip.io.", []string{"MyValue"}),
+				Entry("explicitly getting that value → that value", "GeT.my-key.kv.sslip.io.", []string{"MyValue"}),
+				Entry("deleting that value → the deleted value", "DelETe.my-key.kv.sslip.io.", []string{"MyValue"}),
+				Entry("getting that deleted value → empty array", "my-key.kv.sslip.io.", []string{}),
+				// errors
+				Entry("getting a non-existent key → empty array", "nonexistent.kv.sslip.io.", []string{}),
+				Entry("putting but skipping the value → error txt", "put.my-key.kv.sslip.io.", []string{"422: no value provided"}),
+				Entry("deleting a non-existent key → silently succeeds", "delete.non-existent.kv.sslip.io.", []string{}),
+				Entry("using a garbage verb → error txt", "post.my-key.kv.sslip.io.", []string{"422: valid verbs are get, put, delete"}),
+				// others
+				Entry("putting a multi-label value", "put.96.0.4664.55.chrome-version.kv.sslip.io.", []string{"96.0.4664.55"}),
+				Entry("putting a super-long multi-label value to use in a DNS amplification attack gets truncated to 63 characters",
+					"put"+
+						".IReturnedAndSawUnderTheSunThatTheRaceIsNotToTheSwiftNotThe"+
+						".BattleToTheStrongNeitherYetBreadToTheWiseNorYetRichesToMenOf"+
+						".amplify.kv.sslip.io.",
+					[]string{"IReturnedAndSawUnderTheSunThatTheRaceIsNotToTheSwiftNotThe.Batt"},
+				),
+			)
+		})
 	})
 
 	Describe("NameToA()", func() {

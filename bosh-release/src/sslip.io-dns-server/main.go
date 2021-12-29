@@ -27,8 +27,7 @@ func main() {
 		log.Printf("Couldn't connect to the etcd endpoints: %s. %v\n", strings.Join(etcdEndpoints, ", "), err)
 		os.Exit(1)
 	}
-	defer etcdCli.Close()
-
+	defer etcdCli.Close() // This is redundant in the main routine: when main() exits, everything is closed.
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {

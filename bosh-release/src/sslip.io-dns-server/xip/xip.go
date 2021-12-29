@@ -5,10 +5,14 @@ package xip
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
+
+	"golang.org/x/net/context"
 
 	v3client "go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/dns/dnsmessage"
@@ -702,7 +706,7 @@ func NSResources(fqdnString string) []dnsmessage.NSResource {
 // TXTResources returns TXT records from Customizations or KvCustomizations
 func (x Xip) TXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	if kvRE.MatchString(fqdn) {
-		return kvTXTResources(fqdn)
+		return x.kvTXTResources(fqdn)
 	}
 	if domain, ok := Customizations[strings.ToLower(fqdn)]; ok {
 		// Customizations[strings.ToLower(fqdn)] returns a _function_,
@@ -742,7 +746,7 @@ func ipSslipIo(sourceIP string) ([]dnsmessage.TXTResource, error) {
 }
 
 // when TXT for "kv.sslip.io" is queried, return the key-value pair
-func kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
+func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	// "labels" => official RFC 1035 term
 	// kv.sslip.io. => ["kv", "sslip", "io"] are labels
 	var (
@@ -763,12 +767,19 @@ func kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 		// concatenate multiple labels to create value, especially useful for version numbers
 		value = strings.Join(labels[1:len(labels)-1], ".") // e.g. "put.94.0.2.firefox-version.kv.sslip.io"
 	}
+	// prepare to query etcd:
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
 	switch verb {
 	case "get":
-		if txtRecord, ok := TxtKvCustomizations[key]; ok {
-			return txtRecord, nil
+		resp, err := x.Etcd.Get(ctx, key)
+		if err != nil {
+			return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
 		}
-		return nil, nil
+		if len(resp.Kvs) > 0 {
+			return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
+		}
+		return []dnsmessage.TXTResource{}, nil
 	case "put":
 		if len(labels) == 2 {
 			return []dnsmessage.TXTResource{{[]string{"422: no value provided"}}}, nil
@@ -776,18 +787,25 @@ func kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 		if len(value) > 63 { // too-long TXT records can be used in DNS amplification attacks; Truncate!
 			value = value[:63]
 		}
-		TxtKvCustomizations[key] = []dnsmessage.TXTResource{
-			{
-				[]string{value},
-			},
+		_, err := x.Etcd.Put(ctx, key, value)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
 		}
-		return TxtKvCustomizations[key], nil
+		return []dnsmessage.TXTResource{{[]string{value}}}, nil
 	case "delete":
-		if deletedKey, ok := TxtKvCustomizations[key]; ok {
-			delete(TxtKvCustomizations, key)
-			return deletedKey, nil
+		getResp, err := x.Etcd.Get(ctx, key) // is the key set?
+		if err != nil {
+			return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
 		}
-		return nil, nil
+		if len(getResp.Kvs) == 0 { // nothing to delete
+			return []dnsmessage.TXTResource{}, nil
+		}
+		// the key is set; we need to delete it
+		_, err = x.Etcd.Delete(ctx, key)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", key, value, err)
+		}
+		return []dnsmessage.TXTResource{{[]string{string(getResp.Kvs[0].Value)}}}, nil
 	}
 	return []dnsmessage.TXTResource{{[]string{"422: valid verbs are get, put, delete"}}}, nil
 }
