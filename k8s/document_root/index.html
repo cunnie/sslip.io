@@ -227,45 +227,32 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
       "https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over 14 times
       as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
       service.</p>
-      <h4 id="key-value-store"><code>kv.sslip.io</code>: (key-value) read/write/delete TXTs</h4>
-      <p>We enable special behavior under the <code>kv.sslip.io</code> subdomain: it can be treated as a key-value
-      store, the sub-subdomain being the key, and the TXT record being the value.</p>
+      <h4 id="key-value-store"><code>k-v.io</code>: (key-value) read/write/delete TXTs</h4>
+      <p>We enable special behavior under the <code>k-v.io</code> domain: it can be treated as a key-value store, the
+      subdomain being the key, and the TXT record being the value.</p>
       <p>For example, to write ("put") the value "12.0.1" to the key "macos-version" on the
       <code>ns-gce.sslip.io.</code> nameserver, you'd use the following <code>dig</code> command:</p>
-      <pre><code class="lang-shell">dig @ns-gce<span class="hljs-selector-class">.sslip</span><span class=
-      "hljs-selector-class">.io</span>. txt put.<span class="hljs-number">12.0</span>.<span class=
-      "hljs-number">1</span><span class="hljs-selector-class">.macos-version</span><span class=
-      "hljs-selector-class">.kv</span><span class="hljs-selector-class">.sslip</span><span class=
-      "hljs-selector-class">.io</span>.
-</code></pre>
+      <pre><code class="lang-shell">dig @ns-gce.sslip.io. txt put.12.0.1.macos-version.k-v.io</code>.
+</pre>
       <p>To read ("get") the value back, you'd write the following <code>dig</code> command:</p>
-      <pre><code class="lang-shell">dig @ns-gce<span class="hljs-selector-class">.sslip</span><span class=
-      "hljs-selector-class">.io</span>. txt get<span class="hljs-selector-class">.macos-version</span><span class=
-      "hljs-selector-class">.kv</span><span class="hljs-selector-class">.sslip</span><span class=
-      "hljs-selector-class">.io</span>.
-</code></pre>
+      <pre><code class="lang-shell">dig @ns-gce.sslip.io. txt get.macos-version.k-v.io.</code>
+</pre>
       <p>Since "get" is the default behavior, you don't need to include it in the domain name:</p>
-      <pre><code class="lang-shell">dig @ns-gce<span class="hljs-selector-class">.sslip</span><span class=
-      "hljs-selector-class">.io</span>. txt macos-version<span class="hljs-selector-class">.kv</span><span class=
-      "hljs-selector-class">.sslip</span><span class="hljs-selector-class">.io</span>.
-</code></pre>
+      <pre><code class="lang-shell">dig @ns-gce.sslip.io. txt macos-version.k-v.io.</code>
+</pre>
       <p>Finally, when you're done with the key-value, you can "delete" it:</p>
-      <pre><code class="lang-shell">dig @ns-gce<span class="hljs-selector-class">.sslip</span><span class=
-      "hljs-selector-class">.io</span>. txt delete<span class="hljs-selector-class">.macos-version</span><span class=
-      "hljs-selector-class">.kv</span><span class="hljs-selector-class">.sslip</span><span class=
-      "hljs-selector-class">.io</span>.
+      <pre><code class="lang-shell">dig @ns-gce.sslip.io. txt delete.macos-version.k-v.io.
 </code></pre>
-      <p>Notes:</p>
+      <p><code class="lang-shell">Notes:</code></p>
       <ul>
-        <li>Keys are case-insensitive (to accommodate DNS convention). In other words, <code>KEY.kv.sslip.io</code> and
-        <code>key.kv.sslip.io</code> return the same TXT record.</li>
-        <li>Values are case-sensitive. <code>put.CamelCase.style.kv.sslip.io</code> sets the TXT record to
-        "CamelCase".</li>
-        <li><code>put</code> requests will return the TXT record being put; i.e.
-        <code>put.hello.world.kv.sslip.io</code> returns one TXT record of one string, <code>hello</code>.</li>
+        <li>Keys are case-insensitive (to accommodate DNS convention). In other words,
+        <code>KEY.k-v.io</code> and <code>key.k-v.io</code> return the same TXT record.</code></li>
+        <li>Values are case-sensitive. <code>put.CamelCase.style.k-v.io</code> sets the TXT record to "CamelCase".</li>
+        <li><code>put</code> requests will return the TXT record being put; i.e. <code>put.hello.world.k-v.io</code>
+        returns one TXT record of one string, <code>hello</code>.</li>
         <li><code>delete</code> requests will return the TXT record being deleted; i.e.
-        <code>delete.world.kv.sslip.io</code> returns one TXT record of one string, <code>hello</code>. If the TXT
-        record does not exist, no TXT records will be returned.</li>
+        <code>delete.world.k-v.io</code> returns one TXT record of one string, <code>hello</code>. If the TXT record
+        does not exist, no TXT records will be returned.</li>
         <li>Values are limited to 63 bytes to mitigate using the sslip.io servers in a <a href=
         "https://us-cert.cisa.gov/ncas/alerts/TA13-088A">DNS amplification attack</a>.
         </li>
