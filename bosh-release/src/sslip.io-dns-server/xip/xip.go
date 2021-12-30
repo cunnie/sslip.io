@@ -20,7 +20,7 @@ import (
 
 // Xip contains info that the routines need to answer a query that I don't want to plumb
 // through the call hierarchy
-// (the source address for `ip.sslip.io`, and the etcd client for `kv.sslip.io`)
+// (the source address for `ip.sslip.io`, and the etcd client for `k-v.io`)
 type Xip struct {
 	SrcAddr net.IP
 	Etcd    *v3client.Client
@@ -53,7 +53,7 @@ type DomainCustomizations map[string]DomainCustomization
 
 // KvCustomizations is a lookup table for custom TXT records
 // e.g. KvCustomizations["my-key"] = []dnsmessage.TXTResource{ TXT: { "my-value" } }
-// The key should NOT include ".kv.sslip.io."
+// The key should NOT include ".k-v.io."
 type KvCustomizations map[string][]dnsmessage.TXTResource
 
 // There's nothing like global variables to make my heart pound with joy.
@@ -66,7 +66,7 @@ var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`)
-	kvRE             = regexp.MustCompile(`\.kv\.sslip\.io\.$`)
+	kvRE             = regexp.MustCompile(`\.k-v\.io\.$`)
 	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
 	nsAzureSslip, _  = dnsmessage.NewName("ns-azure.sslip.io.")
 	nsGceSslip, _    = dnsmessage.NewName("ns-gce.sslip.io.")
@@ -745,27 +745,27 @@ func ipSslipIo(sourceIP string) ([]dnsmessage.TXTResource, error) {
 	return []dnsmessage.TXTResource{{TXT: []string{sourceIP}}}, nil
 }
 
-// when TXT for "kv.sslip.io" is queried, return the key-value pair
+// when TXT for "k-v.io" is queried, return the key-value pair
 func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	// "labels" => official RFC 1035 term
-	// kv.sslip.io. => ["kv", "sslip", "io"] are labels
+	// k-v.io. => ["k-v", "io"] are labels
 	var (
 		verb  string // i.e. "get", "put", "delete"
-		key   string // e.g. "my-key" as in "my-key.kv.sslip.io"
-		value string // e.g. "my-value" as in "put.my-value.my-key.kv.sslip.io"
+		key   string // e.g. "my-key" as in "my-key.k-v.io"
+		value string // e.g. "my-value" as in "put.my-value.my-key.k-v.io"
 	)
 	labels := strings.Split(fqdn, ".")
-	labels = labels[:len(labels)-4]              // strip ".kv.sslip.io"
-	key = strings.ToLower(labels[len(labels)-1]) // key is always present, always first subdomain of "kv.sslip.io"
+	labels = labels[:len(labels)-3]              // strip ".k-v.io"
+	key = strings.ToLower(labels[len(labels)-1]) // key is always present, always first subdomain of "k-v.io"
 	switch {
 	case len(labels) == 1:
 		verb = "get" // default action if only key, not verb, is not present
 	case len(labels) == 2:
-		verb = strings.ToLower(labels[0]) // verb, if present, is leftmost, "put.value.key.kv.sslip.io"
+		verb = strings.ToLower(labels[0]) // verb, if present, is leftmost, "put.value.key.k-v.io"
 	case len(labels) > 2:
 		verb = strings.ToLower(labels[0])
 		// concatenate multiple labels to create value, especially useful for version numbers
-		value = strings.Join(labels[1:len(labels)-1], ".") // e.g. "put.94.0.2.firefox-version.kv.sslip.io"
+		value = strings.Join(labels[1:len(labels)-1], ".") // e.g. "put.94.0.2.firefox-version.k-v.io"
 	}
 	// prepare to query etcd:
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)

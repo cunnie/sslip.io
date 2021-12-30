@@ -121,26 +121,26 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 example.com txt +short",
 				`\A\z`,
 				`TypeTXT example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2021080200 900 900 1800 300\n$`),
-			Entry(`getting a non-existent value: TXT for my-key.kv.sslip.io"`,
-				"@127.0.0.1 my-key.kv.sslip.io txt +short",
+			Entry(`getting a non-existent value: TXT for my-key.k-v.io"`,
+				"@127.0.0.1 my-key.k-v.io txt +short",
 				`\A\z`,
-				`TypeTXT my-key.kv.sslip.io. \? nil, SOA my-key.kv.sslip.io. briancunnie.gmail.com. 2021080200 900 900 1800 300\n$`),
-			Entry(`putting a value: TXT for put.MyValue.MY-KEY.kv.sslip.io"`,
-				"@127.0.0.1 put.MyValue.MY-KEY.kv.sslip.io txt +short",
+				`TypeTXT my-key.k-v.io. \? nil, SOA my-key.k-v.io. briancunnie.gmail.com. 2021080200 900 900 1800 300\n$`),
+			Entry(`putting a value: TXT for put.MyValue.MY-KEY.k-v.io"`,
+				"@127.0.0.1 put.MyValue.MY-KEY.k-v.io txt +short",
 				`"MyValue"`,
-				`TypeTXT put.MyValue.MY-KEY.kv.sslip.io. \? \["MyValue"\]`),
-			Entry(`getting a value: TXT for my-key.kv.sslip.io"`,
-				"@127.0.0.1 my-key.kv.sslip.io txt +short",
+				`TypeTXT put.MyValue.MY-KEY.k-v.io. \? \["MyValue"\]`),
+			Entry(`getting a value: TXT for my-key.k-v.io"`,
+				"@127.0.0.1 my-key.k-v.io txt +short",
 				`"MyValue"`,
-				`TypeTXT my-key.kv.sslip.io. \? \["MyValue"\]`),
-			Entry(`deleting a value: TXT for delete.my-key.kv.sslip.io"`,
-				"@127.0.0.1 delete.my-key.kv.sslip.io txt +short",
+				`TypeTXT my-key.k-v.io. \? \["MyValue"\]`),
+			Entry(`deleting a value: TXT for delete.my-key.k-v.io"`,
+				"@127.0.0.1 delete.my-key.k-v.io txt +short",
 				`"MyValue"`,
-				`TypeTXT delete.my-key.kv.sslip.io. \? \["MyValue"\]`),
-			Entry(`getting a non-existent value: TXT for my-key.kv.sslip.io"`,
-				"@127.0.0.1 my-key.kv.sslip.io txt +short",
+				`TypeTXT delete.my-key.k-v.io. \? \["MyValue"\]`),
+			Entry(`getting a non-existent value: TXT for my-key.k-v.io"`,
+				"@127.0.0.1 my-key.k-v.io txt +short",
 				`\A\z`,
-				`TypeTXT my-key.kv.sslip.io. \? nil, SOA my-key.kv.sslip.io. briancunnie.gmail.com. 2021080200 900 900 1800 300\n$`),
+				`TypeTXT my-key.k-v.io. \? nil, SOA my-key.k-v.io. briancunnie.gmail.com. 2021080200 900 900 1800 300\n$`),
 		)
 	})
 	Describe("for more complex assertions", func() {
@@ -225,33 +225,33 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n`))
 			})
 		})
-		When(`a TXT record for a host under the "kv.sslip.io" domain is queried`, func() {
+		When(`a TXT record for a host under the "k-v.io" domain is queried`, func() {
 			It(`the PUT has a three-minute TTL`, func() {
-				digArgs = "@localhost put.a.b.kv.sslip.io txt"
+				digArgs = "@localhost put.a.b.k-v.io txt"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`put.a.b.kv.sslip.io.	180	IN	TXT	"a"`))
+				Eventually(digSession).Should(Say(`put.a.b.k-v.io.		180	IN	TXT	"a"`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT put.a.b.kv.sslip.io. \? \["a"\]`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT put.a.b.k-v.io. \? \["a"\]`))
 			})
 			It(`the GET has a three-minute TTL`, func() {
-				digArgs = "@localhost b.kv.sslip.io txt"
+				digArgs = "@localhost b.k-v.io txt"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`b.kv.sslip.io.		180	IN	TXT	"a"`))
+				Eventually(digSession).Should(Say(`b.k-v.io.		180	IN	TXT	"a"`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT b.kv.sslip.io. \? \["a"\]`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT b.k-v.io. \? \["a"\]`))
 			})
 			It(`the DELETE has a three-minute TTL`, func() {
-				digArgs = "@localhost delete.b.kv.sslip.io txt"
+				digArgs = "@localhost delete.b.k-v.io txt"
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`delete.b.kv.sslip.io.	180	IN	TXT	"a"`))
+				Eventually(digSession).Should(Say(`delete.b.k-v.io.	180	IN	TXT	"a"`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.b.kv.sslip.io. \? \["a"\]`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.b.k-v.io. \? \["a"\]`))
 			})
 		})
 		When(`a record for an "_acme-challenge" domain is queried`, func() {
