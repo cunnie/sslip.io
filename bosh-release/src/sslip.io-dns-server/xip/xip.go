@@ -731,7 +731,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 	return dnsmessage.SOAResource{
 		NS:     name,
 		MBox:   mbox,
-		Serial: 2021080200,
+		Serial: 2021123100,
 		// cribbed the Refresh/Retry/Expire from google.com
 		Refresh: 900,
 		Retry:   900,
@@ -755,8 +755,10 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 		value string // e.g. "my-value" as in "put.my-value.my-key.k-v.io"
 	)
 	labels := strings.Split(fqdn, ".")
-	labels = labels[:len(labels)-3]              // strip ".k-v.io"
-	key = strings.ToLower(labels[len(labels)-1]) // key is always present, always first subdomain of "k-v.io"
+	labels = labels[:len(labels)-3] // strip ".k-v.io"
+	// key is always present, always first subdomain of "k-v.io"
+	// we prepend "d" (data) to differentiate from "t" (time) for future garbage collection
+	key = "d" + strings.ToLower(labels[len(labels)-1])
 	switch {
 	case len(labels) == 1:
 		verb = "get" // default action if only key, not verb, is not present
