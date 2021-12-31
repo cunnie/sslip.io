@@ -27,12 +27,6 @@ developers; the website targets users.
 - `bosh-release/` contains the [BOSH](https://bosh.io/docs/) release. BOSH is
   the mechanism we use to deploy the servers, and the sslip.io BOSH release is a
   packaging of the DNS server (analogous to a `.msi`, `.pkg`, `.deb` or `.rpm`)
-- `conf/sslip.io+nono.io.yml` ***(deprecated)*** contains the
-  [PowerDNS's](https://www.powerdns.com/) [pipe
-  backend's](https://doc.powerdns.com/md/authoritative/backend-pipe/)
-  configuration in YAML format for use with [BOSH](https://bosh.io). The
-  `pdns_pipe` key is the pipe backend script, and `pdns_pipe_conf` is its
-  configuration file.
 
 ## DNS Server
 
