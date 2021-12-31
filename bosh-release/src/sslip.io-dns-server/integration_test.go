@@ -5,39 +5,39 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 )
 
+var err error
+var serverCmd *exec.Cmd
+var serverSession *Session
+
+var _ = BeforeSuite(func() {
+	serverPath, err := Build("main.go")
+	Expect(err).ToNot(HaveOccurred())
+	serverCmd = exec.Command(serverPath)
+	serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
+	// TODO: bind to unprivileged port (NOT 53) for non-macOS users (e.g. port 35353)
+	Expect(err).ToNot(HaveOccurred())
+	// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)
+	// takes 1.312s to start up on macOS Big Sur 2.0GHz quad-core 10th-generation Intel Core i5 processor (2020 13" MacBook Pro)
+	// round up to 3 seconds to account for slow machines
+	time.Sleep(3 * time.Second) // takes 0.455s to start up on macOS Big Sur 4-core Xeon
+})
+
+var _ = AfterSuite(func() {
+	serverSession.Terminate()
+	Eventually(serverSession).Should(Exit())
+})
+
 var _ = Describe("sslip.io-dns-server", func() {
 	//var stdin io.WriteCloser
-	var err error
-	var serverCmd *exec.Cmd
-	var serverSession *Session
 	var digCmd *exec.Cmd
 	var digSession *Session
 	var digArgs string
-
-	BeforeSuite(func() {
-		serverPath, err := Build("main.go")
-		Expect(err).ToNot(HaveOccurred())
-		serverCmd = exec.Command(serverPath)
-		serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
-		// TODO: bind to unprivileged port (NOT 53) for non-macOS users (e.g. port 35353)
-		Expect(err).ToNot(HaveOccurred())
-		// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)
-		// takes 1.312s to start up on macOS Big Sur 2.0GHz quad-core 10th-generation Intel Core i5 processor (2020 13" MacBook Pro)
-		// round up to 3 seconds to account for slow machines
-		time.Sleep(3 * time.Second) // takes 0.455s to start up on macOS Big Sur 4-core Xeon
-	})
-
-	AfterSuite(func() {
-		serverSession.Terminate()
-		Eventually(serverSession).Should(Exit())
-	})
 
 	Describe("Integration tests", func() {
 		DescribeTable("when the DNS server is queried",
