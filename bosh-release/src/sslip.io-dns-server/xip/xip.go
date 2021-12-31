@@ -758,7 +758,8 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	labels = labels[:len(labels)-3] // strip ".k-v.io"
 	// key is always present, always first subdomain of "k-v.io"
 	// we prepend "d" (data) to differentiate from "t" (time) for future garbage collection
-	key = "d" + strings.ToLower(labels[len(labels)-1])
+	keyPrefix := "d"
+	key = keyPrefix + strings.ToLower(labels[len(labels)-1])
 	switch {
 	case len(labels) == 1:
 		verb = "get" // default action if only key, not verb, is not present
@@ -776,7 +777,7 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	case "get":
 		resp, err := x.Etcd.Get(ctx, key)
 		if err != nil {
-			return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+			return nil, fmt.Errorf(`couldn't GET "%s": %w`, strings.TrimPrefix(key, keyPrefix), err)
 		}
 		if len(resp.Kvs) > 0 {
 			return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
@@ -791,13 +792,13 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 		}
 		_, err := x.Etcd.Put(ctx, key, value)
 		if err != nil {
-			return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
+			return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", strings.TrimPrefix(key, keyPrefix), value, err)
 		}
 		return []dnsmessage.TXTResource{{[]string{value}}}, nil
 	case "delete":
 		getResp, err := x.Etcd.Get(ctx, key) // is the key set?
 		if err != nil {
-			return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+			return nil, fmt.Errorf(`couldn't GET "%s": %w`, strings.TrimPrefix(key, keyPrefix), err)
 		}
 		if len(getResp.Kvs) == 0 { // nothing to delete
 			return []dnsmessage.TXTResource{}, nil
@@ -805,7 +806,7 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 		// the key is set; we need to delete it
 		_, err = x.Etcd.Delete(ctx, key)
 		if err != nil {
-			return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", key, value, err)
+			return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", strings.TrimPrefix(key, keyPrefix), value, err)
 		}
 		return []dnsmessage.TXTResource{{[]string{string(getResp.Kvs[0].Value)}}}, nil
 	}
