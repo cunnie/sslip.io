@@ -1,0 +1,18 @@
+{
+  "signing": {
+    "default": {
+      "expiry": "262800h"
+    },
+    "profiles": {
+      "etcd": {
+        "usages": [
+          "signing",
+          "key encipherment",
+          "server auth",
+          "client auth"
+        ],
+        "expiry": "262800h"
+      }
+    }
+  }
+}
