@@ -1,0 +1,20 @@
+{
+  "CA": {
+    "expiry": "262800h"
+  },
+  "CN": "etcd",
+  "key": {
+    "algo": "ecdsa",
+    "size": 256
+  },
+  "expires": "2054-02-16T23:59:59Z",
+  "names": [
+    {
+      "C": "US",
+      "L": "San Francisco",
+      "O": "etcd",
+      "OU": "nono.io",
+      "ST": "California"
+    }
+  ]
+}
