@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -17,17 +19,15 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	// connect to `etcd` on localhost
-	etcdEndpoints := []string{"localhost:2379"}
-	etcdCli, err := clientv3.New(clientv3.Config{
-		Endpoints:   etcdEndpoints,
-		DialTimeout: 250 * time.Millisecond,
-	})
+	// connect to `etcd`; if there's an error, set etcdCli to `nil` and that to
+	// determine whether to use a local key-value store instead
+	etcdCli, err := clientv3New()
 	if err != nil {
-		log.Printf("Couldn't connect to the etcd endpoints: %s. %v\n", strings.Join(etcdEndpoints, ", "), err)
-		os.Exit(1)
+		log.Println(fmt.Errorf("Failed to connect to etcd; using local key-value store instead: %w", err))
+	} else {
+		log.Println("Successfully connected to etcd")
 	}
-	defer etcdCli.Close() // This is redundant in the main routine: when main() exits, everything is closed.
+	// I don't need to `defer etcdCli.Close()` it's redundant in the main routine: when main() exits, everything is closed.
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {
@@ -141,4 +141,26 @@ func isErrorPermissionsError(err error) bool {
 		}
 	}
 	return false
+}
+
+// clientv3New attempts to connect to local etcd and retrieve a key to make
+// sure the connection works. If for any reason it fails it returns nil +
+// error
+func clientv3New() (*clientv3.Client, error) {
+	etcdEndpoints := []string{"localhost:2379"}
+	etcdCli, err := clientv3.New(clientv3.Config{
+		Endpoints:   etcdEndpoints,
+		DialTimeout: 250 * time.Millisecond,
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Let's do a query to determine if etcd is really, truly there
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
+	_, err = etcdCli.Get(ctx, "some-silly-key, doesn't matter if it exists")
+	if err != nil {
+		return nil, err
+	}
+	return etcdCli, nil
 }
