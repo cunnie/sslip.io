@@ -793,48 +793,69 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 }
 
 func (x Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-	defer cancel()
-	resp, err := x.Etcd.Get(ctx, key)
-	if err != nil {
-		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+	if x.Etcd != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+		defer cancel()
+		resp, err := x.Etcd.Get(ctx, key)
+		if err != nil {
+			return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+		}
+		if len(resp.Kvs) > 0 {
+			return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
+		}
+		return []dnsmessage.TXTResource{}, nil
 	}
-	if len(resp.Kvs) > 0 {
-		return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
+	if txtRecord, ok := TxtKvCustomizations[key]; ok {
+		return txtRecord, nil
 	}
-	return []dnsmessage.TXTResource{}, nil
+	return nil, nil
 }
 
 func (x Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-	defer cancel()
 	if len(value) > 63 { // too-long TXT records can be used in DNS amplification attacks; Truncate!
 		value = value[:63]
 	}
-	_, err := x.Etcd.Put(ctx, key, value)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
+	if x.Etcd != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+		defer cancel()
+		_, err := x.Etcd.Put(ctx, key, value)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
+		}
+		return []dnsmessage.TXTResource{{[]string{value}}}, nil
 	}
-	return []dnsmessage.TXTResource{{[]string{value}}}, nil
+	TxtKvCustomizations[key] = []dnsmessage.TXTResource{
+		{
+			[]string{value},
+		},
+	}
+	return TxtKvCustomizations[key], nil
 }
 
 func (x Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-	defer cancel()
-	getResp, err := x.Etcd.Get(ctx, key) // is the key set?
-	if err != nil {
-		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+	if x.Etcd != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+		defer cancel()
+		getResp, err := x.Etcd.Get(ctx, key) // is the key set?
+		if err != nil {
+			return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+		}
+		if len(getResp.Kvs) == 0 { // nothing to delete
+			return []dnsmessage.TXTResource{}, nil
+		}
+		value := string(getResp.Kvs[0].Value)
+		// the key is set; we need to delete it
+		_, err = x.Etcd.Delete(ctx, key)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", key, value, err)
+		}
+		return []dnsmessage.TXTResource{{[]string{value}}}, nil
 	}
-	if len(getResp.Kvs) == 0 { // nothing to delete
-		return []dnsmessage.TXTResource{}, nil
+	if deletedKey, ok := TxtKvCustomizations[key]; ok {
+		delete(TxtKvCustomizations, key)
+		return deletedKey, nil
 	}
-	value := string(getResp.Kvs[0].Value)
-	// the key is set; we need to delete it
-	_, err = x.Etcd.Delete(ctx, key)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", key, value, err)
-	}
-	return []dnsmessage.TXTResource{{[]string{value}}}, nil
+	return nil, nil
 }
 
 // soaLogMessage returns an easy-to-read string for logging SOA Answers/Authorities
