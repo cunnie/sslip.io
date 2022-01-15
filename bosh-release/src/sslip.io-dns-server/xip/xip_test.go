@@ -191,7 +191,7 @@ var _ = Describe("Xip", func() {
 				Entry("getting that deleted value → empty array", "my-key.k-v.io.", []string{}),
 				// errors
 				Entry("getting a non-existent key → empty array", "nonexistent.k-v.io.", []string{}),
-				Entry("putting but skipping the value → error txt", "put.my-key.k-v.io.", []string{"422: no value provided"}),
+				Entry("putting but skipping the value → error txt", "put.my-key.k-v.io.", []string{"422: missing a value: put.value.key.k-v.io"}),
 				Entry("deleting a non-existent key → silently succeeds", "delete.non-existent.k-v.io.", []string{}),
 				Entry("using a garbage verb → error txt", "post.my-key.k-v.io.", []string{"422: valid verbs are get, put, delete"}),
 				// others

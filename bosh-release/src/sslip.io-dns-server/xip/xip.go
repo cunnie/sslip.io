@@ -4,6 +4,7 @@
 package xip
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -11,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/net/context"
 
 	v3client "go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/dns/dnsmessage"
@@ -757,9 +756,7 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	labels := strings.Split(fqdn, ".")
 	labels = labels[:len(labels)-3] // strip ".k-v.io"
 	// key is always present, always first subdomain of "k-v.io"
-	// we prepend "d" (data) to differentiate from "t" (time) for future garbage collection
-	keyPrefix := "d"
-	key = keyPrefix + strings.ToLower(labels[len(labels)-1])
+	key = strings.ToLower(labels[len(labels)-1])
 	switch {
 	case len(labels) == 1:
 		verb = "get" // default action if only key, not verb, is not present
@@ -771,46 +768,63 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 		value = strings.Join(labels[1:len(labels)-1], ".") // e.g. "put.94.0.2.firefox-version.k-v.io"
 	}
 	// prepare to query etcd:
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-	defer cancel()
 	switch verb {
 	case "get":
-		resp, err := x.Etcd.Get(ctx, key)
-		if err != nil {
-			return nil, fmt.Errorf(`couldn't GET "%s": %w`, strings.TrimPrefix(key, keyPrefix), err)
-		}
-		if len(resp.Kvs) > 0 {
-			return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
-		}
-		return []dnsmessage.TXTResource{}, nil
+		return x.getKv(key)
 	case "put":
 		if len(labels) == 2 {
-			return []dnsmessage.TXTResource{{[]string{"422: no value provided"}}}, nil
+			return []dnsmessage.TXTResource{{[]string{"422: missing a value: put.value.key.k-v.io"}}}, nil
 		}
-		if len(value) > 63 { // too-long TXT records can be used in DNS amplification attacks; Truncate!
-			value = value[:63]
-		}
-		_, err := x.Etcd.Put(ctx, key, value)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", strings.TrimPrefix(key, keyPrefix), value, err)
-		}
-		return []dnsmessage.TXTResource{{[]string{value}}}, nil
+		return x.putKv(key, value)
 	case "delete":
-		getResp, err := x.Etcd.Get(ctx, key) // is the key set?
-		if err != nil {
-			return nil, fmt.Errorf(`couldn't GET "%s": %w`, strings.TrimPrefix(key, keyPrefix), err)
-		}
-		if len(getResp.Kvs) == 0 { // nothing to delete
-			return []dnsmessage.TXTResource{}, nil
-		}
-		// the key is set; we need to delete it
-		_, err = x.Etcd.Delete(ctx, key)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", strings.TrimPrefix(key, keyPrefix), value, err)
-		}
-		return []dnsmessage.TXTResource{{[]string{string(getResp.Kvs[0].Value)}}}, nil
+		return x.deleteKv(key)
 	}
 	return []dnsmessage.TXTResource{{[]string{"422: valid verbs are get, put, delete"}}}, nil
+}
+
+func (x Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
+	resp, err := x.Etcd.Get(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+	}
+	if len(resp.Kvs) > 0 {
+		return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
+	}
+	return []dnsmessage.TXTResource{}, nil
+}
+
+func (x Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
+	if len(value) > 63 { // too-long TXT records can be used in DNS amplification attacks; Truncate!
+		value = value[:63]
+	}
+	_, err := x.Etcd.Put(ctx, key, value)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
+	}
+	return []dnsmessage.TXTResource{{[]string{value}}}, nil
+}
+
+func (x Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
+	getResp, err := x.Etcd.Get(ctx, key) // is the key set?
+	if err != nil {
+		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+	}
+	if len(getResp.Kvs) == 0 { // nothing to delete
+		return []dnsmessage.TXTResource{}, nil
+	}
+	value := string(getResp.Kvs[0].Value)
+	// the key is set; we need to delete it
+	_, err = x.Etcd.Delete(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", key, value, err)
+	}
+	return []dnsmessage.TXTResource{{[]string{value}}}, nil
 }
 
 // soaLogMessage returns an easy-to-read string for logging SOA Answers/Authorities
