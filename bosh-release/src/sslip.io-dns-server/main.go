@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -19,9 +20,12 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
+	// the sole flag, `-etcdHost`, is primarily meant for integration tests
+	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd")
+	flag.Parse()
 	// connect to `etcd`; if there's an error, set etcdCli to `nil` and that to
 	// determine whether to use a local key-value store instead
-	etcdCli, err := clientv3New()
+	etcdCli, err := clientv3New(*etcdEndpoint)
 	if err != nil {
 		log.Println(fmt.Errorf("Failed to connect to etcd; using local key-value store instead: %w", err))
 	} else {
@@ -146,8 +150,8 @@ func isErrorPermissionsError(err error) bool {
 // clientv3New attempts to connect to local etcd and retrieve a key to make
 // sure the connection works. If for any reason it fails it returns nil +
 // error
-func clientv3New() (*clientv3.Client, error) {
-	etcdEndpoints := []string{"localhost:2379"}
+func clientv3New(etcdEndpoint string) (*clientv3.Client, error) {
+	etcdEndpoints := []string{etcdEndpoint}
 	etcdCli, err := clientv3.New(clientv3.Config{
 		Endpoints:   etcdEndpoints,
 		DialTimeout: 250 * time.Millisecond,
