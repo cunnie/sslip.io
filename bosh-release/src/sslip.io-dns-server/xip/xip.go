@@ -17,12 +17,22 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+//counterfeiter:generate . V3client
+type V3client interface {
+	Get(context.Context, string, ...v3client.OpOption) (*v3client.GetResponse, error)
+	Put(context.Context, string, string, ...v3client.OpOption) (*v3client.PutResponse, error)
+	Delete(context.Context, string, ...v3client.OpOption) (*v3client.DeleteResponse, error)
+	Close() error
+}
+
 // Xip contains info that the routines need to answer a query that I don't want to plumb
 // through the call hierarchy
 // (the source address for `ip.sslip.io`, and the etcd client for `k-v.io`)
 type Xip struct {
 	SrcAddr net.IP
-	Etcd    *v3client.Client
+	Etcd    V3client
 }
 
 // DomainCustomization is a value that is returned for a specific query.
