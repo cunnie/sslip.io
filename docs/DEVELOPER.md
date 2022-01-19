@@ -8,7 +8,7 @@ export OLD_VERSION=2.2.4
 export VERSION=2.3.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
-# update the version number for the TXT record for version.sslip.io
+# update the version number for the TXT record for version.status.sslip.io
 sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   bin/make_all \
   bosh-release/packages/sslip.io-dns-server/packaging \
@@ -17,7 +17,7 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
   k8s/document_root/index.html \
   k8s/Dockerfile-sslip.io-dns-server
-# update the git hash for the TXT record for version.sslip.io for BOSH release
+# update the git hash for the TXT record for version.status.sslip.io for BOSH release
 sed -i '' "s/VersionGitHash=[0-9a-fA-F]*/VersionGitHash=$(git rev-parse --short HEAD)/g" \
   bosh-release/packages/sslip.io-dns-server/packaging
 cd bosh-release/
@@ -49,7 +49,7 @@ dig +short sSlIp.Io
 echo 78.46.204.247
 dig @$IP txt ip.sslip.io +short | tr -d '"'
 curl curlmyip.org; echo
-dig @$IP txt version.sslip.io +short | grep $VERSION
+dig @$IP txt version.status.sslip.io +short | grep $VERSION
 echo "\"$VERSION\""
 dig @$IP my-key.kv.sslip.io txt +short # returns nothing
 echo " ===" # separator because the results are too similar
@@ -101,7 +101,7 @@ git pull -r
 nvim sslip.io.yml
 bosh -e vsphere -d sslip.io deploy sslip.io.yml -l <(lpass show --note deployments.yml) --no-redact
 dig @ns-azure 127-0-0-1.sslip.io +short  # output should be 127.0.0.1
-dig @ns-azure.nono.io txt version.sslip.io +short
+dig @ns-azure.nono.io txt version.status.sslip.io +short
 git add -p
 git ci -v -m"Bump sslip.io BOSH release: $OLD_VERSION → $VERSION"
 git push
