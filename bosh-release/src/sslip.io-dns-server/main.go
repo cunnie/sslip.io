@@ -33,12 +33,14 @@ func main() {
 	}
 	// I don't need to `defer etcdCli.Close()` it's redundant in the main routine: when main() exits, everything is closed.
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
+	// set up our global metrics struct, setting our start time
+	xipMetrics := xip.Metrics{Start: time.Now()}
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {
 	case err == nil:
 		log.Println(`Successfully bound to all interfaces, port 53.`)
 		wg.Add(1)
-		readFrom(conn, etcdCli, &wg)
+		readFrom(conn, &wg, etcdCli, &xipMetrics)
 	case isErrorPermissionsError(err):
 		log.Println("Try invoking me with `sudo` because I don't have permission to bind to port 53.")
 		log.Fatal(err.Error())
@@ -62,7 +64,7 @@ func main() {
 			} else {
 				wg.Add(1)
 				boundIPsPorts = append(boundIPsPorts, conn.LocalAddr().String())
-				go readFrom(conn, etcdCli, &wg)
+				go readFrom(conn, &wg, etcdCli, &xipMetrics)
 			}
 		}
 		if len(boundIPsPorts) > 0 {
@@ -77,7 +79,7 @@ func main() {
 	wg.Wait()
 }
 
-func readFrom(conn *net.UDPConn, etcdCli *clientv3.Client, wg *sync.WaitGroup) {
+func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, etcdCli xip.V3client, xipMetrics *xip.Metrics) {
 	defer wg.Done()
 	for {
 		query := make([]byte, 512)
@@ -87,7 +89,8 @@ func readFrom(conn *net.UDPConn, etcdCli *clientv3.Client, wg *sync.WaitGroup) {
 			continue
 		}
 		go func() {
-			response, logMessage, err := xip.Xip{SrcAddr: addr.IP, Etcd: etcdCli}.QueryResponse(query)
+			xipServer := xip.Xip{SrcAddr: addr.IP, Etcd: etcdCli, Metrics: xipMetrics}
+			response, logMessage, err := xipServer.QueryResponse(query)
 			if err != nil {
 				log.Println(err.Error())
 				return

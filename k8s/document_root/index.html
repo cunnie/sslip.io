@@ -226,7 +226,7 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
       <code>ns-aws.sslip.io</code> requires a mere 592 bytes spread over 2 packets; Querying <a href=
       "https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over 14 times
       as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
-      service.</p>
+      service.</p><!--
       <h4 id="key-value-store"><code>k-v.io</code>: (key-value) read/write/delete TXTs</h4>
       <p>We enable special behavior under the <code>k-v.io</code> domain: it can be treated as a key-value store, the
       subdomain being the key, and the TXT record being the value.</p>
@@ -260,10 +260,11 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
         <li>Values are not consistent. If a value is set in <code>ns-aws.sslip.io</code>, it does not propagate to
         <code>ns-gce.sslip.io</code> nor <code>ns-azure.sslip.io</code>.</li>
       </ul>
+      -->
       <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
-      sslip.io software by querying the TXT record of <code>version.sslip.io</code>:
+      sslip.io software by querying the TXT record of <code>version.status.sslip.io</code>:
       <pre>
-dig @ns-aws.sslip.io txt version.sslip.io +short
+dig @ns-aws.sslip.io txt version.status.sslip.io +short
             "2.2.3"
             "2021/11/27-11:35:50-0800"
             "074f0a8"
@@ -271,10 +272,28 @@ dig @ns-aws.sslip.io txt version.sslip.io +short
       <p>The first number, ("2.2.3"), is the version of the sslip.io DNS software, and is most relevant. The other two
       numbers are the date compiled and the most recent git hash, but those values can differ across servers due to the
       manner in which the software is deployed.</p>
+      <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
+      <code>metrics.status.sslip.io</code>
+      <pre>
+dig @ns-azure.sslip.io txt version.status.sslip.io +short
+            "uptime (seconds): 1200"
+            "key-value store: builtin"
+            "queries: 46202"
+            "queries/second: 38.5"
+            "successful:"
+            "- queries/second: 14.5"
+            "- A: 2000"
+            "- AAAA: 20"
+            "- IP TXT: 2"
+            "- version TXT: 2"
+            "- DNS-01 challenge: 2"
+      </pre>
       <h3 id="related">Related Services</h3>
       <ul>
         <li>
-          <a href="http://xip.io/">xip.io</a>: the inspiration for sslip.io
+          <a href="http://xip.io/">xip.io</a>: the inspiration for sslip.io. Sadly, this appears to be no longer
+          maintained after <a href="https://twitter.com/sstephenson/status/1388146129284603906">Sam Stephenson left
+          Basecamp</a>.
         </li>
         <li>
           <a href="http://nip.io">nip.io</a>: similar to xip.io, but the PowerDNS backend is written in elegant Python

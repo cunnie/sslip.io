@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -33,6 +34,18 @@ type V3client interface {
 type Xip struct {
 	SrcAddr net.IP
 	Etcd    V3client
+	Metrics *Metrics
+}
+
+type Metrics struct {
+	Start                              time.Time
+	Queries                            int
+	SuccessfulQueries                  int
+	SuccessfulAQueries                 int
+	SuccessfulAAAAQueries              int
+	SuccessfulTXTSrcIPQueries          int
+	SuccessfulTXTVersionQueries        int
+	SuccessfulTXTDNS01ChallengeQUeries int
 }
 
 // DomainCustomization is a value that is returned for a specific query.
@@ -48,7 +61,7 @@ type DomainCustomization struct {
 	AAAA  []dnsmessage.AAAAResource
 	CNAME dnsmessage.CNAMEResource
 	MX    []dnsmessage.MXResource
-	TXT   func(string) ([]dnsmessage.TXTResource, error)
+	TXT   func(Xip) ([]dnsmessage.TXTResource, error)
 	// Unlike the other record types, TXT is a function in order to enable more complex behavior
 	// e.g. IP address of the query's source
 }
@@ -115,7 +128,7 @@ var (
 					MX:   mx2,
 				},
 			},
-			TXT: func(_ string) ([]dnsmessage.TXTResource, error) {
+			TXT: func(_ Xip) ([]dnsmessage.TXTResource, error) {
 				// Although multiple TXT records with multiple strings are allowed, we're sticking
 				// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
 				// and that's what google.com does.
@@ -161,14 +174,17 @@ var (
 		"ip.sslip.io.": {
 			TXT: ipSslipIo,
 		},
-		"version.sslip.io.": {
-			TXT: func(_ string) ([]dnsmessage.TXTResource, error) {
+		"version.status.sslip.io.": {
+			TXT: func(_ Xip) ([]dnsmessage.TXTResource, error) {
 				return []dnsmessage.TXTResource{
 					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
 					{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
 					{TXT: []string{VersionGitHash}},  // e.g. "9339c0d"
 				}, nil
 			},
+		},
+		"metrics.status.sslip.io.": {
+			TXT: metricsSslipIo,
 		},
 	}
 )
@@ -220,6 +236,7 @@ func (x Xip) QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage 
 	response.Header.ID = queryHeader.ID
 	response.Header.RecursionDesired = queryHeader.RecursionDesired
 
+	x.Metrics.Queries += 1
 	b := dnsmessage.NewBuilder(nil, response.Header)
 	b.EnableCompression()
 	if err = b.StartQuestions(); err != nil {
@@ -538,8 +555,6 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 			return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 		}
 	}
-	// The following is flagged as "Unreachable code" in Goland, and that's expected
-	return response, "", errors.New("unexpectedly fell through x.processQuestion()")
 }
 
 // NSResponse sets the Answers/Authorities depending whether we're delegating or authoritative
@@ -720,7 +735,7 @@ func (x Xip) TXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	if domain, ok := Customizations[strings.ToLower(fqdn)]; ok {
 		// Customizations[strings.ToLower(fqdn)] returns a _function_,
 		// we call that function, which has the same return signature as this method
-		return domain.TXT(x.SrcAddr.String())
+		return domain.TXT(x)
 	}
 	return nil, nil
 }
@@ -750,8 +765,28 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 }
 
 // when TXT for "ip.sslip.io" is queried, return the IP address of the querier
-func ipSslipIo(sourceIP string) ([]dnsmessage.TXTResource, error) {
-	return []dnsmessage.TXTResource{{TXT: []string{sourceIP}}}, nil
+func ipSslipIo(x Xip) ([]dnsmessage.TXTResource, error) {
+	return []dnsmessage.TXTResource{{TXT: []string{x.SrcAddr.String()}}}, nil
+}
+
+// when TXT for "metrics.sslip.io" is queried, return the cumulative metrics
+func metricsSslipIo(x Xip) (txtResources []dnsmessage.TXTResource, err error) {
+	var metrics []string
+	uptime := time.Since(x.Metrics.Start)
+	metrics = append(metrics, fmt.Sprintf("uptime (seconds): %.0f", uptime.Seconds()))
+	keyValueStore := "etcd"
+	// comparing interfaces to nil are tricky: interfaces contain both a type
+	// and a value, and although the value is nil the type isn't, so we need the following
+	if x.Etcd == nil || reflect.ValueOf(x.Etcd).IsNil() {
+		keyValueStore = "builtin"
+	}
+	metrics = append(metrics, "key-value store: "+keyValueStore)
+	metrics = append(metrics, fmt.Sprintf("queries: %d", x.Metrics.Queries))
+	metrics = append(metrics, fmt.Sprintf("queries/second: %.1f", float64(x.Metrics.Queries)/uptime.Seconds()))
+	for _, metric := range metrics {
+		txtResources = append(txtResources, dnsmessage.TXTResource{TXT: []string{metric}})
+	}
+	return txtResources, nil
 }
 
 // when TXT for "k-v.io" is queried, return the key-value pair
@@ -867,4 +902,18 @@ func soaLogMessage(soaResource dnsmessage.SOAResource) string {
 		strconv.Itoa(int(soaResource.Retry)) + " " +
 		strconv.Itoa(int(soaResource.Expire)) + " " +
 		strconv.Itoa(int(soaResource.MinTTL))
+}
+
+// MostlyEquals compares all fields except `Start` (timestamp)
+func (a Metrics) MostlyEquals(b Metrics) bool {
+	if a.Queries == b.Queries &&
+		a.SuccessfulQueries == b.SuccessfulQueries &&
+		a.SuccessfulAQueries == b.SuccessfulAQueries &&
+		a.SuccessfulAAAAQueries == b.SuccessfulAAAAQueries &&
+		a.SuccessfulTXTSrcIPQueries == b.SuccessfulTXTSrcIPQueries &&
+		a.SuccessfulTXTVersionQueries == b.SuccessfulTXTVersionQueries &&
+		a.SuccessfulTXTDNS01ChallengeQUeries == b.SuccessfulTXTDNS01ChallengeQUeries {
+		return true
+	}
+	return false
 }
