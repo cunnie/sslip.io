@@ -38,14 +38,14 @@ type Xip struct {
 }
 
 type Metrics struct {
-	Start                              time.Time
-	Queries                            int
-	SuccessfulQueries                  int
-	SuccessfulAQueries                 int
-	SuccessfulAAAAQueries              int
-	SuccessfulTXTSrcIPQueries          int
-	SuccessfulTXTVersionQueries        int
-	SuccessfulTXTDNS01ChallengeQUeries int
+	Start                             time.Time
+	Queries                           int
+	SuccessfulQueries                 int
+	SuccessfulAQueries                int
+	SuccessfulAAAAQueries             int
+	SuccessfulTXTSrcIPQueries         int
+	SuccessfulTXTVersionQueries       int
+	SuccessfulNSDNS01ChallengeQueries int
 }
 
 // DomainCustomization is a value that is returned for a specific query.
@@ -175,7 +175,8 @@ var (
 			TXT: ipSslipIo,
 		},
 		"version.status.sslip.io.": {
-			TXT: func(_ Xip) ([]dnsmessage.TXTResource, error) {
+			TXT: func(x Xip) ([]dnsmessage.TXTResource, error) {
+				x.Metrics.SuccessfulTXTVersionQueries += 1
 				return []dnsmessage.TXTResource{
 					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
 					{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
@@ -235,8 +236,8 @@ func (x Xip) QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage 
 	}
 	response.Header.ID = queryHeader.ID
 	response.Header.RecursionDesired = queryHeader.RecursionDesired
-
 	x.Metrics.Queries += 1
+
 	b := dnsmessage.NewBuilder(nil, response.Header)
 	b.EnableCompression()
 	if err = b.StartQuestions(); err != nil {
@@ -293,7 +294,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
 		// dig _acme-challenge.127-0-0-1.sslip.io mx → NS 127-0-0-1.sslip.io
 		response.Header.Authoritative = false // we're delegating, so we're not authoritative
-		return NSResponse(q.Name, response, logMessage)
+		return x.NSResponse(q.Name, response, logMessage)
 	}
 	switch q.Type {
 	case dnsmessage.TypeA:
@@ -312,6 +313,8 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 					})
 				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
+			x.Metrics.SuccessfulQueries += 1
+			x.Metrics.SuccessfulAQueries += 1
 			response.Answers = append(response.Answers,
 				// 1 or more A records; A records > 1 only available via Customizations
 				func(b *dnsmessage.Builder) error {
@@ -352,6 +355,8 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 					})
 				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
+			x.Metrics.SuccessfulQueries += 1
+			x.Metrics.SuccessfulAAAAQueries += 1
 			response.Answers = append(response.Answers,
 				// 1 or more AAAA records; AAAA records > 1 only available via Customizations
 				func(b *dnsmessage.Builder) error {
@@ -401,6 +406,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 					})
 				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
+			x.Metrics.SuccessfulQueries += 1
 			response.Answers = append(response.Answers,
 				// 1 CNAME record, via Customizations
 				func(b *dnsmessage.Builder) error {
@@ -427,6 +433,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 			if len(mailExchangers) == 0 {
 				return response, "", errors.New("no MX records, but there should be one")
 			}
+			x.Metrics.SuccessfulQueries += 1
 			response.Answers = append(response.Answers,
 				// 1 or more A records; A records > 1 only available via Customizations
 				func(b *dnsmessage.Builder) error {
@@ -451,10 +458,12 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 		}
 	case dnsmessage.TypeNS:
 		{
-			return NSResponse(q.Name, response, logMessage)
+			x.Metrics.SuccessfulQueries += 1
+			return x.NSResponse(q.Name, response, logMessage)
 		}
 	case dnsmessage.TypeSOA:
 		{
+			x.Metrics.SuccessfulQueries += 1
 			soaResource := SOAResource(q.Name)
 			response.Answers = append(response.Answers,
 				func(b *dnsmessage.Builder) error {
@@ -480,7 +489,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 			if IsAcmeChallenge(q.Name.String()) {
 				// No Answers, Not Authoritative, Authorities contain NS records
 				response.Header.Authoritative = false
-				nameServers := NSResources(q.Name.String())
+				nameServers := x.NSResources(q.Name.String())
 				var logMessages []string
 				for _, nameServer := range nameServers {
 					response.Authorities = append(response.Authorities,
@@ -506,6 +515,9 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 			txts, err = x.TXTResources(q.Name.String())
 			if err != nil {
 				return response, "", err
+			}
+			if len(txts) > 0 {
+				x.Metrics.SuccessfulQueries += 1
 			}
 			response.Answers = append(response.Answers,
 				// 1 or more TXT records via Customizations
@@ -560,8 +572,8 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 // NSResponse sets the Answers/Authorities depending whether we're delegating or authoritative
 // (whether it's an "_acme-challenge." domain or not). Either way, it supplies the Additionals
 // (IP addresses of the nameservers).
-func NSResponse(name dnsmessage.Name, response Response, logMessage string) (Response, string, error) {
-	nameServers := NSResources(name.String())
+func (x Xip) NSResponse(name dnsmessage.Name, response Response, logMessage string) (Response, string, error) {
+	nameServers := x.NSResources(name.String())
 	var logMessages []string
 	if response.Header.Authoritative {
 		// we're authoritative, so we reply with the answers
@@ -718,8 +730,9 @@ func IsAcmeChallenge(fqdnString string) bool {
 	return false
 }
 
-func NSResources(fqdnString string) []dnsmessage.NSResource {
+func (x Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 	if IsAcmeChallenge(fqdnString) {
+		x.Metrics.SuccessfulNSDNS01ChallengeQueries += 1
 		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
 		ns, _ := dnsmessage.NewName(strippedFqdn)
 		return []dnsmessage.NSResource{{NS: ns}}
@@ -768,6 +781,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 
 // when TXT for "ip.sslip.io" is queried, return the IP address of the querier
 func ipSslipIo(x Xip) ([]dnsmessage.TXTResource, error) {
+	x.Metrics.SuccessfulTXTSrcIPQueries += 1
 	return []dnsmessage.TXTResource{{TXT: []string{x.SrcAddr.String()}}}, nil
 }
 
@@ -785,6 +799,14 @@ func metricsSslipIo(x Xip) (txtResources []dnsmessage.TXTResource, err error) {
 	metrics = append(metrics, "key-value store: "+keyValueStore)
 	metrics = append(metrics, fmt.Sprintf("queries: %d", x.Metrics.Queries))
 	metrics = append(metrics, fmt.Sprintf("queries/second: %.1f", float64(x.Metrics.Queries)/uptime.Seconds()))
+	metrics = append(metrics, "successful:")
+	metrics = append(metrics, fmt.Sprintf("- queries: %d", x.Metrics.SuccessfulQueries))
+	metrics = append(metrics, fmt.Sprintf("- queries/second: %.1f", float64(x.Metrics.SuccessfulQueries)/uptime.Seconds()))
+	metrics = append(metrics, fmt.Sprintf("- A: %d", x.Metrics.SuccessfulAQueries))
+	metrics = append(metrics, fmt.Sprintf("- AAAA: %d", x.Metrics.SuccessfulAAAAQueries))
+	metrics = append(metrics, fmt.Sprintf("- source IP TXT: %d", x.Metrics.SuccessfulTXTSrcIPQueries))
+	metrics = append(metrics, fmt.Sprintf("- version TXT: %d", x.Metrics.SuccessfulTXTVersionQueries))
+	metrics = append(metrics, fmt.Sprintf("- DNS-01 challenge: %d", x.Metrics.SuccessfulNSDNS01ChallengeQueries))
 	for _, metric := range metrics {
 		txtResources = append(txtResources, dnsmessage.TXTResource{TXT: []string{metric}})
 	}
@@ -914,7 +936,7 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 		a.SuccessfulAAAAQueries == b.SuccessfulAAAAQueries &&
 		a.SuccessfulTXTSrcIPQueries == b.SuccessfulTXTSrcIPQueries &&
 		a.SuccessfulTXTVersionQueries == b.SuccessfulTXTVersionQueries &&
-		a.SuccessfulTXTDNS01ChallengeQUeries == b.SuccessfulTXTDNS01ChallengeQUeries {
+		a.SuccessfulNSDNS01ChallengeQueries == b.SuccessfulNSDNS01ChallengeQueries {
 		return true
 	}
 	return false
