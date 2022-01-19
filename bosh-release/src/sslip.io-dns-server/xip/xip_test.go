@@ -80,9 +80,10 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("NSResources()", func() {
+		var x = xip.Xip{Metrics: &xip.Metrics{}}
 		It("returns an array of hard-coded name servers", func() {
 			randomDomain := random8ByteString() + ".com."
-			ns := xip.NSResources(randomDomain)
+			ns := x.NSResources(randomDomain)
 			Expect(len(ns)).To(Equal(3))
 			Expect(ns[0].NS.String()).To(Equal("ns-aws.sslip.io."))
 			Expect(ns[1].NS.String()).To(Equal("ns-azure.sslip.io."))
@@ -92,7 +93,7 @@ var _ = Describe("Xip", func() {
 			When("the domain name has an embedded IP", func() {
 				It(`returns an array of one NS record pointing to the domain name _sans_ "acme-challenge."`, func() {
 					randomDomain := "192.168.0.1." + random8ByteString() + ".com."
-					ns := xip.NSResources("_acme-challenge." + randomDomain)
+					ns := x.NSResources("_acme-challenge." + randomDomain)
 					Expect(len(ns)).To(Equal(1))
 					Expect(ns[0].NS.String()).To(Equal(randomDomain))
 					aResources := xip.NameToA(randomDomain)
@@ -104,7 +105,7 @@ var _ = Describe("Xip", func() {
 			When("the domain name does not have an embedded IP", func() {
 				It("returns the default trinity of nameservers", func() {
 					randomDomain := "_acme-challenge." + random8ByteString() + ".com."
-					ns := xip.NSResources(randomDomain)
+					ns := x.NSResources(randomDomain)
 					Expect(len(ns)).To(Equal(3))
 				})
 			})
@@ -151,6 +152,7 @@ var _ = Describe("Xip", func() {
 		When(`the domain "ip.sslip.io" is queried`, func() {
 			BeforeEach(func() {
 				x.SrcAddr = net.IP{1, 1, 1, 1}
+				x.Metrics = &xip.Metrics{}
 			})
 			It("returns the IP address of the querier", func() {
 				txts, err := x.TXTResources("ip.sslip.io.")
