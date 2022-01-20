@@ -201,20 +201,28 @@ var _ = Describe("Xip", func() {
 			When("there's no etcd, just local, in-memory key-value", func() {
 				txtTests()
 			})
-			When(`etcd is backing the kv store`, func() {
-				BeforeEach(func() {
-					etcdCli, err := clientv3.New(clientv3.Config{
-						Endpoints:   []string{"localhost:2379"},
-						DialTimeout: 250 * time.Millisecond,
+			etcdURI := "localhost:2379"
+			// make sure there's an etcd listening before we run our tests
+			conn, err := net.DialTimeout("tcp", etcdURI, 250*time.Millisecond)
+			if err == nil {
+				err = conn.Close()
+				Expect(err).ToNot(HaveOccurred())
+				When(`etcd is backing the kv store`, func() {
+					BeforeEach(func() {
+						etcdCli, err := clientv3.New(clientv3.Config{
+							Endpoints:   []string{etcdURI},
+							DialTimeout: 250 * time.Millisecond,
+						})
+						Expect(err).ToNot(HaveOccurred())
+						x.Etcd = etcdCli
 					})
-					Expect(err).ToNot(HaveOccurred())
-					x.Etcd = etcdCli
+					AfterEach(func() {
+						err = x.Etcd.Close()
+						Expect(err).ToNot(HaveOccurred())
+					})
+					txtTests()
 				})
-				AfterEach(func() {
-					x.Etcd.Close()
-				})
-				txtTests()
-			})
+			}
 		})
 	})
 
