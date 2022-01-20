@@ -289,6 +289,49 @@ dig @ns-azure.sslip.io txt version.status.sslip.io +short
             "- version TXT: 2"
             "- DNS-01 challenge: 2"
       </pre>
+      <h5>Explanation of Metrics</h5>
+      <dl>
+        <dt>uptime</dt>
+        <dd>The time since the DNS server has been started, in seconds</dd>
+        <dt>key-value store</dt>
+        <dd>This can be one of two values: "builtin" and "etcd". "builtin" means any changes to key/value are limited
+        to that specific DNS server. "etcd" means changes are propagated to all servers whose key-value store is
+        "etcd".</dd>
+        <dt>uptime</dt>
+        <dd>The time since the DNS server has been started, in seconds</dd>
+        <dt>queries</dt>
+        <dd>The raw number of DNS queries that the server has responded to since starting operation</dd>
+        <dt>queries/second</dt>
+        <dd>The raw number of DNS queries that the server has responded to since starting operation divided by the
+        number of seconds</dd>
+        <dt>successful</dt>
+        <dd>"successful" means the number of queries for which at least one record was returned as an answer (at least
+        one record in the ANSWER section). Note that the number of successful queries is typically a third or fourth
+        the size of the overall queries. This is normal. One reason for this disparity is that often both the IPv4 (A)
+        and IPv6 (AAAA) records will be checked, but only one record is returned (successful). For example, browsing to
+        "127.0.0.1.sslip.io" generates two lookups, one successful (IPv4), and one not (IPv6). Another reason is that
+        lookups follow a chain, e.g. looking up "127.0.0.1.sslip.io" may generate up to four queries for A records
+        ("1.sslip.io", "0.1.sslip.io", "0.0.1.sslip.io" and "127.0.0.1.sslip.io"), only the last of which is
+        successful. Pro-tip: if you want to shave milliseconds off name resolution, use dashes not dots in your
+        hostname (e.g. "10-9-9-30.sslip.io" instead of "10.9.9.30.sslip.io")</dd>
+        <dt>A</dt>
+        <dd>The number of responses which included an IPv4 record since starting operation (e.g. "dig
+        127.0.0.1.sslip.io")</dd>
+        <dt>AAAA</dt>
+        <dd>The number of responses which included an IPv6 record since starting operation (e.g. "dig --1.sslip.io
+        aaaa")</dd>
+        <dt>source IP TXT</dt>
+        <dd>The number of responses which included a TXT record of the querier's IP address since starting operation
+        (e.g. "dig @ns.sslip.io ip.sslip.io txt")</dd>
+        <dt>version TXT</dt>
+        <dd>The number of responses which included a TXT record of the DNS's servers version since starting operation
+        (e.g. "dig @ns-azure.sslip.io version.status.sslip.io txt")</dd>
+        <dt>DNS-01 Challenge</dt>
+        <dd>The number of responses which included a delegation of the NS (nameserver). This lookup is used for
+        generating wildcard certificates from Let's Encrypt. Technically this is not a "successful" query in that we
+        don't return a record in the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig
+        @ns-gce.sslip.io _acme-challenge.192.168.0.1.sslip.io. soa")</dd>
+      </dl>
       <h3 id="related">Related Services</h3>
       <ul>
         <li>
