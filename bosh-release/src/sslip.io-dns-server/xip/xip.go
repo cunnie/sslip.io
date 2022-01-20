@@ -791,9 +791,7 @@ func metricsSslipIo(x Xip) (txtResources []dnsmessage.TXTResource, err error) {
 	uptime := time.Since(x.Metrics.Start)
 	metrics = append(metrics, fmt.Sprintf("uptime (seconds): %.0f", uptime.Seconds()))
 	keyValueStore := "etcd"
-	// comparing interfaces to nil are tricky: interfaces contain both a type
-	// and a value, and although the value is nil the type isn't, so we need the following
-	if x.Etcd == nil || reflect.ValueOf(x.Etcd).IsNil() {
+	if x.isEtcdNil() {
 		keyValueStore = "builtin"
 	}
 	metrics = append(metrics, "key-value store: "+keyValueStore)
@@ -852,69 +850,69 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 }
 
 func (x Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
-	if x.Etcd != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-		defer cancel()
-		resp, err := x.Etcd.Get(ctx, key)
-		if err != nil {
-			return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+	if x.isEtcdNil() {
+		if txtRecord, ok := TxtKvCustomizations[key]; ok {
+			return txtRecord, nil
 		}
-		if len(resp.Kvs) > 0 {
-			return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
-		}
-		return []dnsmessage.TXTResource{}, nil
+		return nil, nil
 	}
-	if txtRecord, ok := TxtKvCustomizations[key]; ok {
-		return txtRecord, nil
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
+	resp, err := x.Etcd.Get(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
 	}
-	return nil, nil
+	if len(resp.Kvs) > 0 {
+		return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
+	}
+	return []dnsmessage.TXTResource{}, nil
 }
 
 func (x Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
 	if len(value) > 63 { // too-long TXT records can be used in DNS amplification attacks; Truncate!
 		value = value[:63]
 	}
-	if x.Etcd != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-		defer cancel()
-		_, err := x.Etcd.Put(ctx, key, value)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
+	if x.isEtcdNil() {
+		TxtKvCustomizations[key] = []dnsmessage.TXTResource{
+			{
+				[]string{value},
+			},
 		}
-		return []dnsmessage.TXTResource{{[]string{value}}}, nil
+		return TxtKvCustomizations[key], nil
 	}
-	TxtKvCustomizations[key] = []dnsmessage.TXTResource{
-		{
-			[]string{value},
-		},
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
+	_, err := x.Etcd.Put(ctx, key, value)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
 	}
-	return TxtKvCustomizations[key], nil
+	return []dnsmessage.TXTResource{{[]string{value}}}, nil
 }
 
 func (x Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
-	if x.Etcd != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-		defer cancel()
-		getResp, err := x.Etcd.Get(ctx, key) // is the key set?
-		if err != nil {
-			return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+	if x.isEtcdNil() {
+		if deletedKey, ok := TxtKvCustomizations[key]; ok {
+			delete(TxtKvCustomizations, key)
+			return deletedKey, nil
 		}
-		if len(getResp.Kvs) == 0 { // nothing to delete
-			return []dnsmessage.TXTResource{}, nil
-		}
-		value := string(getResp.Kvs[0].Value)
-		// the key is set; we need to delete it
-		_, err = x.Etcd.Delete(ctx, key)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", key, value, err)
-		}
-		return []dnsmessage.TXTResource{{[]string{value}}}, nil
+		return nil, nil
 	}
-	if deletedKey, ok := TxtKvCustomizations[key]; ok {
-		delete(TxtKvCustomizations, key)
-		return deletedKey, nil
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
+	getResp, err := x.Etcd.Get(ctx, key) // is the key set?
+	if err != nil {
+		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
 	}
-	return nil, nil
+	if len(getResp.Kvs) == 0 { // nothing to delete
+		return []dnsmessage.TXTResource{}, nil
+	}
+	// the key is set; we need to delete it
+	value := string(getResp.Kvs[0].Value)
+	_, err = x.Etcd.Delete(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", key, value, err)
+	}
+	return []dnsmessage.TXTResource{{[]string{value}}}, nil
 }
 
 // soaLogMessage returns an easy-to-read string for logging SOA Answers/Authorities
@@ -937,6 +935,15 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 		a.SuccessfulTXTSrcIPQueries == b.SuccessfulTXTSrcIPQueries &&
 		a.SuccessfulTXTVersionQueries == b.SuccessfulTXTVersionQueries &&
 		a.SuccessfulNSDNS01ChallengeQueries == b.SuccessfulNSDNS01ChallengeQueries {
+		return true
+	}
+	return false
+}
+
+func (x Xip) isEtcdNil() bool {
+	// comparing interfaces to nil are tricky: interfaces contain both a type
+	// and a value, and although the value is nil the type isn't, so we need the following
+	if x.Etcd == nil || reflect.ValueOf(x.Etcd).IsNil() {
 		return true
 	}
 	return false
