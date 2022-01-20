@@ -101,7 +101,7 @@ describe domain do
     end
 
     it "gets the expected version number, #{sslip_version}" do
-      expect(`dig @#{whois_nameserver} TXT version.#{domain} +short`).to include(sslip_version)
+      expect(`dig @#{whois_nameserver} TXT version.status.#{domain} +short`).to include(sslip_version)
     end
 
     it "gets the source (querier's) IP address" do
@@ -110,19 +110,19 @@ describe domain do
     end
 
     it "sets a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
-      expect(`dig @#{whois_nameserver} put.MyKey.sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
+      expect(`dig @#{whois_nameserver} put.MyKey.sslipio-spec.k-v.io TXT +short`).to match(/^"MyKey"$/)
     end
 
     it "gets a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
-      expect(`dig @#{whois_nameserver} sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
+      expect(`dig @#{whois_nameserver} sslipio-spec.k-v.io TXT +short`).to match(/^"MyKey"$/)
     end
 
     it "deletes a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
-      expect(`dig @#{whois_nameserver} delete.sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
+      expect(`dig @#{whois_nameserver} delete.sslipio-spec.k-v.io TXT +short`).to match(/^"MyKey"$/)
     end
 
     it "gets a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
-      expect(`dig @#{whois_nameserver} sslipio-spec.kv.#{domain} TXT +short`).to match(/^$/)
+      expect(`dig @#{whois_nameserver} sslipio-spec.k-v.io TXT +short`).to match(/^$/)
     end
   end
   # check the website
