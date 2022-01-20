@@ -275,19 +275,19 @@ dig @ns-aws.sslip.io txt version.status.sslip.io +short
       <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
       <code>metrics.status.sslip.io</code>
       <pre>
-dig @ns-azure.sslip.io txt version.status.sslip.io +short
-            "uptime (seconds): 1200"
-            "key-value store: builtin"
-            "queries: 46202"
-            "queries/second: 38.5"
-            "successful:"
-            "- queries: 5162"
-            "- queries/second: 4.3"
-            "- A: 5000"
-            "- AAAA: 50"
-            "- source IP TXT: 2"
-            "- version TXT: 2"
-            "- DNS-01 challenge: 2"
+dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
+  "uptime (seconds): 13486"
+  "key-value store: etcd"
+  "queries: 550488"
+  "queries/second: 40.8"
+  "successful:"
+  "- queries: 149974"
+  "- queries/second: 11.1"
+  "- A: 113520"
+  "- AAAA: 7993"
+  "- source IP TXT: 12"
+  "- version TXT: 5"
+  "- DNS-01 challenge: 39"
       </pre>
       <h5>Explanation of Metrics</h5>
       <dl>
