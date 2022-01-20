@@ -161,6 +161,13 @@ var _ = Describe("Xip", func() {
 				Expect(txts[0].TXT[0]).To(MatchRegexp("^1.1.1.1$"))
 			})
 		})
+		When(`a customized domain without a TXT entry is queried`, func() {
+			It("returns no records (and doesn't panic, either)", func() {
+				txts, err := x.TXTResources("ns.sslip.io.")
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(len(txts)).To(Equal(0))
+			})
+		})
 		When(`the domain "k-v.io is queried"`, func() {
 			txtTests := func() {
 				DescribeTable(`the domain "k-v.io" is queried for TXT records`,

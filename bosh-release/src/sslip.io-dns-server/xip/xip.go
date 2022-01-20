@@ -105,9 +105,9 @@ var (
 	dkim2, _ = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
 	dkim3, _ = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
 
-	VersionSemantic = "dev"
-	VersionDate     = "today"
-	VersionGitHash  = "xxx"
+	VersionSemantic = "0.0.0"
+	VersionDate     = "0001/01/01-99:99:99-0800"
+	VersionGitHash  = "cafexxx"
 
 	TxtKvCustomizations = KvCustomizations{}
 	Customizations      = DomainCustomizations{
@@ -748,7 +748,9 @@ func (x Xip) TXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	if domain, ok := Customizations[strings.ToLower(fqdn)]; ok {
 		// Customizations[strings.ToLower(fqdn)] returns a _function_,
 		// we call that function, which has the same return signature as this method
-		return domain.TXT(x)
+		if domain.TXT != nil {
+			return domain.TXT(x)
+		}
 	}
 	return nil, nil
 }

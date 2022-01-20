@@ -109,19 +109,19 @@ describe domain do
       expect(`dig @#{whois_nameserver} TXT ip.#{domain} +short`).to match(/^"([0-9]+\.[0-9]+\.[0-9]+\.[0-9+])|(([0-9a-fA-F]*:){2,7}[0-9a-fA-F]*)"$/)
     end
 
-    it "sets a key-value @#{whois_nameserver} sslipio-spec.kv.sslip.io" do
+    it "sets a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
       expect(`dig @#{whois_nameserver} put.MyKey.sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
     end
 
-    it "gets a key-value @#{whois_nameserver} sslipio-spec.kv.sslip.io" do
+    it "gets a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
       expect(`dig @#{whois_nameserver} sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
     end
 
-    it "deletes a key-value @#{whois_nameserver} sslipio-spec.kv.sslip.io" do
+    it "deletes a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
       expect(`dig @#{whois_nameserver} delete.sslipio-spec.kv.#{domain} TXT +short`).to match(/^"MyKey"$/)
     end
 
-    it "gets a key-value @#{whois_nameserver} sslipio-spec.kv.sslip.io" do
+    it "gets a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
       expect(`dig @#{whois_nameserver} sslipio-spec.kv.#{domain} TXT +short`).to match(/^$/)
     end
   end
