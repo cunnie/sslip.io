@@ -264,7 +264,7 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
       <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
       sslip.io software by querying the TXT record of <code>version.status.sslip.io</code>:
       <pre>
-dig @ns-gce.nono.io txt version.status.sslip.io +short
+dig @ns-gce.nono.io version.status.sslip.io txt +short
   "2.4.1"
   "2022/01/20-08:11:07-0800"
   "14ef9a0"
