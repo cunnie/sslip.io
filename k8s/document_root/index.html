@@ -151,7 +151,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
       <p>If you want to run your own DNS server, it's simple: you can compile from <a href=
-      "https://github.com/cunnie/sslip.io/tree/master/bosh-release/src/sslip.io-dns-server">source</a> or you can use
+      "https://github.com/cunnie/sslip.io/tree/main/bosh-release/src/sslip.io-dns-server">source</a> or you can use
       one of our <a href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following
       example, we install & run our server within a docker container:</p>
       <pre>
@@ -185,7 +185,7 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
       </div>
       <p>if you're interested in acquiring a wildcard certificate for your sslip.io domain, e.g.
       "*.52-0-56-137.sslip.io", the procedure is described <a href=
-      "https://github.com/cunnie/sslip.io/blob/master/docs/wildcard.md">here</a>.</p>
+      "https://github.com/cunnie/sslip.io/blob/main/docs/wildcard.md">here</a>.</p>
       <h3 id="experimental">Experimental Features</h3>
       <p>Experimental features can change; don't depend on them.</p>
       <h4 id="whatismyip">Determining Your External IP Address via DNS Lookup</h4>
@@ -264,12 +264,12 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
       <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
       sslip.io software by querying the TXT record of <code>version.status.sslip.io</code>:
       <pre>
-dig @ns-aws.sslip.io txt version.status.sslip.io +short
-            "2.2.3"
-            "2021/11/27-11:35:50-0800"
-            "074f0a8"
+dig @ns-gce.nono.io txt version.status.sslip.io +short
+  "2.4.1"
+  "2022/01/20-08:11:07-0800"
+  "14ef9a0"
 </pre>
-      <p>The first number, ("2.2.3"), is the version of the sslip.io DNS software, and is most relevant. The other two
+      <p>The first number, ("2.4.1"), is the version of the sslip.io DNS software, and is most relevant. The other two
       numbers are the date compiled and the most recent git hash, but those values can differ across servers due to the
       manner in which the software is deployed.</p>
       <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
