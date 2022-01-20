@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.2.4
-export VERSION=2.3.0
+export OLD_VERSION=2.3.0
+export VERSION=2.4.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -51,18 +51,19 @@ dig @$IP txt ip.sslip.io +short | tr -d '"'
 curl curlmyip.org; echo
 dig @$IP txt version.status.sslip.io +short | grep $VERSION
 echo "\"$VERSION\""
-dig @$IP my-key.kv.sslip.io txt +short # returns nothing
+dig @$IP my-key.k-v.io txt +short # returns nothing
 echo " ===" # separator because the results are too similar
-dig @$IP put.MyValue.my-key.kv.sslip.io txt +short
+dig @$IP put.MyValue.my-key.k-v.io txt +short
 echo "\"MyValue\""
 echo " ===" # separator because the results are too similar
-dig @$IP MY-KEY.kv.sslip.io txt +short
+dig @$IP MY-KEY.k-v.io txt +short
 echo "\"MyValue\""
 echo " ===" # separator because the results are too similar
-dig @$IP delete.my-key.kv.sslip.io txt +short
+dig @$IP delete.my-key.k-v.io txt +short
 echo "\"MyValue\""
 echo " ===" # separator because the results are too similar
-dig @$IP my-key.kv.sslip.io txt +short # returns nothing
+dig @$IP my-key.k-v.io txt +short # returns nothing
+dig @$IP metrics.status.sslip.io txt +short
 pushd ..
 git add -p
 git ci -vm"BOSH release: $VERSION: kv.sslip.io key-value store"
