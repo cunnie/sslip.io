@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.4.0
-export VERSION=2.4.1
+export OLD_VERSION=2.4.1
+export VERSION=2.4.2
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io

@@ -661,6 +661,10 @@ func NameToA(fqdnString string) []dnsmessage.AResource {
 			match := string(ipv4RE.FindSubmatch(fqdn)[2])
 			match = strings.Replace(match, "-", ".", -1)
 			ipv4address := net.ParseIP(match).To4()
+			// We shouldn't reach here because `match` should always be valid, but we're not optimists
+			if ipv4address == nil {
+				return []dnsmessage.AResource{}
+			}
 			return []dnsmessage.AResource{
 				{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
 			}
@@ -770,7 +774,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 	return dnsmessage.SOAResource{
 		NS:     name,
 		MBox:   mbox,
-		Serial: 2022011900,
+		Serial: 2022012200,
 		// cribbed the Refresh/Retry/Expire from google.com.
 		// MinTTL was 300, but I dropped to 180 for faster
 		// key-value propagation
