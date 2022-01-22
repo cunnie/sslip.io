@@ -81,6 +81,31 @@ func main() {
 
 func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, etcdCli xip.V3client, xipMetrics *xip.Metrics) {
 	defer wg.Done()
+	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
+	// The endpoint we're worried about is metrics.status.sslip.io, whose reply is
+	// ~400 bytes with a query of ~100 bytes (4x amplification). We accomplish this by
+	// using channels with a quarter-second delay. Max throughput 1.2 kBytes/sec.
+	//
+	// We want to balance this delay against our desire to run tests quickly, so we buffer
+	// the channel with enough room to accommodate our tests.
+	//
+	// We realize that, if we're listening on several network interfaces, we're throttling
+	// _per interface_, not from a global standpoint, but we didn't want to clutter
+	// main() more than necessary.
+	//
+	// We also want to have fun playing with channels
+	dnsAmplificationAttackDelay := make(chan struct{}, xip.MetricsBufferSize)
+	go func() {
+		// fill up the channel's buffer so that our tests aren't slowed down (~85 tests)
+		for i := 0; i < xip.MetricsBufferSize; i += 1 {
+			dnsAmplificationAttackDelay <- struct{}{}
+		}
+		// now put on the brakes for users trying to leverage our server in a DNS amplification attack
+		for {
+			dnsAmplificationAttackDelay <- struct{}{}
+			time.Sleep(250 * time.Millisecond)
+		}
+	}()
 	for {
 		query := make([]byte, 512)
 		_, addr, err := conn.ReadFromUDP(query)
@@ -89,7 +114,12 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, etcdCli xip.V3client, xipMe
 			continue
 		}
 		go func() {
-			xipServer := xip.Xip{SrcAddr: addr.IP, Etcd: etcdCli, Metrics: xipMetrics}
+			xipServer := xip.Xip{
+				SrcAddr:                     addr.IP,
+				Etcd:                        etcdCli,
+				Metrics:                     xipMetrics,
+				DnsAmplificationAttackDelay: dnsAmplificationAttackDelay,
+			}
 			response, logMessage, err := xipServer.QueryResponse(query)
 			if err != nil {
 				log.Println(err.Error())

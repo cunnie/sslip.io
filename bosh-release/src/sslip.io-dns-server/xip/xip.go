@@ -32,9 +32,10 @@ type V3client interface {
 // through the call hierarchy
 // (the source address for `ip.sslip.io`, and the etcd client for `k-v.io`)
 type Xip struct {
-	SrcAddr net.IP
-	Etcd    V3client
-	Metrics *Metrics
+	SrcAddr                     net.IP
+	Etcd                        V3client
+	DnsAmplificationAttackDelay chan struct{}
+	Metrics                     *Metrics
 }
 
 type Metrics struct {
@@ -108,6 +109,8 @@ var (
 	VersionSemantic = "0.0.0"
 	VersionDate     = "0001/01/01-99:99:99-0800"
 	VersionGitHash  = "cafexxx"
+
+	MetricsBufferSize = 100
 
 	TxtKvCustomizations = KvCustomizations{}
 	Customizations      = DomainCustomizations{
@@ -793,6 +796,7 @@ func ipSslipIo(x Xip) ([]dnsmessage.TXTResource, error) {
 
 // when TXT for "metrics.sslip.io" is queried, return the cumulative metrics
 func metricsSslipIo(x Xip) (txtResources []dnsmessage.TXTResource, err error) {
+	<-x.DnsAmplificationAttackDelay
 	var metrics []string
 	uptime := time.Since(x.Metrics.Start)
 	metrics = append(metrics, fmt.Sprintf("uptime (seconds): %.0f", uptime.Seconds()))
