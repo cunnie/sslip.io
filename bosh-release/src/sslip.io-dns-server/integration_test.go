@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"xip/xip"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -295,6 +296,28 @@ var _ = Describe("sslip.io-dns-server", func() {
 					Eventually(digSession, 1).Should(Exit(0))
 					Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA _acme-challenge.127-0-0-1.sslip.io. \? nil, NS 127-0-0-1.sslip.io.\n`))
 				})
+			})
+		})
+		When(`a TXT record for an "metrics.status.sslip.io" domain is repeatedly queries`, func() {
+			It("rate-limits the queries after some amount requests", func() {
+				// typically ~9 milliseconds / query, ~125 queries / sec on 4-core Xeon
+				var start, stop time.Time
+				throttled := false
+				// add an extra ten to the loop to really make sure we've exhausted the buffered channel
+				for i := 0; i < xip.MetricsBufferSize+10; i += 1 {
+					start = time.Now()
+					digArgs = "@localhost metrics.status.sslip.io txt"
+					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+					_, err := digCmd.Output()
+					Expect(err).ToNot(HaveOccurred())
+					stop = time.Now()
+					// we currently buffer at 250 milliseconds, so for our test we use a smidgen less because jitter
+					if stop.Sub(start) > 240*time.Millisecond {
+						throttled = true
+						break
+					}
+				}
+				Expect(throttled).To(BeTrue())
 			})
 		})
 	})
