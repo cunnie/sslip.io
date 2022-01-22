@@ -28,7 +28,7 @@ bosh create-release --force
 bosh upload-release
 bosh -n -d sslip.io-dns-server deploy ~/workspace/deployments/sslip.io-dns-server.yml --recreate
 bosh instances # record the IP address of the instance
-IP=10.0.250.22
+IP=$(bosh is --json | jq -r '.Tables[0].Rows[0].ips')
 dig +short 127.0.0.1.example.com @$IP
 echo 127.0.0.1
 dig +short ns example.com @$IP
@@ -63,7 +63,8 @@ dig @$IP delete.my-key.k-v.io txt +short
 echo "\"MyValue\""
 echo " ===" # separator because the results are too similar
 dig @$IP my-key.k-v.io txt +short # returns nothing
-dig @$IP metrics.status.sslip.io txt +short
+dig @$IP metrics.status.sslip.io txt +short | grep '"queries: '
+echo '"queries: 16"'
 pushd ..
 git add -p
 git ci -vm"BOSH release: $VERSION: kv.sslip.io key-value store"
