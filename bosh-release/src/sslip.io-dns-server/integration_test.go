@@ -303,8 +303,8 @@ var _ = Describe("sslip.io-dns-server", func() {
 				// typically ~9 milliseconds / query, ~125 queries / sec on 4-core Xeon
 				var start, stop time.Time
 				throttled := false
-				// add an extra ten to the loop to really make sure we've exhausted the buffered channel
-				for i := 0; i < xip.MetricsBufferSize+10; i += 1 {
+				// double the the number of queries to make sure we exhaust the channel
+				for i := 0; i < xip.MetricsBufferSize*2; i += 1 {
 					start = time.Now()
 					digArgs = "@localhost metrics.status.sslip.io txt"
 					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
