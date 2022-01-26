@@ -1,0 +1,15 @@
+# List of "Forbidden" names
+
+# This is a list of forbidden names that are often used in phishing attacks. We
+# won't properly resolve these names for public IP addresses (e.g. we won't
+# resolve "aiffeisen.94.228.116.140.sslip.io" to 94.228.116.140; instead, we'll
+# resolve it to one of our servers, ns-aws.sslip.io)
+
+# Forbidden names are okay for private networks, e.g.
+# "raiffeisen.192.168.0.1.sslip.io", because they aren't publicly accessible &
+# thus can't be used for phishing attempts. We properly resolve such hostnames.
+
+# File format: blank lines are ignored, "#" are comments and are ignored. One
+# name per line.
+
+raiffeisen # https://www.rbinternational.com/en/homepage.html
