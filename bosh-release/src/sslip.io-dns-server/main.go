@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -20,27 +21,48 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
+	var x xip.Xip
+	x.Metrics = &xip.Metrics{}
 	// the sole flag, `-etcdHost`, is primarily meant for integration tests
 	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd")
+	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `a list of "forbidden" names`)
 	flag.Parse()
+
 	// connect to `etcd`; if there's an error, set etcdCli to `nil` and that to
 	// determine whether to use a local key-value store instead
 	etcdCli, err := clientv3New(*etcdEndpoint)
 	if err != nil {
-		log.Println(fmt.Errorf("Failed to connect to etcd; using local key-value store instead: %w", err))
+		log.Println(fmt.Errorf("failed to connect to etcd; using local key-value store instead: %w", err))
 	} else {
 		log.Println("Successfully connected to etcd")
 	}
 	// I don't need to `defer etcdCli.Close()` it's redundant in the main routine: when main() exits, everything is closed.
-	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
+
+	// TODO move the following into its own function
+	resp, err := http.Get(*blocklistURL)
+	if err != nil {
+		log.Println(fmt.Errorf(`failed to download blocklist "%s": %w`, *blocklistURL, err))
+	} else {
+		defer resp.Body.Close()
+		if resp.StatusCode > 299 {
+			log.Printf(`failed to download blocklist "%s", HTTP status: "%d"`, *blocklistURL, resp.StatusCode)
+		} else {
+			x.BlockList, err = xip.ReadBlocklist(resp.Body)
+			if err != nil {
+				log.Println(fmt.Errorf(`failed to parse blocklist "%s": %w`, *blocklistURL, err))
+			}
+		}
+	}
+
 	// set up our global metrics struct, setting our start time
-	xipMetrics := xip.Metrics{Start: time.Now()}
+	x.Metrics.Start = time.Now()
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {
 	case err == nil:
 		log.Println(`Successfully bound to all interfaces, port 53.`)
 		wg.Add(1)
-		readFrom(conn, &wg, etcdCli, &xipMetrics)
+		readFrom(conn, &wg, etcdCli, x.Metrics)
 	case isErrorPermissionsError(err):
 		log.Println("Try invoking me with `sudo` because I don't have permission to bind to port 53.")
 		log.Fatal(err.Error())
@@ -64,7 +86,7 @@ func main() {
 			} else {
 				wg.Add(1)
 				boundIPsPorts = append(boundIPsPorts, conn.LocalAddr().String())
-				go readFrom(conn, &wg, etcdCli, &xipMetrics)
+				go readFrom(conn, &wg, etcdCli, x.Metrics)
 			}
 		}
 		if len(boundIPsPorts) > 0 {

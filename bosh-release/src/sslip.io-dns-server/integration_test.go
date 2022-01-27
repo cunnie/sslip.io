@@ -298,7 +298,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				})
 			})
 		})
-		When(`a TXT record for an "metrics.status.sslip.io" domain is repeatedly queries`, func() {
+		When(`a TXT record for an "metrics.status.sslip.io" domain is repeatedly queried`, func() {
 			It("rate-limits the queries after some amount requests", func() {
 				// typically ~9 milliseconds / query, ~125 queries / sec on 4-core Xeon
 				var start, stop time.Time
@@ -321,4 +321,49 @@ var _ = Describe("sslip.io-dns-server", func() {
 			})
 		})
 	})
+	/*
+		Describe(`The domain blocklist`, func() {
+			DescribeTable("when queried",
+				func(digArgs string, digResults string, serverLogMessage string) {
+					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					// we want to make sure digSession has exited because we
+					// want to compare the _full_ contents of the stdout in the case
+					// of negative assertions (e.g. "^$")
+					Eventually(digSession, 1).Should(Exit(0))
+					Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(digResults))
+					Eventually(serverSession.Err).Should(Say(serverLogMessage))
+				},
+				Entry("an A record with a forbidden string on the left-hand side is redirected",
+					"@localhost raiffeisen.94.228.116.140.sslip.io +short",
+					`\A52.0.56.137\n\z`,
+					`TypeA raiffeisen.94.228.116.140.sslip.io. \? 52.0.56.137\n$`),
+				Entry("an A record with a forbidden string on the right-hand side is redirected",
+					"@localhost www.94-228-116-140.raiffeisen.com +short",
+					`\A52.0.56.137\n\z`,
+					`TypeA www.94-228-116-140.raiffeisen.com. \? 52.0.56.137\n$`),
+				Entry("an A record with a forbidden string embedded is redirected",
+					"@localhost international-raiffeisen-bank.94.228.116.140.sslip.io +short",
+					`\A52.0.56.137\n\z`,
+					`TypeA international-raiffeisen-bank.94.228.116.140.sslip.io. \? 52.0.56.137\n$`),
+				Entry("an A record with a forbidden string with a private IP is not redirected",
+					"@localhost raiffeisen.192.168.0.20.sslip.io +short",
+					`\A192.168.0.20\n\z`,
+					`TypeA raiffeisen.192.168.0.20.sslip.io. \? 192.168.0.20\n$`),
+				Entry("an AAAA record with a forbidden string is redirected",
+					"@localhost international-raiffeisen-bank.2600--.sslip.io +short",
+					`\A2600:1f18:aaf:6900::a\n\z`,
+					`TypeAAAA international-raiffeisen-bank.2600--.sslip.io. \? 2600:1f18:aaf:6900::a\n$`),
+				Entry("an AAAA record with a forbidden string with a private IP is NOT redirected",
+					"@localhost international-raiffeisen-bank.fc00--.sslip.io +short",
+					`\Afc00::a\n\z`,
+					`TypeAAAA international-raiffeisen-bank.fc00--.sslip.io. \? fc00::a\n$`),
+				Entry("an NS record with acme_challenge with a forbidden string is not delegated",
+					"@localhost _acme-challenge.raiffeisen.fe80--.sslip.io ns +short",
+					`\Ans-aws.sslip.io.\nns-azure.sslip.io.\nns-gce.sslip.io.\n\z`,
+					`TypeNS _acme-challenge.raiffeisen.fe80--.sslip.io. \? ns-aws.sslip.io., ns-azure.sslip.io., ns-gce.sslip.io.\n$`),
+			)
+		})
+	*/
 })

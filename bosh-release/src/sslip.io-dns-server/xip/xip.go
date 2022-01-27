@@ -4,9 +4,11 @@
 package xip
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"reflect"
 	"regexp"
@@ -30,12 +32,12 @@ type V3client interface {
 
 // Xip contains info that the routines need to answer a query that I don't want to plumb
 // through the call hierarchy
-// (the source address for `ip.sslip.io`, and the etcd client for `k-v.io`)
 type Xip struct {
-	SrcAddr                     net.IP
-	Etcd                        V3client
-	DnsAmplificationAttackDelay chan struct{}
-	Metrics                     *Metrics
+	SrcAddr                     net.IP        // the source address for `ip.sslip.io`
+	Etcd                        V3client      // etcd client for `k-v.io`
+	DnsAmplificationAttackDelay chan struct{} // for throttling metrics.status.sslip.io
+	Metrics                     *Metrics      // DNS server metrics
+	BlockList                   []string      // list of blacklisted strings that shouldn't appear in public hostnames
 }
 
 type Metrics struct {
@@ -948,6 +950,28 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 		return true
 	}
 	return false
+}
+
+// ReadBlocklist "sanitizes" the block list, removing comments, invalid characters
+// and lowercasing the names to be blocked
+func ReadBlocklist(blocklist io.Reader) (blocklists []string, err error) {
+	scanner := bufio.NewScanner(blocklist)
+	comments := regexp.MustCompile(`#.*`)
+	invalidDNSchars := regexp.MustCompile(`[^-_0-9a-z]`)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		line = strings.ToLower(line)
+		line = comments.ReplaceAllString(line, "")        // strip comments
+		line = invalidDNSchars.ReplaceAllString(line, "") // strip invalid characters
+		if line != "" {
+			blocklists = append(blocklists, line)
+		}
+	}
+	if err = scanner.Err(); err != nil {
+		return []string{}, err
+	}
+	return blocklists, nil
 }
 
 func (x Xip) isEtcdNil() bool {

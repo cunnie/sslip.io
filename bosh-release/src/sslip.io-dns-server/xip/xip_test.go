@@ -404,6 +404,32 @@ var _ = Describe("Xip", func() {
 			})
 		})
 	})
+	Describe("ReadBlocklist()", func() {
+		It("strips comments", func() {
+			input := strings.NewReader("# a comment\n#another comment\nno-comments\n")
+			bls, err := xip.ReadBlocklist(input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bls).To(Equal([]string{"no-comments"}))
+		})
+		It("strips blank lines", func() {
+			input := strings.NewReader("\n\n\nno-blank-lines")
+			bls, err := xip.ReadBlocklist(input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bls).To(Equal([]string{"no-blank-lines"}))
+		})
+		It("lowercases names for comparison", func() {
+			input := strings.NewReader("NO-YELLING")
+			bls, err := xip.ReadBlocklist(input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bls).To(Equal([]string{"no-yelling"}))
+		})
+		It("removes all non-allowable characters", func() {
+			input := strings.NewReader("\nalpha #comment # comment\nåß∂ # comment # comment\ndelta∆\n ... GAMMA∑µ®† ...#asdfasdf#asdfasdf")
+			bls, err := xip.ReadBlocklist(input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bls).To(Equal([]string{"alpha", "delta", "gamma"}))
+		})
+	})
 })
 
 func randomIPv6Address() net.IP {
