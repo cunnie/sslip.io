@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"reflect"
 	"regexp"
@@ -217,7 +218,7 @@ type Response struct {
 //
 // Examples of log strings returned:
 //   78.46.204.247.33654: TypeA 127-0-0-1.sslip.io ? 127.0.0.1
-//   78.46.204.247.33654: TypeA www.sslip.io ? nil, SOA
+//   78.46.204.247.33654: TypeA non-existent.sslip.io ? nil, SOA
 //   78.46.204.247.33654: TypeNS www.example.com ? NS
 //   78.46.204.247.33654: TypeSOA www.example.com ? SOA
 //   2600::.33654: TypeAAAA --1.sslip.io ? ::1
@@ -295,7 +296,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 			RCode:              dnsmessage.RCodeSuccess, // assume success, may be replaced later
 		},
 	}
-	if IsAcmeChallenge(q.Name.String()) { // thanks @NormanR
+	if IsAcmeChallenge(q.Name.String()) && !x.blocklist(q.Name.String()) { // thanks @NormanR
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
 		// dig _acme-challenge.127-0-0-1.sslip.io mx → NS 127-0-0-1.sslip.io
 		response.Header.Authoritative = false // we're delegating, so we're not authoritative
@@ -304,87 +305,11 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 	switch q.Type {
 	case dnsmessage.TypeA:
 		{
-			var nameToAs []dnsmessage.AResource
-			nameToAs = NameToA(q.Name.String())
-			if len(nameToAs) == 0 {
-				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
-				response.Authorities = append(response.Authorities,
-					func(b *dnsmessage.Builder) error {
-						if err = b.SOAResource(soaHeader, soaResource); err != nil {
-							return err
-						}
-						return nil
-					})
-				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
-			}
-			x.Metrics.SuccessfulQueries += 1
-			x.Metrics.SuccessfulAQueries += 1
-			response.Answers = append(response.Answers,
-				// 1 or more A records; A records > 1 only available via Customizations
-				func(b *dnsmessage.Builder) error {
-					for _, nameToA := range nameToAs {
-						err = b.AResource(dnsmessage.ResourceHeader{
-							Name:   q.Name,
-							Type:   dnsmessage.TypeA,
-							Class:  dnsmessage.ClassINET,
-							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-							Length: 0,
-						}, nameToA)
-						if err != nil {
-							return err
-						}
-					}
-					return nil
-				})
-			var logMessages []string
-			for _, nameToA := range nameToAs {
-				ip := net.IP(nameToA.A[:])
-				logMessages = append(logMessages, ip.String())
-			}
-			return response, logMessage + strings.Join(logMessages, ", "), nil
+			return x.nameToAwithBlocklist(q, response, logMessage)
 		}
 	case dnsmessage.TypeAAAA:
 		{
-			var nameToAAAAs []dnsmessage.AAAAResource
-			nameToAAAAs = NameToAAAA(q.Name.String())
-			if len(nameToAAAAs) == 0 {
-				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
-				response.Authorities = append(response.Authorities,
-					func(b *dnsmessage.Builder) error {
-						if err = b.SOAResource(soaHeader, soaResource); err != nil {
-							return err
-						}
-						return nil
-					})
-				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
-			}
-			x.Metrics.SuccessfulQueries += 1
-			x.Metrics.SuccessfulAAAAQueries += 1
-			response.Answers = append(response.Answers,
-				// 1 or more AAAA records; AAAA records > 1 only available via Customizations
-				func(b *dnsmessage.Builder) error {
-					for _, nameToAAAA := range nameToAAAAs {
-						err = b.AAAAResource(dnsmessage.ResourceHeader{
-							Name:   q.Name,
-							Type:   dnsmessage.TypeAAAA,
-							Class:  dnsmessage.ClassINET,
-							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-							Length: 0,
-						}, nameToAAAA)
-						if err != nil {
-							return err
-						}
-					}
-					return nil
-				})
-			var logMessages []string
-			for _, nameToAAAA := range nameToAAAAs {
-				ip := net.IP(nameToAAAA.AAAA[:])
-				logMessages = append(logMessages, ip.String())
-			}
-			return response, logMessage + strings.Join(logMessages, ", "), nil
+			return x.nameToAAAAwithBlocklist(q, response, logMessage)
 		}
 	case dnsmessage.TypeALL:
 		{
@@ -654,7 +579,8 @@ func (x Xip) NSResponse(name dnsmessage.Name, response Response, logMessage stri
 	return response, logMessage + strings.Join(logMessages, ", "), nil
 }
 
-// NameToA returns an []AResource that matched the hostname
+// NameToA returns an []AResource that matched the hostname; it returns an
+// array of zero-or-one records
 func NameToA(fqdnString string) []dnsmessage.AResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
@@ -668,6 +594,7 @@ func NameToA(fqdnString string) []dnsmessage.AResource {
 			ipv4address := net.ParseIP(match).To4()
 			// We shouldn't reach here because `match` should always be valid, but we're not optimists
 			if ipv4address == nil {
+				log.Printf("----> Should be valid A but isn't: %s\n", fqdn) // TODO: delete this
 				return []dnsmessage.AResource{}
 			}
 			return []dnsmessage.AResource{
@@ -695,6 +622,7 @@ func NameToAAAA(fqdnString string) []dnsmessage.AAAAResource {
 	ipv16address := net.ParseIP(match).To16()
 	if ipv16address == nil {
 		// We shouldn't reach here because `match` should always be valid, but we're not optimists
+		log.Printf("----> Should be valid AAAA but isn't: %s\n", fqdn) // TODO: delete this
 		return []dnsmessage.AAAAResource{}
 	}
 
@@ -740,7 +668,7 @@ func IsAcmeChallenge(fqdnString string) bool {
 }
 
 func (x Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
-	if IsAcmeChallenge(fqdnString) {
+	if IsAcmeChallenge(fqdnString) && !x.blocklist(fqdnString) {
 		x.Metrics.SuccessfulNSDNS01ChallengeQueries += 1
 		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
 		ns, _ := dnsmessage.NewName(strippedFqdn)
@@ -981,4 +909,148 @@ func (x Xip) isEtcdNil() bool {
 		return true
 	}
 	return false
+}
+
+func (x Xip) blocklist(hostname string) bool {
+	aResources := NameToA(hostname)
+	aaaaResources := NameToAAAA(hostname)
+	var ip net.IP
+	if len(aResources) == 1 {
+		ip = aResources[0].A[:]
+	}
+	if len(aaaaResources) == 1 {
+		ip = aaaaResources[0].AAAA[:]
+	}
+	if len(aResources) == 0 && len(aaaaResources) == 0 {
+		return false
+	}
+	if ip.IsPrivate() {
+		return false
+	}
+	for _, blockstring := range x.BlockList {
+		if strings.Contains(hostname, blockstring) {
+			return true
+		}
+	}
+	return false
+}
+
+func (x Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
+	var nameToAs []dnsmessage.AResource
+	nameToAs = NameToA(q.Name.String())
+	if len(nameToAs) == 0 {
+		// No Answers, only 1 Authorities
+		soaHeader, soaResource := SOAAuthority(q.Name)
+		response.Authorities = append(response.Authorities,
+			func(b *dnsmessage.Builder) error {
+				if err = b.SOAResource(soaHeader, soaResource); err != nil {
+					return err
+				}
+				return nil
+			})
+		return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+	}
+	if x.blocklist(q.Name.String()) {
+		response.Answers = append(response.Answers,
+			// 1 or more A records; A records > 1 only available via Customizations
+			func(b *dnsmessage.Builder) error {
+				err = b.AResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeA,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					Length: 0,
+				}, Customizations["ns-aws.sslip.io."].A[0])
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+		return response, logMessage + net.IP(Customizations["ns-aws.sslip.io."].A[0].A[:]).String(), nil
+	}
+	x.Metrics.SuccessfulQueries += 1
+	x.Metrics.SuccessfulAQueries += 1
+	response.Answers = append(response.Answers,
+		// 1 or more A records; A records > 1 only available via Customizations
+		func(b *dnsmessage.Builder) error {
+			for _, nameToA := range nameToAs {
+				err = b.AResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeA,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					Length: 0,
+				}, nameToA)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	var logMessages []string
+	for _, nameToA := range nameToAs {
+		ip := net.IP(nameToA.A[:])
+		logMessages = append(logMessages, ip.String())
+	}
+	return response, logMessage + strings.Join(logMessages, ", "), nil
+}
+
+func (x Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
+	var nameToAAAAs []dnsmessage.AAAAResource
+	nameToAAAAs = NameToAAAA(q.Name.String())
+	if len(nameToAAAAs) == 0 {
+		// No Answers, only 1 Authorities
+		soaHeader, soaResource := SOAAuthority(q.Name)
+		response.Authorities = append(response.Authorities,
+			func(b *dnsmessage.Builder) error {
+				if err = b.SOAResource(soaHeader, soaResource); err != nil {
+					return err
+				}
+				return nil
+			})
+		return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+	}
+	if x.blocklist(q.Name.String()) {
+		response.Answers = append(response.Answers,
+			// 1 or more A records; A records > 1 only available via Customizations
+			func(b *dnsmessage.Builder) error {
+				err = b.AAAAResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeA,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					Length: 0,
+				}, Customizations["ns-aws.sslip.io."].AAAA[0])
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+		return response, logMessage + net.IP(Customizations["ns-aws.sslip.io."].AAAA[0].AAAA[:]).String(), nil
+	}
+	x.Metrics.SuccessfulQueries += 1
+	x.Metrics.SuccessfulAAAAQueries += 1
+	response.Answers = append(response.Answers,
+		// 1 or more AAAA records; AAAA records > 1 only available via Customizations
+		func(b *dnsmessage.Builder) error {
+			for _, nameToAAAA := range nameToAAAAs {
+				err = b.AAAAResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeAAAA,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					Length: 0,
+				}, nameToAAAA)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	var logMessages []string
+	for _, nameToAAAA := range nameToAAAAs {
+		ip := net.IP(nameToAAAA.AAAA[:])
+		logMessages = append(logMessages, ip.String())
+	}
+	return response, logMessage + strings.Join(logMessages, ", "), nil
 }
