@@ -22,6 +22,7 @@ import (
 func main() {
 	var wg sync.WaitGroup
 	var x xip.Xip
+	var err error
 	x.Metrics = &xip.Metrics{}
 	// the sole flag, `-etcdHost`, is primarily meant for integration tests
 	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd")
@@ -30,28 +31,20 @@ func main() {
 
 	// connect to `etcd`; if there's an error, set etcdCli to `nil` and that to
 	// determine whether to use a local key-value store instead
-	etcdCli, err := clientv3New(*etcdEndpoint)
+	x.Etcd, err = clientv3New(*etcdEndpoint)
 	if err != nil {
-		log.Println(fmt.Errorf("failed to connect to etcd; using local key-value store instead: %w", err))
+		log.Println(fmt.Errorf("failed to connect to etcd at %s; using local key-value store instead: %w", *etcdEndpoint, err))
 	} else {
-		log.Println("Successfully connected to etcd")
+		log.Printf("Successfully connected to etcd at %s\n", *etcdEndpoint)
 	}
 	// I don't need to `defer etcdCli.Close()` it's redundant in the main routine: when main() exits, everything is closed.
 
-	// TODO move the following into its own function
-	resp, err := http.Get(*blocklistURL)
+	// set up the block list
+	x.BlockList, err = readBlocklist(*blocklistURL)
 	if err != nil {
-		log.Println(fmt.Errorf(`failed to download blocklist "%s": %w`, *blocklistURL, err))
+		log.Println(fmt.Errorf("couldn't get blocklist at %s, not blocking: %w", *blocklistURL, err))
 	} else {
-		defer resp.Body.Close()
-		if resp.StatusCode > 299 {
-			log.Printf(`failed to download blocklist "%s", HTTP status: "%d"`, *blocklistURL, resp.StatusCode)
-		} else {
-			x.BlockList, err = xip.ReadBlocklist(resp.Body)
-			if err != nil {
-				log.Println(fmt.Errorf(`failed to parse blocklist "%s": %w`, *blocklistURL, err))
-			}
-		}
+		log.Printf("Successfully downloaded blocklist from %s: %v", *blocklistURL, x.BlockList)
 	}
 
 	// set up our global metrics struct, setting our start time
@@ -62,7 +55,7 @@ func main() {
 	case err == nil:
 		log.Println(`Successfully bound to all interfaces, port 53.`)
 		wg.Add(1)
-		readFrom(conn, &wg, etcdCli, x.Metrics)
+		readFrom(conn, &wg, x)
 	case isErrorPermissionsError(err):
 		log.Println("Try invoking me with `sudo` because I don't have permission to bind to port 53.")
 		log.Fatal(err.Error())
@@ -86,7 +79,7 @@ func main() {
 			} else {
 				wg.Add(1)
 				boundIPsPorts = append(boundIPsPorts, conn.LocalAddr().String())
-				go readFrom(conn, &wg, etcdCli, x.Metrics)
+				go readFrom(conn, &wg, x)
 			}
 		}
 		if len(boundIPsPorts) > 0 {
@@ -101,7 +94,7 @@ func main() {
 	wg.Wait()
 }
 
-func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, etcdCli xip.V3client, xipMetrics *xip.Metrics) {
+func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x xip.Xip) {
 	defer wg.Done()
 	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
 	// The endpoint we're worried about is metrics.status.sslip.io, whose reply is
@@ -128,6 +121,7 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, etcdCli xip.V3client, xipMe
 			time.Sleep(250 * time.Millisecond)
 		}
 	}()
+	x.DnsAmplificationAttackDelay = dnsAmplificationAttackDelay
 	for {
 		query := make([]byte, 512)
 		_, addr, err := conn.ReadFromUDP(query)
@@ -136,13 +130,8 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, etcdCli xip.V3client, xipMe
 			continue
 		}
 		go func() {
-			xipServer := xip.Xip{
-				SrcAddr:                     addr.IP,
-				Etcd:                        etcdCli,
-				Metrics:                     xipMetrics,
-				DnsAmplificationAttackDelay: dnsAmplificationAttackDelay,
-			}
-			response, logMessage, err := xipServer.QueryResponse(query)
+			x.SrcAddr = addr.IP
+			response, logMessage, err := x.QueryResponse(query)
 			if err != nil {
 				log.Println(err.Error())
 				return
@@ -222,4 +211,24 @@ func clientv3New(etcdEndpoint string) (*clientv3.Client, error) {
 		return nil, err
 	}
 	return etcdCli, nil
+}
+
+// readBlocklist downloads the blocklist of domains that are forbidden
+// because they're used for phishing (e.g. "raiffeisen")
+func readBlocklist(blocklistURL string) (blocklist []string, err error) {
+	resp, err := http.Get(blocklistURL)
+	if err != nil {
+		log.Println(fmt.Errorf(`failed to download blocklist "%s": %w`, blocklistURL, err))
+	} else {
+		defer resp.Body.Close()
+		if resp.StatusCode > 299 {
+			log.Printf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
+		} else {
+			blocklist, err = xip.ReadBlocklist(resp.Body)
+			if err != nil {
+				log.Println(fmt.Errorf(`failed to parse blocklist "%s": %w`, blocklistURL, err))
+			}
+		}
+	}
+	return blocklist, err
 }
