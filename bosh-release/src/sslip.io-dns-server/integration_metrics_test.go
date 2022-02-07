@@ -17,76 +17,130 @@ var _ = Describe("IntegrationMetrics", func() {
 	When("the server is queried", func() {
 		// One big `It()` block because these tests cannot be run in parallel (singleton)
 		It("should update metrics", func() {
+			var actualMetrics xip.Metrics
 			expectedMetrics := getMetrics()
 
-			// non-existent record updates .Queries
-			expectedMetrics.Queries += 2           // two queries: nonexistent.sslip.io, metrics.status.sslip.io
-			expectedMetrics.SuccessfulQueries += 1 // metrics.status.sslip.io
-			actualMetrics := digAndGetMetrics("@localhost non-existent.sslip.io +short")
-			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
-
-			// MX record updates .Queries, .SuccessfulQueries
-			expectedMetrics.Queries += 2
-			expectedMetrics.SuccessfulQueries += 2
-			actualMetrics = digAndGetMetrics("@localhost sslip.io mx +short")
-			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
-
-			// A record updates .Queries, .SuccessfulQueries, .SuccessfulAQueries
-			expectedMetrics.Queries += 2
-			expectedMetrics.SuccessfulQueries += 2
-			expectedMetrics.SuccessfulAQueries += 1
+			// A updates .Queries, .AnsweredQueries, .AnsweredAQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics.AnsweredAQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost 127.0.0.1.sslip.io +short")
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
-			// AAAA record updates .Queries, .SuccessfulQueries, .SuccessfulAAAAQueries
-			expectedMetrics.Queries += 2
-			expectedMetrics.SuccessfulQueries += 2
-			expectedMetrics.SuccessfulAAAAQueries += 1
+			// A (non-existent) record updates .Queries
+			expectedMetrics.Queries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io +short")
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// A blocked updates .Queries, .AnsweredQueries, .AnsweredBlockedQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics.AnsweredBlockedQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			dig("@localhost bank-of-raiffeisen.127.0.0.1.sslip.io +short")
+			actualMetrics = getMetrics()
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// AAAA updates .Queries, .AnsweredQueries, .AnsweredAAAAQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics.AnsweredAAAAQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost 2600--.sslip.io aaaa +short")
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
-			// source IP TXT record updates .Queries, .SuccessfulQueries, .SuccessfulTXTSrcIPQueries
-			expectedMetrics.Queries += 2
-			expectedMetrics.SuccessfulQueries += 2
-			expectedMetrics.SuccessfulTXTSrcIPQueries += 1
-			actualMetrics = digAndGetMetrics("@localhost ip.sslip.io txt +short")
+			// AAAA (non-existent) updates .Queries
+			expectedMetrics.Queries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io aaaa +short")
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
-			// version TXT record updates .Queries, .SuccessfulQueries, .SuccessfulTXTVersionQueries
-			expectedMetrics.Queries += 2
-			expectedMetrics.SuccessfulQueries += 2
-			expectedMetrics.SuccessfulTXTVersionQueries += 1
-			actualMetrics = digAndGetMetrics("@localhost version.status.sslip.io txt +short")
+			// MX (customized) updates .Queries, .AnsweredQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost sslip.io mx +short")
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
-			// DNS-01 challenge N record updates .Queries, .SuccessfulQueries, .SuccessfulNSDNS01ChallengeQueries
-			expectedMetrics.Queries += 2
+			// MX updates .Queries, AnsweredQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io mx +short")
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// NS updates .Queries, AnsweredQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io ns +short")
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// NS DNS-01 challenge record updates .Queries, .AnsweredNSDNS01ChallengeQueries
+			expectedMetrics.Queries += 1
 			// DNS-01 challenges don't count as successful because we're not authoritative; we're delegating
-			expectedMetrics.SuccessfulQueries += 1
-			expectedMetrics.SuccessfulNSDNS01ChallengeQueries += 1
+			expectedMetrics.AnsweredNSDNS01ChallengeQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost _acme-challenge.fe80--.sslip.io NS +short")
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
-			// 3 failed lookups + metrics
-			expectedMetrics.Queries += 4
-			expectedMetrics.SuccessfulQueries += 1
-			dig("@localhost non-existent.sslip.io +short")
-			dig("@localhost non-existent.sslip.io aaaa +short")
-			dig("@localhost non-existent.sslip.io txt +short")
+			// Always successful: SOA
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			dig("@localhost non-existent.sslip.io soa +short")
 			actualMetrics = getMetrics()
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
-			// Always successful: SOA MX NS
-			expectedMetrics.Queries += 4
-			expectedMetrics.SuccessfulQueries += 4
-			dig("@localhost non-existent.sslip.io soa +short")
-			dig("@localhost non-existent.sslip.io mx +short")
-			dig("@localhost non-existent.sslip.io ns +short")
-			actualMetrics = getMetrics()
+			// TXT sslip.io (customized) updates .Queries, .AnsweredQueries,
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost sslip.io txt +short")
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// TXT sslip.io (non-existent) updates .Queries, .AnsweredQueries,
+			expectedMetrics.Queries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io txt +short")
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// TXT ip.sslip.io updates .Queries, .AnsweredQueries, .AnsweredTXTSrcIPQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics.AnsweredTXTSrcIPQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost ip.sslip.io txt +short")
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// TXT version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredXTVersionQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredQueries += 1
+			expectedMetrics.AnsweredXTVersionQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost version.status.sslip.io txt +short")
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// TXT DNS-01 challenge record updates .Queries, .AnsweredNSDNS01ChallengeQueries
+			expectedMetrics.Queries += 1
+			expectedMetrics.AnsweredNSDNS01ChallengeQueries += 1
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost _acme-challenge.fe80--.sslip.io txt +short")
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 		})
 	})
 })
+
+// bumpExpectedToAccountForMetricsQuery takes into account that
+// digging for the metrics endpoint affects the metrics. It's like
+// the Heisenberg uncertainty principle (observing changes the values)
+func bumpExpectedToAccountForMetricsQuery(metrics xip.Metrics) xip.Metrics {
+	metrics.Queries += 1
+	metrics.AnsweredQueries += 1
+	return metrics
+}
 
 func digAndGetMetrics(digArgs string) xip.Metrics {
 	dig(digArgs)
@@ -119,18 +173,20 @@ func getMetrics() (m xip.Metrics) {
 			"\"- AAAA: %d\"\n"+
 			"\"- source IP TXT: %d\"\n"+
 			"\"- version TXT: %d\"\n"+
-			"\"- DNS-01 challenge: %d\"\n",
+			"\"- DNS-01 challenge: %d\"\n"+
+			"\"- blocked: %d\"\n",
 		&uptime,
 		&junk,
 		&m.Queries,
 		&junk,
-		&m.SuccessfulQueries,
+		&m.AnsweredQueries,
 		&junk,
-		&m.SuccessfulAQueries,
-		&m.SuccessfulAAAAQueries,
-		&m.SuccessfulTXTSrcIPQueries,
-		&m.SuccessfulTXTVersionQueries,
-		&m.SuccessfulNSDNS01ChallengeQueries,
+		&m.AnsweredAQueries,
+		&m.AnsweredAAAAQueries,
+		&m.AnsweredTXTSrcIPQueries,
+		&m.AnsweredXTVersionQueries,
+		&m.AnsweredNSDNS01ChallengeQueries,
+		&m.AnsweredBlockedQueries,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	m.Start = time.Now().Add(-time.Duration(uptime) * time.Second)

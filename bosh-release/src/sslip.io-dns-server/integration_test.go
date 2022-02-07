@@ -1,7 +1,6 @@
 package main_test
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 	"time"
@@ -28,7 +27,7 @@ var _ = BeforeSuite(func() {
 	// takes 1.312s to start up on macOS Big Sur 2.0GHz quad-core 10th-generation Intel Core i5 processor (2020 13" MacBook Pro)
 	// round up to 3 seconds to account for slow container-on-a-VM-with-shared-core
 	time.Sleep(3 * time.Second) // takes 0.455s to start up on macOS Big Sur 4-core Xeon
-	fmt.Println(string(serverSession.Err.Contents()))
+	// fmt.Println(string(serverSession.Err.Contents())) // only print this out to debug--it clutters the output
 })
 
 var _ = AfterSuite(func() {
