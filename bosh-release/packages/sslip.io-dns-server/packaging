@@ -5,9 +5,9 @@ source /var/vcap/packages/golang-1-linux/bosh/compile.env
 mkdir src ${BOSH_INSTALL_TARGET}/bin
 mv sslip.io-dns-server/{go.*,main.go,xip} src/
 cd src/
-ldflags="-X xip/xip.VersionSemantic=2.4.2 \
+ldflags="-X xip/xip.VersionSemantic=2.5.0 \
          -X xip/xip.VersionDate=$(date +%Y/%m/%d-%H:%M:%S%z) \
-         -X xip/xip.VersionGitHash=1e6fae4"
+         -X xip/xip.VersionGitHash=7831e3c"
 go build \
     -ldflags="$ldflags" \
     -o ${BOSH_INSTALL_TARGET}/bin/sslip.io-dns-server

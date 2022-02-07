@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.4.1
-export VERSION=2.4.2
+export OLD_VERSION=2.4.2
+export VERSION=2.5.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -20,15 +20,20 @@ sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
 # update the git hash for the TXT record for version.status.sslip.io for BOSH release
 sed -i '' "s/VersionGitHash=[0-9a-fA-F]*/VersionGitHash=$(git rev-parse --short HEAD)/g" \
   bosh-release/packages/sslip.io-dns-server/packaging
+# let's get the BOSH creds
 cd bosh-release/
 lpass show a # refresh LastPass token
 . ~/workspace/deployments/.envrc # set BOSH auth
 export BOSH_DEPLOYMENT=sslip.io-dns-server
+# create the BOSH release
 bosh create-release --force
+# upload the release
 bosh upload-release
+# deploy the release
 bosh -n -d sslip.io-dns-server deploy ~/workspace/deployments/sslip.io-dns-server.yml --recreate
-bosh instances # record the IP address of the instance
-IP=$(bosh is --json | jq -r '.Tables[0].Rows[0].ips')
+# find the IP of the deployed DNS server
+IP=$(bosh is --json | jq -r '.Tables[0].Rows[0].ips'); echo $IP
+# run the tests!
 dig +short 127.0.0.1.example.com @$IP
 echo 127.0.0.1
 dig +short ns example.com @$IP
@@ -65,18 +70,25 @@ echo " ===" # separator because the results are too similar
 dig @$IP my-key.k-v.io txt +short # returns nothing
 dig @$IP metrics.status.sslip.io txt +short | grep '"queries: '
 echo '"queries: 16"'
+# pop up a directory
 pushd ..
+# let's add our changes
 git add -p
-git ci -vm"BOSH release: $VERSION: kv.sslip.io key-value store"
+# and commit (but DON'T push)
+git ci -vm"BOSH release: $VERSION: block phishers"
 popd
+# upload the blobs
 bosh upload-blobs
+# create the release
 bosh create-release \
   --final \
   --tarball ~/Downloads/sslip.io-release-${VERSION}.tgz \
   --version ${VERSION}
+# add the changes
 git add -N releases/ .final_builds/
 git add -p
 git ci --amend
+# tag the release
 git tag $VERSION
 git push
 git push --tags
