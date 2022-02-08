@@ -13,3 +13,5 @@
 # name per line.
 
 raiffeisen # https://www.rbinternational.com/en/homepage.html
+43-134-66-67 # Netflix
+43.134.66.67 # Netflix
