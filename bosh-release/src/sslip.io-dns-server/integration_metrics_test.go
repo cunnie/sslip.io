@@ -162,19 +162,18 @@ func getMetrics() (m xip.Metrics) {
 	var uptime int
 	var junk string
 	_, err = fmt.Sscanf(string(stdout),
-		"\"uptime (seconds): %d\"\n"+
-			"\"key-value store: %s\n"+ // %s "swallows" the double-quote at the end
-			"\"queries: %d\"\n"+
-			"\"queries/second: %s\n"+
-			"\"successful:\"\n"+
-			"\"- queries: %d\"\n"+
-			"\"- queries/second: %s\n"+
-			"\"- A: %d\"\n"+
-			"\"- AAAA: %d\"\n"+
-			"\"- source IP TXT: %d\"\n"+
-			"\"- version TXT: %d\"\n"+
-			"\"- DNS-01 challenge: %d\"\n"+
-			"\"- blocked: %d\"\n",
+		"\"Uptime (seconds): %d\"\n"+
+			"\"Key-value store: %s\n"+ // %s "swallows" the double-quote at the end
+			"\"Queries: %d\"\n"+
+			"\"Queries/second: %s\n"+
+			"\"AnsQueries: %d\"\n"+
+			"\"AnsQueries/second: %s\n"+
+			"\"AnsA: %d\"\n"+
+			"\"AnsAAAA: %d\"\n"+
+			"\"Source IP TXT: %d\"\n"+
+			"\"Version TXT: %d\"\n"+
+			"\"DNS-01 challenge: %d\"\n"+
+			"\"Blocked: %d\"\n",
 		&uptime,
 		&junk,
 		&m.Queries,

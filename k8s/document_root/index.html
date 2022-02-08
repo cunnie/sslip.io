@@ -151,9 +151,9 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
       <p>If you want to run your own DNS server, it's simple: you can compile from <a href=
-      "https://github.com/cunnie/sslip.io/tree/main/bosh-release/src/sslip.io-dns-server">source</a> or you can use
-      one of our <a href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following
-      example, we install & run our server within a docker container:</p>
+      "https://github.com/cunnie/sslip.io/tree/main/bosh-release/src/sslip.io-dns-server">source</a> or you can use one
+      of our <a href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we
+      install & run our server within a docker container:</p>
       <pre>
 docker run -it --rm fedora
 curl -L https://github.com/cunnie/sslip.io/releases/download/2.5.0/sslip.io-dns-server-linux-amd64 -o dns-server
@@ -276,54 +276,54 @@ dig @ns-gce.nono.io version.status.sslip.io txt +short
       <code>metrics.status.sslip.io</code>
       <pre>
 dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
-  "uptime (seconds): 13486"
-  "key-value store: etcd"
-  "queries: 550488"
-  "queries/second: 40.8"
-  "successful:"
-  "- queries: 149974"
-  "- queries/second: 11.1"
-  "- A: 113520"
-  "- AAAA: 7993"
-  "- source IP TXT: 12"
-  "- version TXT: 5"
-  "- DNS-01 challenge: 39"
+  "Uptime (seconds): 13486"
+  "Key-value store: etcd"
+  "Queries: 550488"
+  "Queries/second: 40.8"
+  "AnsQueries: 149974"
+  "AnsQueries/second: 11.1"
+  "AnsA: 113520"
+  "AnsAAAA: 7993"
+  "Source IP TXT: 12"
+  "Version TXT: 5"
+  "DNS-01 challenge: 39"
       </pre>
       <h5>Explanation of Metrics</h5>
       <dl>
-        <dt>uptime</dt>
+        <dt>Uptime</dt>
         <dd>The time since the DNS server has been started, in seconds</dd>
-        <dt>key-value store</dt>
+        <dt>Key-value store</dt>
         <dd>This can be one of two values: "builtin" and "etcd". "builtin" means any changes to key/value are limited
         to that specific DNS server. "etcd" means changes are propagated to all servers whose key-value store is
-        "etcd".</dd>
-        <dt>uptime</dt>
-        <dd>The time since the DNS server has been started, in seconds</dd>
-        <dt>queries</dt>
+        "etcd"</dd>
+        <dt>Queries</dt>
         <dd>The raw number of DNS queries that the server has responded to since starting operation</dd>
-        <dt>queries/second</dt>
+        <dt>Queries/second</dt>
         <dd>The raw number of DNS queries that the server has responded to since starting operation divided by the
         number of seconds</dd>
-        <dt>successful</dt>
-        <dd>"successful" means the number of queries for which at least one record was returned as an answer (at least
-        one record in the ANSWER section). Note that the number of successful queries is typically a third or fourth
-        the size of the overall queries. This is normal. One reason for this disparity is that often both the IPv4 (A)
-        and IPv6 (AAAA) records will be checked, but only one record is returned (successful). For example, browsing to
-        "127.0.0.1.sslip.io" generates two lookups, one successful (IPv4), and one not (IPv6). Another reason is that
-        lookups follow a chain, e.g. looking up "127.0.0.1.sslip.io" may generate up to four queries for A records
-        ("1.sslip.io", "0.1.sslip.io", "0.0.1.sslip.io" and "127.0.0.1.sslip.io"), only the last of which is
-        successful. Pro-tip: if you want to shave milliseconds off name resolution, use dashes not dots in your
-        hostname (e.g. "10-9-9-30.sslip.io" instead of "10.9.9.30.sslip.io")</dd>
-        <dt>A</dt>
-        <dd>The number of responses which included an IPv4 record since starting operation (e.g. "dig
+        <dt>AnsQueries</dt>
+        <dd>The number of queries we responded to with at least one record in the answer section. Note that the number
+        of answered queries is typically a third or fourth the size of the overall queries. This is normal. One reason
+        for this disparity is that often both the IPv4 (A) and IPv6 (AAAA) records will be checked, but only one reply
+        will have a record in the answer section . For example, browsing to "127.0.0.1.sslip.io" generates two lookups,
+        one with an answer (IPv4), and one without (IPv6). Another reason is that lookups follow a chain, e.g. looking
+        up "127.0.0.1.sslip.io" may generate up to four queries for A records ("1.sslip.io", "0.1.sslip.io",
+        "0.0.1.sslip.io" and "127.0.0.1.sslip.io"), only the last of which returns a record in the answer section.
+        Pro-tip: if you want to shave milliseconds off name resolution, use dashes not dots in your hostname (e.g.
+        "10-9-9-30.sslip.io" instead of "10.9.9.30.sslip.io")</dd>
+        <dt>AnsQueries/second</dt>
+        <dd>The raw number of DNS queries that the server has responded to with at least one record in the answer
+        section since starting operation divided by the number of seconds</dd>
+        <dt>AnsA</dt>
+        <dd>The number of responses which included an A (IPv4) record since starting operation (e.g. "dig
         127.0.0.1.sslip.io")</dd>
-        <dt>AAAA</dt>
-        <dd>The number of responses which included an IPv6 record since starting operation (e.g. "dig --1.sslip.io
-        aaaa")</dd>
-        <dt>source IP TXT</dt>
+        <dt>AnsAAAA</dt>
+        <dd>The number of responses which included an AAAA (IPv6) record since starting operation (e.g. "dig
+        --1.sslip.io aaaa")</dd>
+        <dt>Source IP TXT</dt>
         <dd>The number of responses which included a TXT record of the querier's IP address since starting operation
         (e.g. "dig @ns.sslip.io ip.sslip.io txt")</dd>
-        <dt>version TXT</dt>
+        <dt>Version TXT</dt>
         <dd>The number of responses which included a TXT record of the DNS's servers version since starting operation
         (e.g. "dig @ns-azure.sslip.io version.status.sslip.io txt")</dd>
         <dt>DNS-01 Challenge</dt>
