@@ -112,7 +112,7 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x xip.Xip) {
 	dnsAmplificationAttackDelay := make(chan struct{}, xip.MetricsBufferSize)
 	go func() {
 		// fill up the channel's buffer so that our tests aren't slowed down (~85 tests)
-		for i := 0; i < xip.MetricsBufferSize; i += 1 {
+		for i := 0; i < xip.MetricsBufferSize; i++ {
 			dnsAmplificationAttackDelay <- struct{}{}
 		}
 		// now put on the brakes for users trying to leverage our server in a DNS amplification attack
@@ -224,7 +224,7 @@ func readBlocklist(blocklistURL string) (blocklist []string, err error) {
 		if resp.StatusCode > 299 {
 			log.Printf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
 		} else {
-			blocklist, err = xip.ReadBlocklist(resp.Body)
+			blocklist, _, err = xip.ReadBlocklist(resp.Body)
 			if err != nil {
 				log.Println(fmt.Errorf(`failed to parse blocklist "%s": %w`, blocklistURL, err))
 			}

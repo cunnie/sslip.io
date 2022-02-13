@@ -183,7 +183,7 @@ var (
 		},
 		"version.status.sslip.io.": {
 			TXT: func(x Xip) ([]dnsmessage.TXTResource, error) {
-				x.Metrics.AnsweredXTVersionQueries += 1
+				x.Metrics.AnsweredXTVersionQueries++
 				return []dnsmessage.TXTResource{
 					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
 					{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
@@ -243,7 +243,7 @@ func (x Xip) QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage 
 	}
 	response.Header.ID = queryHeader.ID
 	response.Header.RecursionDesired = queryHeader.RecursionDesired
-	x.Metrics.Queries += 1
+	x.Metrics.Queries++
 
 	b := dnsmessage.NewBuilder(nil, response.Header)
 	b.EnableCompression()
@@ -337,7 +337,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 					})
 				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
-			x.Metrics.AnsweredQueries += 1
+			x.Metrics.AnsweredQueries++
 			response.Answers = append(response.Answers,
 				// 1 CNAME record, via Customizations
 				func(b *dnsmessage.Builder) error {
@@ -364,7 +364,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 			if len(mailExchangers) == 0 {
 				return response, "", errors.New("no MX records, but there should be one")
 			}
-			x.Metrics.AnsweredQueries += 1
+			x.Metrics.AnsweredQueries++
 			response.Answers = append(response.Answers,
 				// 1 or more A records; A records > 1 only available via Customizations
 				func(b *dnsmessage.Builder) error {
@@ -393,7 +393,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 		}
 	case dnsmessage.TypeSOA:
 		{
-			x.Metrics.AnsweredQueries += 1
+			x.Metrics.AnsweredQueries++
 			soaResource := SOAResource(q.Name)
 			response.Answers = append(response.Answers,
 				func(b *dnsmessage.Builder) error {
@@ -447,7 +447,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 				return response, "", err
 			}
 			if len(txts) > 0 {
-				x.Metrics.AnsweredQueries += 1
+				x.Metrics.AnsweredQueries++
 			}
 			response.Answers = append(response.Answers,
 				// 1 or more TXT records via Customizations
@@ -669,17 +669,17 @@ func IsAcmeChallenge(fqdnString string) bool {
 
 func (x Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 	if x.blocklist(fqdnString) {
-		x.Metrics.AnsweredQueries += 1
-		x.Metrics.AnsweredBlockedQueries += 1
+		x.Metrics.AnsweredQueries++
+		x.Metrics.AnsweredBlockedQueries++
 		return NameServers
 	}
 	if IsAcmeChallenge(fqdnString) {
-		x.Metrics.AnsweredNSDNS01ChallengeQueries += 1
+		x.Metrics.AnsweredNSDNS01ChallengeQueries++
 		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
 		ns, _ := dnsmessage.NewName(strippedFqdn)
 		return []dnsmessage.NSResource{{NS: ns}}
 	}
-	x.Metrics.AnsweredQueries += 1
+	x.Metrics.AnsweredQueries++
 	return NameServers
 }
 
@@ -726,7 +726,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 
 // when TXT for "ip.sslip.io" is queried, return the IP address of the querier
 func ipSslipIo(x Xip) ([]dnsmessage.TXTResource, error) {
-	x.Metrics.AnsweredTXTSrcIPQueries += 1
+	x.Metrics.AnsweredTXTSrcIPQueries++
 	return []dnsmessage.TXTResource{{TXT: []string{x.SrcAddr.String()}}}, nil
 }
 
@@ -889,24 +889,32 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 
 // ReadBlocklist "sanitizes" the block list, removing comments, invalid characters
 // and lowercasing the names to be blocked
-func ReadBlocklist(blocklist io.Reader) (blocklists []string, err error) {
+func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlockLists []net.IPNet, err error) {
 	scanner := bufio.NewScanner(blocklist)
 	comments := regexp.MustCompile(`#.*`)
 	invalidDNSchars := regexp.MustCompile(`[^-_0-9a-z]`)
+	invalidDNScharsWithSlashesDotsAndColons := regexp.MustCompile(`[^-_0-9a-z/.:]`)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.ToLower(line)
-		line = comments.ReplaceAllString(line, "")        // strip comments
-		line = invalidDNSchars.ReplaceAllString(line, "") // strip invalid characters
-		if line != "" {
-			blocklists = append(blocklists, line)
+		line = comments.ReplaceAllString(line, "")                                // strip comments
+		line = invalidDNScharsWithSlashesDotsAndColons.ReplaceAllString(line, "") // strip invalid characters
+		_, ipcidr, err := net.ParseCIDR(line)
+		if err != nil {
+			line = invalidDNSchars.ReplaceAllString(line, "") // strip invalid DNS characters
+			if line == "" {
+				continue
+			}
+			stringBlocklists = append(stringBlocklists, line)
+		} else {
+			cidrBlockLists = append(cidrBlockLists, *ipcidr)
 		}
 	}
 	if err = scanner.Err(); err != nil {
-		return []string{}, err
+		return []string{}, []net.IPNet{}, err
 	}
-	return blocklists, nil
+	return stringBlocklists, cidrBlockLists, nil
 }
 
 func (x Xip) isEtcdNil() bool {
@@ -958,8 +966,8 @@ func (x Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logM
 		return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 	}
 	if x.blocklist(q.Name.String()) {
-		x.Metrics.AnsweredQueries += 1
-		x.Metrics.AnsweredBlockedQueries += 1
+		x.Metrics.AnsweredQueries++
+		x.Metrics.AnsweredBlockedQueries++
 		response.Answers = append(response.Answers,
 			// 1 or more A records; A records > 1 only available via Customizations
 			func(b *dnsmessage.Builder) error {
@@ -977,8 +985,8 @@ func (x Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logM
 			})
 		return response, logMessage + net.IP(Customizations["ns-aws.sslip.io."].A[0].A[:]).String(), nil
 	}
-	x.Metrics.AnsweredQueries += 1
-	x.Metrics.AnsweredAQueries += 1
+	x.Metrics.AnsweredQueries++
+	x.Metrics.AnsweredAQueries++
 	response.Answers = append(response.Answers,
 		// 1 or more A records; A records > 1 only available via Customizations
 		func(b *dnsmessage.Builder) error {
@@ -1020,8 +1028,8 @@ func (x Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, l
 		return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 	}
 	if x.blocklist(q.Name.String()) {
-		x.Metrics.AnsweredQueries += 1
-		x.Metrics.AnsweredBlockedQueries += 1
+		x.Metrics.AnsweredQueries++
+		x.Metrics.AnsweredBlockedQueries++
 		response.Answers = append(response.Answers,
 			// 1 or more A records; A records > 1 only available via Customizations
 			func(b *dnsmessage.Builder) error {
@@ -1039,8 +1047,8 @@ func (x Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, l
 			})
 		return response, logMessage + net.IP(Customizations["ns-aws.sslip.io."].AAAA[0].AAAA[:]).String(), nil
 	}
-	x.Metrics.AnsweredQueries += 1
-	x.Metrics.AnsweredAAAAQueries += 1
+	x.Metrics.AnsweredQueries++
+	x.Metrics.AnsweredAAAAQueries++
 	response.Answers = append(response.Answers,
 		// 1 or more AAAA records; AAAA records > 1 only available via Customizations
 		func(b *dnsmessage.Builder) error {
