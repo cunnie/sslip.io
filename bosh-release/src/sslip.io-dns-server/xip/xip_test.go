@@ -404,30 +404,51 @@ var _ = Describe("Xip", func() {
 			})
 		})
 	})
+
 	Describe("ReadBlocklist()", func() {
 		It("strips comments", func() {
 			input := strings.NewReader("# a comment\n#another comment\nno-comments\n")
-			bls, err := xip.ReadBlocklist(input)
+			bls, blIPs, err := xip.ReadBlocklist(input)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bls).To(Equal([]string{"no-comments"}))
+			Expect(blIPs).To(BeNil())
 		})
 		It("strips blank lines", func() {
 			input := strings.NewReader("\n\n\nno-blank-lines")
-			bls, err := xip.ReadBlocklist(input)
+			bls, blIPs, err := xip.ReadBlocklist(input)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bls).To(Equal([]string{"no-blank-lines"}))
+			Expect(blIPs).To(BeNil())
 		})
 		It("lowercases names for comparison", func() {
 			input := strings.NewReader("NO-YELLING")
-			bls, err := xip.ReadBlocklist(input)
+			bls, blIPs, err := xip.ReadBlocklist(input)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bls).To(Equal([]string{"no-yelling"}))
+			Expect(blIPs).To(BeNil())
 		})
 		It("removes all non-allowable characters", func() {
 			input := strings.NewReader("\nalpha #comment # comment\nåß∂ # comment # comment\ndelta∆\n ... GAMMA∑µ®† ...#asdfasdf#asdfasdf")
-			bls, err := xip.ReadBlocklist(input)
+			bls, blIPs, err := xip.ReadBlocklist(input)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bls).To(Equal([]string{"alpha", "delta", "gamma"}))
+			Expect(blIPs).To(BeNil())
+		})
+		It("reads in IPv4 CIDRs", func() {
+			input := strings.NewReader("\n43.134.66.67/24 #asdfasdf")
+			bls, blIPs, err := xip.ReadBlocklist(input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bls).To(BeNil())
+			Expect(blIPs).To(Equal([]net.IPNet{{IP: net.IP{43, 134, 66, 0}, Mask: net.IPMask{255, 255, 255, 0}}}))
+		})
+		It("reads in IPv6 CIDRs", func() {
+			input := strings.NewReader("\n 2600::/64 #asdfasdf")
+			bls, blIPs, err := xip.ReadBlocklist(input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bls).To(BeNil())
+			Expect(blIPs).To(Equal([]net.IPNet{
+				{IP: net.IP{38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+					Mask: net.IPMask{255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0}}}))
 		})
 	})
 })

@@ -305,7 +305,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				var start, stop time.Time
 				throttled := false
 				// double the the number of queries to make sure we exhaust the channel's buffers
-				for i := 0; i < xip.MetricsBufferSize*2; i += 1 {
+				for i := 0; i < xip.MetricsBufferSize*2; i++ {
 					start = time.Now()
 					digArgs = "@localhost metrics.status.sslip.io txt"
 					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
