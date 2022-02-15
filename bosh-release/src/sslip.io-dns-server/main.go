@@ -39,14 +39,6 @@ func main() {
 	}
 	// I don't need to `defer etcdCli.Close()` it's redundant in the main routine: when main() exits, everything is closed.
 
-	// set up the block list
-	x.BlockList, err = readBlocklist(*blocklistURL)
-	if err != nil {
-		log.Println(fmt.Errorf("couldn't get blocklist at %s, not blocking: %w", *blocklistURL, err))
-	} else {
-		log.Printf("Successfully downloaded blocklist from %s: %v", *blocklistURL, x.BlockList)
-	}
-
 	// set up our global metrics struct, setting our start time
 	x.Metrics.Start = time.Now()
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
@@ -55,7 +47,7 @@ func main() {
 	case err == nil:
 		log.Println(`Successfully bound to all interfaces, port 53.`)
 		wg.Add(1)
-		readFrom(conn, &wg, x)
+		readFrom(conn, &wg, x, *blocklistURL)
 	case isErrorPermissionsError(err):
 		log.Println("Try invoking me with `sudo` because I don't have permission to bind to port 53.")
 		log.Fatal(err.Error())
@@ -79,7 +71,7 @@ func main() {
 			} else {
 				wg.Add(1)
 				boundIPsPorts = append(boundIPsPorts, conn.LocalAddr().String())
-				go readFrom(conn, &wg, x)
+				go readFrom(conn, &wg, x, *blocklistURL)
 			}
 		}
 		if len(boundIPsPorts) > 0 {
@@ -94,7 +86,7 @@ func main() {
 	wg.Wait()
 }
 
-func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x xip.Xip) {
+func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x xip.Xip, blocklistURL string) {
 	defer wg.Done()
 	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
 	// The endpoint we're worried about is metrics.status.sslip.io, whose reply is
@@ -119,6 +111,20 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x xip.Xip) {
 		for {
 			dnsAmplificationAttackDelay <- struct{}{}
 			time.Sleep(250 * time.Millisecond)
+		}
+	}()
+	go func() {
+		for {
+			blockListStrings, blockListCDIRs, err := readBlocklist(blocklistURL)
+			if err != nil {
+				log.Println(fmt.Errorf("couldn't get blocklist at %s: %w", blocklistURL, err))
+			} else {
+				log.Printf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, blockListStrings, blockListCDIRs)
+				x.BlockListStrings = blockListStrings
+				x.BlockListCDIRS = blockListCDIRs
+				x.BlockListUpdated = time.Now()
+			}
+			time.Sleep(1 * time.Hour)
 		}
 	}()
 	x.DnsAmplificationAttackDelay = dnsAmplificationAttackDelay
@@ -213,9 +219,9 @@ func clientv3New(etcdEndpoint string) (*clientv3.Client, error) {
 	return etcdCli, nil
 }
 
-// readBlocklist downloads the blocklist of domains that are forbidden
+// readBlocklist downloads the blocklist of domains & CIDRs that are forbidden
 // because they're used for phishing (e.g. "raiffeisen")
-func readBlocklist(blocklistURL string) (blocklist []string, err error) {
+func readBlocklist(blocklistURL string) (blocklistStrings []string, blocklistCIDRs []net.IPNet, err error) {
 	resp, err := http.Get(blocklistURL)
 	if err != nil {
 		log.Println(fmt.Errorf(`failed to download blocklist "%s": %w`, blocklistURL, err))
@@ -224,11 +230,11 @@ func readBlocklist(blocklistURL string) (blocklist []string, err error) {
 		if resp.StatusCode > 299 {
 			log.Printf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
 		} else {
-			blocklist, _, err = xip.ReadBlocklist(resp.Body)
+			blocklistStrings, blocklistCIDRs, err = xip.ReadBlocklist(resp.Body)
 			if err != nil {
 				log.Println(fmt.Errorf(`failed to parse blocklist "%s": %w`, blocklistURL, err))
 			}
 		}
 	}
-	return blocklist, err
+	return blocklistStrings, blocklistCIDRs, err
 }
