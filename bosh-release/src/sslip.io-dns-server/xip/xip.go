@@ -38,7 +38,9 @@ type Xip struct {
 	Etcd                        V3client      // etcd client for `k-v.io`
 	DnsAmplificationAttackDelay chan struct{} // for throttling metrics.status.sslip.io
 	Metrics                     *Metrics      // DNS server metrics
-	BlockList                   []string      // list of blacklisted strings that shouldn't appear in public hostnames
+	BlockListStrings            []string      // list of blacklisted strings that shouldn't appear in public hostnames
+	BlockListCDIRS              []net.IPNet   // list of blacklisted strings that shouldn't appear in public hostnames
+	BlockListUpdated            time.Time     // The most recent time the BlockList was updated
 }
 
 type Metrics struct {
@@ -942,7 +944,7 @@ func (x Xip) blocklist(hostname string) bool {
 	if ip.IsPrivate() {
 		return false
 	}
-	for _, blockstring := range x.BlockList {
+	for _, blockstring := range x.BlockListStrings {
 		if strings.Contains(hostname, blockstring) {
 			return true
 		}
