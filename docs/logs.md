@@ -17,6 +17,11 @@ To find the domains queried (95% sslip.io):
  # find all successful queries of A & AAAA records
 grep -v '\. \? nil' < sslip.io.log |\
     egrep "TypeA | TypeAAAA " |\
-    cut -d " " -f 10 > hosts.log
+    cut -d " " -f 10 > /tmp/hosts.log
 sed -E 's=.*(\.[^.]+\.[^.]+\.$)=\1=' < hosts.log | tr 'A-Z' 'a-z' | sort | uniq -c | sort -n
+```
+
+```zsh
+ # find the most looked-up IP addresses using the above hosts.log
+sort < /tmp/hosts.log | uniq -c | sort -n | tail -50
 ```
