@@ -136,8 +136,7 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x xip.Xip, blocklistURL str
 			continue
 		}
 		go func() {
-			x.SrcAddr = addr.IP
-			response, logMessage, err := x.QueryResponse(query)
+			response, logMessage, err := x.QueryResponse(query, addr.IP)
 			if err != nil {
 				log.Println(err.Error())
 				return

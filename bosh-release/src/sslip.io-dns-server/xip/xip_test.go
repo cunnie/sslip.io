@@ -125,14 +125,14 @@ var _ = Describe("Xip", func() {
 		var x xip.Xip
 		It("returns an empty array for a random domain", func() {
 			randomDomain := random8ByteString() + ".com."
-			txts, err := x.TXTResources(randomDomain)
+			txts, err := x.TXTResources(randomDomain, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(len(txts)).To(Equal(0))
 		})
 		When("queried for the sslip.io domain", func() {
 			It("returns mail-related TXT resources for the sslip.io domain", func() {
 				domain := "ssLip.iO."
-				txts, err := x.TXTResources(domain)
+				txts, err := x.TXTResources(domain, nil)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(2))
 				Expect(txts[0].TXT[0]).To(MatchRegexp("protonmail-verification="))
@@ -143,7 +143,7 @@ var _ = Describe("Xip", func() {
 			customizedDomain := random8ByteString() + ".com."
 			xip.Customizations[customizedDomain] = xip.DomainCustomization{}
 			It("returns no TXT resources", func() {
-				txts, err := x.TXTResources(customizedDomain)
+				txts, err := x.TXTResources(customizedDomain, nil)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(0))
 			})
@@ -151,11 +151,10 @@ var _ = Describe("Xip", func() {
 		})
 		When(`the domain "ip.sslip.io" is queried`, func() {
 			BeforeEach(func() {
-				x.SrcAddr = net.IP{1, 1, 1, 1}
 				x.Metrics = &xip.Metrics{}
 			})
 			It("returns the IP address of the querier", func() {
-				txts, err := x.TXTResources("ip.sslip.io.")
+				txts, err := x.TXTResources("ip.sslip.io.", net.IP{1, 1, 1, 1})
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(1))
 				Expect(txts[0].TXT[0]).To(MatchRegexp("^1.1.1.1$"))
@@ -163,7 +162,7 @@ var _ = Describe("Xip", func() {
 		})
 		When(`a customized domain without a TXT entry is queried`, func() {
 			It("returns no records (and doesn't panic, either)", func() {
-				txts, err := x.TXTResources("ns.sslip.io.")
+				txts, err := x.TXTResources("ns.sslip.io.", nil)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(0))
 			})
@@ -172,7 +171,7 @@ var _ = Describe("Xip", func() {
 			txtTests := func() {
 				DescribeTable(`the domain "k-v.io" is queried for TXT records`,
 					func(fqdn string, txts []string) {
-						txtResources, err := x.TXTResources(fqdn)
+						txtResources, err := x.TXTResources(fqdn, nil)
 						Expect(err).ToNot(HaveOccurred())
 						Expect(len(txtResources)).To(Equal(len(txts)))
 						for i, txtResource := range txtResources {
