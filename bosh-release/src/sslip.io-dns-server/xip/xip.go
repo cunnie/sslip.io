@@ -38,11 +38,12 @@ type Xip struct {
 	Etcd                        V3client      // etcd client for `k-v.io`
 	DnsAmplificationAttackDelay chan struct{} // for throttling metrics.status.sslip.io
 	Metrics                     *Metrics      // DNS server metrics
-	BlockListStrings            []string      // list of blacklisted strings that shouldn't appear in public hostnames
-	BlockListCDIRS              []net.IPNet   // list of blacklisted strings that shouldn't appear in public hostnames
-	BlockListUpdated            time.Time     // The most recent time the BlockList was updated
+	BlocklistStrings            []string      // list of blacklisted strings that shouldn't appear in public hostnames
+	BlocklistCDIRS              []net.IPNet   // list of blacklisted strings that shouldn't appear in public hostnames
+	BlocklistUpdated            time.Time     // The most recent time the Blocklist was updated
 }
 
+// Metrics contains the counters of the important/interesting queries
 type Metrics struct {
 	Start                           time.Time
 	Queries                         int
@@ -891,7 +892,7 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 
 // ReadBlocklist "sanitizes" the block list, removing comments, invalid characters
 // and lowercasing the names to be blocked
-func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlockLists []net.IPNet, err error) {
+func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklists []net.IPNet, err error) {
 	scanner := bufio.NewScanner(blocklist)
 	comments := regexp.MustCompile(`#.*`)
 	invalidDNSchars := regexp.MustCompile(`[^-_0-9a-z]`)
@@ -910,13 +911,13 @@ func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlockLis
 			}
 			stringBlocklists = append(stringBlocklists, line)
 		} else {
-			cidrBlockLists = append(cidrBlockLists, *ipcidr)
+			cidrBlocklists = append(cidrBlocklists, *ipcidr)
 		}
 	}
 	if err = scanner.Err(); err != nil {
 		return []string{}, []net.IPNet{}, err
 	}
-	return stringBlocklists, cidrBlockLists, nil
+	return stringBlocklists, cidrBlocklists, nil
 }
 
 func (x Xip) isEtcdNil() bool {
@@ -944,7 +945,7 @@ func (x Xip) blocklist(hostname string) bool {
 	if ip.IsPrivate() {
 		return false
 	}
-	for _, blockstring := range x.BlockListStrings {
+	for _, blockstring := range x.BlocklistStrings {
 		if strings.Contains(hostname, blockstring) {
 			return true
 		}

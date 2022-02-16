@@ -115,14 +115,14 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x xip.Xip, blocklistURL str
 	}()
 	go func() {
 		for {
-			blockListStrings, blockListCDIRs, err := readBlocklist(blocklistURL)
+			blocklistStrings, blocklistCDIRs, err := readBlocklist(blocklistURL)
 			if err != nil {
 				log.Println(fmt.Errorf("couldn't get blocklist at %s: %w", blocklistURL, err))
 			} else {
-				log.Printf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, blockListStrings, blockListCDIRs)
-				x.BlockListStrings = blockListStrings
-				x.BlockListCDIRS = blockListCDIRs
-				x.BlockListUpdated = time.Now()
+				log.Printf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, blocklistStrings, blocklistCDIRs)
+				x.BlocklistStrings = blocklistStrings
+				x.BlocklistCDIRS = blocklistCDIRs
+				x.BlocklistUpdated = time.Now()
 			}
 			time.Sleep(1 * time.Hour)
 		}
