@@ -31,10 +31,8 @@ type V3client interface {
 	Close() error
 }
 
-// Xip contains info that the routines need to answer a query that I don't want to plumb
-// through the call hierarchy
+// Xip is meant to be a singleton that holds global state for the DNS server
 type Xip struct {
-	SrcAddr                     net.IP        // the source address for `ip.sslip.io`
 	Etcd                        V3client      // etcd client for `k-v.io`
 	DnsAmplificationAttackDelay chan struct{} // for throttling metrics.status.sslip.io
 	Metrics                     *Metrics      // DNS server metrics
@@ -69,7 +67,7 @@ type DomainCustomization struct {
 	AAAA  []dnsmessage.AAAAResource
 	CNAME dnsmessage.CNAMEResource
 	MX    []dnsmessage.MXResource
-	TXT   func(Xip) ([]dnsmessage.TXTResource, error)
+	TXT   func(Xip, net.IP) ([]dnsmessage.TXTResource, error)
 	// Unlike the other record types, TXT is a function in order to enable more complex behavior
 	// e.g. IP address of the query's source
 }
@@ -138,7 +136,7 @@ var (
 					MX:   mx2,
 				},
 			},
-			TXT: func(_ Xip) ([]dnsmessage.TXTResource, error) {
+			TXT: func(_ Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 				// Although multiple TXT records with multiple strings are allowed, we're sticking
 				// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
 				// and that's what google.com does.
@@ -185,7 +183,7 @@ var (
 			TXT: ipSslipIo,
 		},
 		"version.status.sslip.io.": {
-			TXT: func(x Xip) ([]dnsmessage.TXTResource, error) {
+			TXT: func(x Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 				x.Metrics.AnsweredXTVersionQueries++
 				return []dnsmessage.TXTResource{
 					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
@@ -226,7 +224,7 @@ type Response struct {
 //   78.46.204.247.33654: TypeNS www.example.com ? NS
 //   78.46.204.247.33654: TypeSOA www.example.com ? SOA
 //   2600::.33654: TypeAAAA --1.sslip.io ? ::1
-func (x Xip) QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage string, err error) {
+func (x Xip) QueryResponse(queryBytes []byte, srcAddr net.IP) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
 	var p dnsmessage.Parser
 	var response Response
@@ -240,7 +238,7 @@ func (x Xip) QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage 
 	if q, err = p.Question(); err != nil {
 		return nil, "", err
 	}
-	response, logMessage, err = x.processQuestion(q)
+	response, logMessage, err = x.processQuestion(q, srcAddr)
 	if err != nil {
 		return nil, "", err
 	}
@@ -286,7 +284,7 @@ func (x Xip) QueryResponse(queryBytes []byte) (responseBytes []byte, logMessage 
 	return responseBytes, logMessage, nil
 }
 
-func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessage string, err error) {
+func (x Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response Response, logMessage string, err error) {
 	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
 	response = Response{
 		Header: dnsmessage.Header{
@@ -445,7 +443,7 @@ func (x Xip) processQuestion(q dnsmessage.Question) (response Response, logMessa
 				return response, logMessage + "nil, NS " + strings.Join(logMessages, ", "), nil
 			}
 			var txts []dnsmessage.TXTResource
-			txts, err = x.TXTResources(q.Name.String())
+			txts, err = x.TXTResources(q.Name.String(), srcAddr)
 			if err != nil {
 				return response, "", err
 			}
@@ -687,7 +685,7 @@ func (x Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 }
 
 // TXTResources returns TXT records from Customizations or KvCustomizations
-func (x Xip) TXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
+func (x Xip) TXTResources(fqdn string, ip net.IP) ([]dnsmessage.TXTResource, error) {
 	if kvRE.MatchString(fqdn) {
 		return x.kvTXTResources(fqdn)
 	}
@@ -695,7 +693,7 @@ func (x Xip) TXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 		// Customizations[strings.ToLower(fqdn)] returns a _function_,
 		// we call that function, which has the same return signature as this method
 		if domain.TXT != nil {
-			return domain.TXT(x)
+			return domain.TXT(x, ip)
 		}
 	}
 	return nil, nil
@@ -728,13 +726,13 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 }
 
 // when TXT for "ip.sslip.io" is queried, return the IP address of the querier
-func ipSslipIo(x Xip) ([]dnsmessage.TXTResource, error) {
+func ipSslipIo(x Xip, srcAddr net.IP) ([]dnsmessage.TXTResource, error) {
 	x.Metrics.AnsweredTXTSrcIPQueries++
-	return []dnsmessage.TXTResource{{TXT: []string{x.SrcAddr.String()}}}, nil
+	return []dnsmessage.TXTResource{{TXT: []string{srcAddr.String()}}}, nil
 }
 
 // when TXT for "metrics.sslip.io" is queried, return the cumulative metrics
-func metricsSslipIo(x Xip) (txtResources []dnsmessage.TXTResource, err error) {
+func metricsSslipIo(x Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err error) {
 	<-x.DnsAmplificationAttackDelay
 	var metrics []string
 	uptime := time.Since(x.Metrics.Start)
