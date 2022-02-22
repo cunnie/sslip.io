@@ -80,7 +80,7 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("NSResources()", func() {
-		var x = xip.Xip{Metrics: &xip.Metrics{}}
+		var x = &xip.Xip{}
 		It("returns an array of hard-coded name servers", func() {
 			randomDomain := random8ByteString() + ".com."
 			ns := x.NSResources(randomDomain)
@@ -150,9 +150,6 @@ var _ = Describe("Xip", func() {
 			delete(xip.Customizations, customizedDomain) // clean-up
 		})
 		When(`the domain "ip.sslip.io" is queried`, func() {
-			BeforeEach(func() {
-				x.Metrics = &xip.Metrics{}
-			})
 			It("returns the IP address of the querier", func() {
 				txts, err := x.TXTResources("ip.sslip.io.", net.IP{1, 1, 1, 1})
 				Expect(err).To(Not(HaveOccurred()))

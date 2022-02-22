@@ -21,9 +21,8 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	var x xip.Xip
 	var err error
-	x.Metrics = &xip.Metrics{}
+	var x = &xip.Xip{Metrics: xip.Metrics{Start: time.Now()}}
 	// the sole flag, `-etcdHost`, is primarily meant for integration tests
 	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd")
 	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `a list of "forbidden" names`)
@@ -39,8 +38,6 @@ func main() {
 	}
 	// I don't need to `defer etcdCli.Close()` it's redundant in the main routine: when main() exits, everything is closed.
 
-	// set up our global metrics struct, setting our start time
-	x.Metrics.Start = time.Now()
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {
@@ -86,7 +83,7 @@ func main() {
 	wg.Wait()
 }
 
-func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x xip.Xip, blocklistURL string) {
+func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x *xip.Xip, blocklistURL string) {
 	defer wg.Done()
 	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
 	// The endpoint we're worried about is metrics.status.sslip.io, whose reply is
