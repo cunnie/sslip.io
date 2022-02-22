@@ -35,7 +35,7 @@ type V3client interface {
 type Xip struct {
 	Etcd                        V3client      // etcd client for `k-v.io`
 	DnsAmplificationAttackDelay chan struct{} // for throttling metrics.status.sslip.io
-	Metrics                     *Metrics      // DNS server metrics
+	Metrics                     Metrics       // DNS server metrics
 	BlocklistStrings            []string      // list of blacklisted strings that shouldn't appear in public hostnames
 	BlocklistCDIRS              []net.IPNet   // list of blacklisted strings that shouldn't appear in public hostnames
 	BlocklistUpdated            time.Time     // The most recent time the Blocklist was updated
@@ -67,7 +67,7 @@ type DomainCustomization struct {
 	AAAA  []dnsmessage.AAAAResource
 	CNAME dnsmessage.CNAMEResource
 	MX    []dnsmessage.MXResource
-	TXT   func(Xip, net.IP) ([]dnsmessage.TXTResource, error)
+	TXT   func(*Xip, net.IP) ([]dnsmessage.TXTResource, error)
 	// Unlike the other record types, TXT is a function in order to enable more complex behavior
 	// e.g. IP address of the query's source
 }
@@ -136,7 +136,7 @@ var (
 					MX:   mx2,
 				},
 			},
-			TXT: func(_ Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+			TXT: func(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 				// Although multiple TXT records with multiple strings are allowed, we're sticking
 				// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
 				// and that's what google.com does.
@@ -183,7 +183,7 @@ var (
 			TXT: ipSslipIo,
 		},
 		"version.status.sslip.io.": {
-			TXT: func(x Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+			TXT: func(x *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 				x.Metrics.AnsweredXTVersionQueries++
 				return []dnsmessage.TXTResource{
 					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
@@ -224,7 +224,7 @@ type Response struct {
 //   78.46.204.247.33654: TypeNS www.example.com ? NS
 //   78.46.204.247.33654: TypeSOA www.example.com ? SOA
 //   2600::.33654: TypeAAAA --1.sslip.io ? ::1
-func (x Xip) QueryResponse(queryBytes []byte, srcAddr net.IP) (responseBytes []byte, logMessage string, err error) {
+func (x *Xip) QueryResponse(queryBytes []byte, srcAddr net.IP) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
 	var p dnsmessage.Parser
 	var response Response
@@ -284,7 +284,7 @@ func (x Xip) QueryResponse(queryBytes []byte, srcAddr net.IP) (responseBytes []b
 	return responseBytes, logMessage, nil
 }
 
-func (x Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response Response, logMessage string, err error) {
+func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response Response, logMessage string, err error) {
 	logMessage = q.Type.String() + " " + q.Name.String() + " ? "
 	response = Response{
 		Header: dnsmessage.Header{
@@ -503,7 +503,7 @@ func (x Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response Re
 // NSResponse sets the Answers/Authorities depending whether we're delegating or authoritative
 // (whether it's an "_acme-challenge." domain or not). Either way, it supplies the Additionals
 // (IP addresses of the nameservers).
-func (x Xip) NSResponse(name dnsmessage.Name, response Response, logMessage string) (Response, string, error) {
+func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage string) (Response, string, error) {
 	nameServers := x.NSResources(name.String())
 	var logMessages []string
 	if response.Header.Authoritative {
@@ -668,7 +668,7 @@ func IsAcmeChallenge(fqdnString string) bool {
 	return false
 }
 
-func (x Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
+func (x *Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 	if x.blocklist(fqdnString) {
 		x.Metrics.AnsweredQueries++
 		x.Metrics.AnsweredBlockedQueries++
@@ -685,7 +685,7 @@ func (x Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 }
 
 // TXTResources returns TXT records from Customizations or KvCustomizations
-func (x Xip) TXTResources(fqdn string, ip net.IP) ([]dnsmessage.TXTResource, error) {
+func (x *Xip) TXTResources(fqdn string, ip net.IP) ([]dnsmessage.TXTResource, error) {
 	if kvRE.MatchString(fqdn) {
 		return x.kvTXTResources(fqdn)
 	}
@@ -726,13 +726,13 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 }
 
 // when TXT for "ip.sslip.io" is queried, return the IP address of the querier
-func ipSslipIo(x Xip, srcAddr net.IP) ([]dnsmessage.TXTResource, error) {
+func ipSslipIo(x *Xip, srcAddr net.IP) ([]dnsmessage.TXTResource, error) {
 	x.Metrics.AnsweredTXTSrcIPQueries++
 	return []dnsmessage.TXTResource{{TXT: []string{srcAddr.String()}}}, nil
 }
 
 // when TXT for "metrics.sslip.io" is queried, return the cumulative metrics
-func metricsSslipIo(x Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err error) {
+func metricsSslipIo(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err error) {
 	<-x.DnsAmplificationAttackDelay
 	var metrics []string
 	uptime := time.Since(x.Metrics.Start)
@@ -759,7 +759,7 @@ func metricsSslipIo(x Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err
 }
 
 // when TXT for "k-v.io" is queried, return the key-value pair
-func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
+func (x *Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	// "labels" => official RFC 1035 term
 	// k-v.io. => ["k-v", "io"] are labels
 	var (
@@ -796,7 +796,7 @@ func (x Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 	return []dnsmessage.TXTResource{{[]string{"422: valid verbs are get, put, delete"}}}, nil
 }
 
-func (x Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
+func (x *Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
 	if x.isEtcdNil() {
 		if txtRecord, ok := TxtKvCustomizations[key]; ok {
 			return txtRecord, nil
@@ -815,7 +815,7 @@ func (x Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
 	return []dnsmessage.TXTResource{}, nil
 }
 
-func (x Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
+func (x *Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
 	if len(value) > 63 { // too-long TXT records can be used in DNS amplification attacks; Truncate!
 		value = value[:63]
 	}
@@ -836,7 +836,7 @@ func (x Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
 	return []dnsmessage.TXTResource{{[]string{value}}}, nil
 }
 
-func (x Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
+func (x *Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
 	if x.isEtcdNil() {
 		if deletedKey, ok := TxtKvCustomizations[key]; ok {
 			delete(TxtKvCustomizations, key)
@@ -918,7 +918,7 @@ func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklis
 	return stringBlocklists, cidrBlocklists, nil
 }
 
-func (x Xip) isEtcdNil() bool {
+func (x *Xip) isEtcdNil() bool {
 	// comparing interfaces to nil are tricky: interfaces contain both a type
 	// and a value, and although the value is nil the type isn't, so we need the following
 	if x.Etcd == nil || reflect.ValueOf(x.Etcd).IsNil() {
@@ -927,7 +927,7 @@ func (x Xip) isEtcdNil() bool {
 	return false
 }
 
-func (x Xip) blocklist(hostname string) bool {
+func (x *Xip) blocklist(hostname string) bool {
 	aResources := NameToA(hostname)
 	aaaaResources := NameToAAAA(hostname)
 	var ip net.IP
@@ -951,7 +951,7 @@ func (x Xip) blocklist(hostname string) bool {
 	return false
 }
 
-func (x Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
+func (x *Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
 	var nameToAs []dnsmessage.AResource
 	nameToAs = NameToA(q.Name.String())
 	if len(nameToAs) == 0 {
@@ -1013,7 +1013,7 @@ func (x Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logM
 	return response, logMessage + strings.Join(logMessages, ", "), nil
 }
 
-func (x Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
+func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
 	var nameToAAAAs []dnsmessage.AAAAResource
 	nameToAAAAs = NameToAAAA(q.Name.String())
 	if len(nameToAAAAs) == 0 {
