@@ -1,17 +1,21 @@
-# List of "Forbidden" names
+# List of "Forbidden" (blocked) names & CIDRs
 
-# This is a list of forbidden names that are often used in phishing attacks. We
-# won't properly resolve these names for public IP addresses (e.g. we won't
-# resolve "aiffeisen.94.228.116.140.sslip.io" to 94.228.116.140; instead, we'll
-# resolve it to one of our servers, ns-aws.sslip.io)
+# This is a list of forbidden names and CIDRs that are often used in phishing
+# attacks. We won't resolve these hostnames to their embedded IP address (e.g.
+# we won't resolve "raiffeisen.94.228.116.140.sslip.io" to 94.228.116.140);
+# instead, we'll resolve it to one of our server's, ns-aws.sslip.io's, IP
+# addresses, 52.0.56.137 or 2600:1f18:aaf:6900::a.  Similarly, we won't resolve
+# nf-43-134-66-67.sslip.io to 43.134.66.67 because it falls within one of our
+# blocked CIDRs (43.134.66.67/24).
 
-# Forbidden names are okay for private networks, e.g.
-# "raiffeisen.192.168.0.1.sslip.io", because they aren't publicly accessible &
-# thus can't be used for phishing attempts. We properly resolve such hostnames.
+# Forbidden names are resolved as expected for private networks (e.g.
+# "raiffeisen.192.168.0.1.sslip.io" resolves to 192.168.0.1) because they
+# aren't publicly accessible & thus can't be used for phishing attempts.
 
 # File format: blank lines are ignored, "#" are comments and are ignored. One
-# name per line.
+# name or CIDR per line.
 
 raiffeisen # https://www.rbinternational.com/en/homepage.html
 43-134-66-67 # Netflix, https://nf-43-134-66-67.sslip.io/sg
 43.134.66.67/24 # Netflix
+2601:646:100:69f7:cafe:bebe:cafe:bebe/112 # personal (Comcast) IPv6 range for testing blocklist
