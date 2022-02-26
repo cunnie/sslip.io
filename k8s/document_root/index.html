@@ -278,6 +278,7 @@ dig @ns-gce.nono.io version.status.sslip.io txt +short
 dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
   "Uptime (seconds): 13486"
   "Key-value store: etcd"
+  "Blocklist: 2022-02-26 10:54:21-08 2,1"
   "Queries: 550488"
   "Queries/second: 40.8"
   "AnsQueries: 149974"
@@ -296,6 +297,14 @@ dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
         <dd>This can be one of two values: "builtin" and "etcd". "builtin" means any changes to key/value are limited
         to that specific DNS server. "etcd" means changes are propagated to all servers whose key-value store is
         "etcd"</dd>
+        <dt>Blocklist</dt>
+        <dd>
+          The first value ("2022-02-26 10:54:21-08") is the date the blocklist was last downloaded. The following two
+          numbers are the number of string matches that are blocked (e.g. "raiffeisen" is a string that is blocked if
+          it appears in the queried hostname) and the number of CIDR matches that are blocked (e.g. "43.134.66.67/24"
+          is blocked). The blocklist can be found <a href=
+          "https://github.com/cunnie/sslip.io/blob/main/etc/blocklist.txt">here</a>
+        </dd>
         <dt>Queries</dt>
         <dd>The raw number of DNS queries that the server has responded to since starting operation</dd>
         <dt>Queries/second</dt>
