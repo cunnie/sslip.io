@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new BOSH release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.4.2
-export VERSION=2.5.0
+export OLD_VERSION=2.5.0
+export VERSION=2.5.1
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -68,8 +68,8 @@ dig @$IP delete.my-key.k-v.io txt +short
 echo "\"MyValue\""
 echo " ===" # separator because the results are too similar
 dig @$IP my-key.k-v.io txt +short # returns nothing
-dig @$IP metrics.status.sslip.io txt +short | grep '"queries: '
-echo '"queries: 16"'
+dig @$IP metrics.status.sslip.io txt +short | grep '"Queries: '
+echo '"Queries: 16"'
 # pop up a directory
 pushd ..
 # let's add our changes
