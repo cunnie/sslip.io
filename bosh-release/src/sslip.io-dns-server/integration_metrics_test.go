@@ -164,6 +164,7 @@ func getMetrics() (m xip.Metrics) {
 	_, err = fmt.Sscanf(string(stdout),
 		"\"Uptime (seconds): %d\"\n"+
 			"\"Key-value store: %s\n"+ // %s "swallows" the double-quote at the end
+			"\"Blocklist: %s %s %s\n"+
 			"\"Queries: %d\"\n"+
 			"\"Queries/second: %s\n"+
 			"\"AnsQueries: %d\"\n"+
@@ -176,6 +177,7 @@ func getMetrics() (m xip.Metrics) {
 			"\"Blocked: %d\"\n",
 		&uptime,
 		&junk,
+		&junk, &junk, &junk,
 		&m.Queries,
 		&junk,
 		&m.AnsweredQueries,

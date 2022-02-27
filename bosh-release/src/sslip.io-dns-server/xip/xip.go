@@ -37,7 +37,7 @@ type Xip struct {
 	DnsAmplificationAttackDelay chan struct{} // for throttling metrics.status.sslip.io
 	Metrics                     Metrics       // DNS server metrics
 	BlocklistStrings            []string      // list of blacklisted strings that shouldn't appear in public hostnames
-	BlocklistCDIRS              []net.IPNet   // list of blacklisted strings that shouldn't appear in public hostnames
+	BlocklistCDIRs              []net.IPNet   // list of blacklisted strings that shouldn't appear in public hostnames
 	BlocklistUpdated            time.Time     // The most recent time the Blocklist was updated
 }
 
@@ -742,6 +742,10 @@ func metricsSslipIo(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, er
 		keyValueStore = "builtin"
 	}
 	metrics = append(metrics, "Key-value store: "+keyValueStore)
+	metrics = append(metrics, fmt.Sprintf("Blocklist: %s %d,%d",
+		x.BlocklistUpdated.Format("2006-01-02 15:04:05-07"),
+		len(x.BlocklistStrings),
+		len(x.BlocklistCDIRs)))
 	metrics = append(metrics, fmt.Sprintf("Queries: %d", x.Metrics.Queries))
 	metrics = append(metrics, fmt.Sprintf("Queries/second: %.1f", float64(x.Metrics.Queries)/uptime.Seconds()))
 	metrics = append(metrics, fmt.Sprintf("AnsQueries: %d", x.Metrics.AnsweredQueries))
@@ -945,6 +949,11 @@ func (x *Xip) blocklist(hostname string) bool {
 	}
 	for _, blockstring := range x.BlocklistStrings {
 		if strings.Contains(hostname, blockstring) {
+			return true
+		}
+	}
+	for _, blockCDIR := range x.BlocklistCDIRs {
+		if blockCDIR.Contains(ip) {
 			return true
 		}
 	}

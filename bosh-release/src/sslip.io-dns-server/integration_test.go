@@ -363,6 +363,14 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@localhost _acme-challenge.raiffeisen.fe80--.sslip.io ns +short",
 				`\Ans-aws.sslip.io.\nns-azure.sslip.io.\nns-gce.sslip.io.\n\z`,
 				`TypeNS _acme-challenge.raiffeisen.fe80--.sslip.io. \? ns-aws.sslip.io., ns-azure.sslip.io., ns-gce.sslip.io.\n$`),
+			Entry("an A record with a forbidden CIDR is redirected",
+				"@localhost nf.43.134.66.67.sslip.io +short",
+				`\A52.0.56.137\n\z`,
+				`TypeA nf.43.134.66.67.sslip.io. \? 52.0.56.137\n$`),
+			Entry("an AAAA record with a forbidden CIDR is redirected",
+				"@localhost 2601-646-100-69f7-cafe-bebe-cafe-baba.sslip.io aaaa +short",
+				`\A2600:1f18:aaf:6900::a\n\z`,
+				`TypeAAAA 2601-646-100-69f7-cafe-bebe-cafe-baba.sslip.io. \? 2600:1f18:aaf:6900::a\n$`),
 		)
 	})
 })

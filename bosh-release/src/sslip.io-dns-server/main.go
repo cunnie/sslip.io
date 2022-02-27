@@ -99,6 +99,7 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x *xip.Xip, blocklistURL st
 	//
 	// We also want to have fun playing with channels
 	dnsAmplificationAttackDelay := make(chan struct{}, xip.MetricsBufferSize)
+	x.DnsAmplificationAttackDelay = dnsAmplificationAttackDelay
 	go func() {
 		// fill up the channel's buffer so that our tests aren't slowed down (~85 tests)
 		for i := 0; i < xip.MetricsBufferSize; i++ {
@@ -118,13 +119,12 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x *xip.Xip, blocklistURL st
 			} else {
 				log.Printf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, blocklistStrings, blocklistCDIRs)
 				x.BlocklistStrings = blocklistStrings
-				x.BlocklistCDIRS = blocklistCDIRs
+				x.BlocklistCDIRs = blocklistCDIRs
 				x.BlocklistUpdated = time.Now()
 			}
 			time.Sleep(1 * time.Hour)
 		}
 	}()
-	x.DnsAmplificationAttackDelay = dnsAmplificationAttackDelay
 	for {
 		query := make([]byte, 512)
 		_, addr, err := conn.ReadFromUDP(query)
