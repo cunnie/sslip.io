@@ -11,13 +11,14 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	v3client "go.etcd.io/etcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/dns/dnsmessage"
 )
 
@@ -25,9 +26,9 @@ import (
 
 //counterfeiter:generate . V3client
 type V3client interface {
-	Get(context.Context, string, ...v3client.OpOption) (*v3client.GetResponse, error)
-	Put(context.Context, string, string, ...v3client.OpOption) (*v3client.PutResponse, error)
-	Delete(context.Context, string, ...v3client.OpOption) (*v3client.DeleteResponse, error)
+	Get(context.Context, string, ...clientv3.OpOption) (*clientv3.GetResponse, error)
+	Put(context.Context, string, string, ...clientv3.OpOption) (*clientv3.PutResponse, error)
+	Delete(context.Context, string, ...clientv3.OpOption) (*clientv3.DeleteResponse, error)
 	Close() error
 }
 
@@ -210,6 +211,62 @@ type Response struct {
 	Answers     []func(*dnsmessage.Builder) error
 	Authorities []func(*dnsmessage.Builder) error
 	Additionals []func(*dnsmessage.Builder) error
+}
+
+// NewXip follows convention for constructors: https://go.dev/doc/effective_go#allocation_new
+func NewXip(etcdEndpoint, blocklistURL string) (x *Xip, logmessages []string) {
+	var err error
+	x = &Xip{Metrics: Metrics{Start: time.Now()}}
+	// connect to `etcd`; if there's an error, set etcdCli to `nil` and that to
+	// determine whether to use a local key-value store instead
+	x.Etcd, err = clientv3New(etcdEndpoint)
+	if err != nil {
+		logmessages = append(logmessages, fmt.Sprintf("failed to connect to etcd at %s; using local key-value store instead: %s", etcdEndpoint, err.Error()))
+	} else {
+		logmessages = append(logmessages, fmt.Sprintf("Successfully connected to etcd at %s", etcdEndpoint))
+	}
+	// don't `defer etcdCli.Close()`: "The Client has internal state (watchers and leases), so
+	// Clients should be reused instead of created as needed"
+
+	// re-download the blocklist every hour so I don't need to restart servers after updating blocklist
+	go func() {
+		for {
+			blocklistStrings, blocklistCDIRs, err := readBlocklist(blocklistURL)
+			if err != nil {
+				logmessages = append(logmessages, fmt.Sprintf("couldn't get blocklist at %s: %s", blocklistURL, err.Error()))
+			} else {
+				logmessages = append(logmessages, fmt.Sprintf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, blocklistStrings, blocklistCDIRs))
+				x.BlocklistStrings = blocklistStrings
+				x.BlocklistCDIRs = blocklistCDIRs
+				x.BlocklistUpdated = time.Now()
+			}
+			time.Sleep(1 * time.Hour)
+		}
+	}()
+
+	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
+	// The endpoint we're worried about is metrics.status.sslip.io, whose reply is
+	// ~400 bytes with a query of ~100 bytes (4x amplification). We accomplish this by
+	// using channels with a quarter-second delay. Max throughput 1.2 kBytes/sec.
+	//
+	// We want to balance this delay against our desire to run tests quickly, so we buffer
+	// the channel with enough room to accommodate our tests.
+	//
+	// We also want to have fun playing with channels
+	dnsAmplificationAttackDelay := make(chan struct{}, MetricsBufferSize)
+	x.DnsAmplificationAttackDelay = dnsAmplificationAttackDelay
+	go func() {
+		// fill up the channel's buffer so that our tests aren't slowed down (~85 tests)
+		for i := 0; i < MetricsBufferSize; i++ {
+			dnsAmplificationAttackDelay <- struct{}{}
+		}
+		// now put on the brakes for users trying to leverage our server in a DNS amplification attack
+		for {
+			dnsAmplificationAttackDelay <- struct{}{}
+			time.Sleep(250 * time.Millisecond)
+		}
+	}()
+	return x, logmessages
 }
 
 // QueryResponse takes in a raw (packed) DNS query and returns a raw (packed)
@@ -892,6 +949,26 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 	return false
 }
 
+// readBlocklist downloads the blocklist of domains & CIDRs that are forbidden
+// because they're used for phishing (e.g. "raiffeisen")
+func readBlocklist(blocklistURL string) (blocklistStrings []string, blocklistCIDRs []net.IPNet, err error) {
+	resp, err := http.Get(blocklistURL)
+	if err != nil {
+		log.Println(fmt.Errorf(`failed to download blocklist "%s": %w`, blocklistURL, err))
+	} else {
+		defer resp.Body.Close()
+		if resp.StatusCode > 299 {
+			log.Printf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
+		} else {
+			blocklistStrings, blocklistCIDRs, err = ReadBlocklist(resp.Body)
+			if err != nil {
+				log.Println(fmt.Errorf(`failed to parse blocklist "%s": %w`, blocklistURL, err))
+			}
+		}
+	}
+	return blocklistStrings, blocklistCIDRs, err
+}
+
 // ReadBlocklist "sanitizes" the block list, removing comments, invalid characters
 // and lowercasing the names to be blocked
 func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklists []net.IPNet, err error) {
@@ -1082,4 +1159,26 @@ func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, 
 		logMessages = append(logMessages, ip.String())
 	}
 	return response, logMessage + strings.Join(logMessages, ", "), nil
+}
+
+// clientv3New attempts to connect to local etcd and retrieve a key to make
+// sure the connection works. If for any reason it fails it returns nil +
+// error
+func clientv3New(etcdEndpoint string) (*clientv3.Client, error) {
+	etcdEndpoints := []string{etcdEndpoint}
+	etcdCli, err := clientv3.New(clientv3.Config{
+		Endpoints:   etcdEndpoints,
+		DialTimeout: 250 * time.Millisecond,
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Let's do a query to determine if etcd is really, truly there
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
+	_, err = etcdCli.Get(ctx, "some-silly-key, doesn't matter if it exists")
+	if err != nil {
+		return nil, err
+	}
+	return etcdCli, nil
 }
