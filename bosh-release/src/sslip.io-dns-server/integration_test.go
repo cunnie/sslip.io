@@ -1,7 +1,9 @@
 package main_test
 
 import (
+	"net"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 	"xip/xip"
@@ -15,19 +17,26 @@ import (
 var err error
 var serverCmd *exec.Cmd
 var serverSession *Session
+var port = 53
 
 var _ = BeforeSuite(func() {
+	// Try to bind to the privileged first (for macOS), the fall back to unprivileged
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: port})
+	if err != nil {
+		port = 3553 // unprivileged, a.k.a. "Red Box Recorder ADP" from /etc/services
+	} else {
+		err = conn.Close()
+		Expect(err).ToNot(HaveOccurred())
+	}
 	serverPath, err := Build("main.go")
 	Expect(err).ToNot(HaveOccurred())
-	serverCmd = exec.Command(serverPath)
+	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port))
 	serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
-	// TODO: bind to unprivileged port (NOT 53) for non-macOS users (e.g. port 35353)
 	Expect(err).ToNot(HaveOccurred())
 	// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)
 	// takes 1.312s to start up on macOS Big Sur 2.0GHz quad-core 10th-generation Intel Core i5 processor (2020 13" MacBook Pro)
 	// round up to 3 seconds to account for slow container-on-a-VM-with-shared-core
 	time.Sleep(3 * time.Second) // takes 0.455s to start up on macOS Big Sur 4-core Xeon
-	// fmt.Println(string(serverSession.Err.Contents())) // only print this out to debug--it clutters the output
 })
 
 var _ = AfterSuite(func() {
@@ -44,6 +53,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 	Describe("Integration tests", func() {
 		DescribeTable("when the DNS server is queried",
 			func(digArgs string, digResults string, serverLogMessage string) {
+				digArgs += " -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -151,7 +161,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 			err := cmd.Run() // if the command succeeds, we have IPv6
 			if err == nil {
 				It("returns a TXT of the querier's IPv6 address when querying ip.sslip.io", func() {
-					digCmd = exec.Command("dig", "@::1", "ip.sslip.io", "txt", "+short")
+					digCmd = exec.Command("dig", "@::1", "ip.sslip.io", "txt", "+short", "-p", strconv.Itoa(port))
 					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(digSession, 1).Should(Exit(0))
@@ -163,7 +173,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When("ns.sslip.io is queried", func() {
 			It("returns all the A records", func() {
-				digArgs = "@localhost ns.sslip.io +short"
+				digArgs = "@localhost ns.sslip.io +short -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -174,7 +184,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA ns.sslip.io. \? 52.0.56.137, 52.187.42.158, 104.155.144.4\n`))
 			})
 			It("returns all the AAAA records", func() {
-				digArgs = "@localhost aaaa ns.sslip.io +short"
+				digArgs = "@localhost aaaa ns.sslip.io +short -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -185,7 +195,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When("there are multiple MX records returned (e.g. sslip.io)", func() {
 			It("returns all the records", func() {
-				digArgs = "@localhost sslip.io mx +short"
+				digArgs = "@localhost sslip.io mx +short -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -197,7 +207,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When("there are multiple NS records returned (e.g. almost any NS query)", func() {
 			It("returns all the records", func() {
-				digArgs = "@localhost example.com ns"
+				digArgs = "@localhost example.com ns -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -217,7 +227,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
 			It("returns the custom TXT records", func() {
-				digArgs = "@localhost sslip.io txt +short"
+				digArgs = "@localhost sslip.io txt +short -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -229,7 +239,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When(`a TXT record for a host under the "k-v.io" domain is queried`, func() {
 			It(`the PUT has a three-minute TTL`, func() {
-				digArgs = "@localhost put.a.b.k-v.io txt"
+				digArgs = "@localhost put.a.b.k-v.io txt -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -238,7 +248,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT put.a.b.k-v.io. \? \["a"\]`))
 			})
 			It(`the GET has a three-minute TTL`, func() {
-				digArgs = "@localhost b.k-v.io txt"
+				digArgs = "@localhost b.k-v.io txt -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -247,7 +257,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT b.k-v.io. \? \["a"\]`))
 			})
 			It(`the DELETE has a three-minute TTL`, func() {
-				digArgs = "@localhost delete.b.k-v.io txt"
+				digArgs = "@localhost delete.b.k-v.io txt -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
@@ -259,7 +269,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		When(`a record for an "_acme-challenge" domain is queried`, func() {
 			When(`it's an NS record`, func() {
 				It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
-					digArgs = "@localhost _acme-challenge.fe80--.sslip.io ns"
+					digArgs = "@localhost _acme-challenge.fe80--.sslip.io ns -p " + strconv.Itoa(port)
 					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
@@ -274,7 +284,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 			})
 			When(`it's a TXT record`, func() {
 				It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
-					digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io txt"
+					digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io txt -p " + strconv.Itoa(port)
 					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
@@ -287,7 +297,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 			})
 			When(`it's a A record`, func() {
 				It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {
-					digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io a"
+					digArgs = "@localhost _acme-challenge.127-0-0-1.sslip.io a -p " + strconv.Itoa(port)
 					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
@@ -307,7 +317,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				// double the the number of queries to make sure we exhaust the channel's buffers
 				for i := 0; i < xip.MetricsBufferSize*2; i++ {
 					start = time.Now()
-					digArgs = "@localhost metrics.status.sslip.io txt"
+					digArgs = "@localhost metrics.status.sslip.io txt -p " + strconv.Itoa(port)
 					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 					_, err := digCmd.Output()
 					Expect(err).ToNot(HaveOccurred())
@@ -325,6 +335,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 	Describe(`The domain blocklist`, func() {
 		DescribeTable("when queried",
 			func(digArgs string, digResults string, serverLogMessage string) {
+				digArgs += " -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())

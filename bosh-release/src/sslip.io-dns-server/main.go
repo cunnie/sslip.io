@@ -15,9 +15,9 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	// the sole flag, `-etcdHost`, is primarily meant for integration tests
-	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd")
-	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `a list of "forbidden" names`)
+	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd client endpoint")
+	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `URL containing a list of "forbidden" names`)
+	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	flag.Parse()
 
 	x, logmessages := xip.NewXip(*etcdEndpoint, *blocklistURL)
@@ -25,18 +25,18 @@ func main() {
 		log.Println(logmessage)
 	}
 
-	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: *bindPort})
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {
 	case err == nil:
-		log.Println(`Successfully bound to all interfaces, port 53.`)
+		log.Printf("Successfully bound to all interfaces, port %d.\n", *bindPort)
 		wg.Add(1)
 		readFrom(conn, &wg, x, *blocklistURL)
 	case isErrorPermissionsError(err):
-		log.Println("Try invoking me with `sudo` because I don't have permission to bind to port 53.")
+		log.Printf("Try invoking me with `sudo` because I don't have permission to bind to port %d.\n", *bindPort)
 		log.Fatal(err.Error())
 	case isErrorAddressAlreadyInUse(err):
-		log.Println(`I couldn't bind to "0.0.0.0:53" (INADDR_ANY, all interfaces), so I'll try to bind to each address individually.`)
+		log.Printf("I couldn't bind to \"0.0.0.0:%d\" (INADDR_ANY, all interfaces), so I'll try to bind to each address individually.\n", *bindPort)
 		ipCIDRs := listLocalIPCIDRs()
 		var boundIPsPorts, unboundIPs []string
 		for _, ipCIDR := range ipCIDRs {
@@ -47,7 +47,7 @@ func main() {
 			}
 			conn, err = net.ListenUDP("udp", &net.UDPAddr{
 				IP:   ip,
-				Port: 53,
+				Port: *bindPort,
 				Zone: "",
 			})
 			if err != nil {
