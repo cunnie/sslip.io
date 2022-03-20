@@ -39,9 +39,9 @@ sudo ~/go/bin/ginkgo -r .
 
 ## Directory Structure
 
-- `src/` contains the source code to the DNS server.
+- `src/` contains the source code to the DNS server
 - `ci/` contains the [Concourse](https://concourse.ci/) continuous integration
-  (CI) pipeline and task.
+  (CI) pipeline and task
 - `spec/` contains the tests for the production nameservers.  To run
   the tests locally:
   ```bash
@@ -49,7 +49,7 @@ sudo ~/go/bin/ginkgo -r .
   ```
 - `k8s/document_root/` contains the HTML content of the sslip.io website. Please
   run `tidy -im -w 120 k8s/document_root/index.html` before submitting pull
-  requests.
+  requests
 - `bosh-release/` contains the [BOSH](https://bosh.io/docs/) release. BOSH is
   the mechanism we use to deploy the servers, and the sslip.io BOSH release is a
   packaging of the DNS server (analogous to a `.msi`, `.pkg`, `.deb` or `.rpm`)
@@ -59,17 +59,20 @@ sudo ~/go/bin/ginkgo -r .
 The DNS server is written in Golang and is not configurable without modifying
 the source:
 
-- it binds to port 53 (you can't change it)
+- it binds to port 53, but can be overridden on the command line with the
+  `-port`, e.g. `go run main.go -port 9553`
 - it only binds to UDP (no TCP, sorry)
-- The SOA record is hard-coded with the exception of the _MNAME_ (primary
-  master name server) record, which is set to the queried hostname (e.g. `dig
+- The SOA record is hard-coded with the exception of the _MNAME_ (primary master
+  name server) record, which is set to the queried hostname (e.g. `dig
   big.apple.com @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
   `big.apple.com.`
 - The NS records are hard-coded (`ns-aws.sslip.io`, `ns-azure.sslip.io`,
-  `ns-gce.sslip.io`)
+  `ns-gce.sslip.io`). Exception: `_acme-challenge` records are handled
+  differently to accommodate the procurement of Let's Encrypt wildcard
+  certificates; you can read more about that procedure [here](docs/wildcard.md)
 - The MX records are hard-coded to the queried hostname with a preference of 0,
-  with the exception of `sslip.io` itself, which has custom MX records to
-  enable email delivery to ProtonMail
+  with the exception of `sslip.io` itself, which has custom MX records to enable
+  email delivery to ProtonMail
 - There are no SRV records
 
 ### Acknowledgements
