@@ -48,10 +48,45 @@ cd /etc/etcd
 lpass login brian.cunnie@gmail.com --trust
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem
-sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.conf
+sudo curl -o etcd.conf -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-aws.conf
 lpass show --note etcd-ca-key.pem | sudo tee ca-key.pem
 lpass show --note etcd-key.pem | sudo tee etcd-key.pem
-sudo chmod 600 *key*
+sudo chmod 400 *key*
+sudo chown etcd:etcd *key*
+```
+
+Let's fire up etcd:
+
+```shell
+sudo systemctl daemon-reload
+sudo systemctl enable etcd
+sudo systemctl stop etcd
+sudo systemctl start etcd
+sudo journalctl -xefu etcd # look for any errors on startup
+```
+
+If the messages look innocuous (ignore "serving client traffic insecurely; this
+is strongly discouraged!"), then check the cluster:
+
+```shell
+etcdctl member list # "8e9e05c52164694d, started, default, http://localhost:2380, http://localhost:2379, false"
+```
+
+#### Configure ns-azure.sslip.io
+
+Now let's set up etcd on ns-azure:
+
+```shell
+ssh ns-azure.sslip.io
+cd /etc/etcd
+lpass login brian.cunnie@gmail.com --trust
+sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem
+sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem
+sudo curl -o etcd.conf -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-azure.conf
+lpass show --note etcd-ca-key.pem | sudo tee ca-key.pem
+lpass show --note etcd-key.pem | sudo tee etcd-key.pem
+sudo chmod 400 *key*
+sudo chown etcd:etcd *key*
 ```
 
 Let's fire up etcd:
