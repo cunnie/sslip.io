@@ -78,11 +78,11 @@ Now let's set up etcd on ns-azure:
 
 ```shell
 ssh ns-azure.sslip.io
-cd /etc/etcd
+sudo mkdir /etc/etcd # default's okay: root:root 755
 lpass login brian.cunnie@gmail.com --trust
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem
-sudo curl -o etcd.conf -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-azure.conf
+sudo curl -o /etc/default/etcd -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-azure.conf
 lpass show --note etcd-ca-key.pem | sudo tee ca-key.pem
 lpass show --note etcd-key.pem | sudo tee etcd-key.pem
 sudo chmod 400 *key*
