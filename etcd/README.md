@@ -105,3 +105,21 @@ is strongly discouraged!"), then check the cluster:
 ```shell
 etcdctl member list # "8e9e05c52164694d, started, default, http://localhost:2380, http://localhost:2379, false"
 ```
+
+### Wiping old data
+
+ns-aws:
+
+```
+sudo systemctl stop etcd
+sudo rm -r /var/lib/etcd/default.etcd/member
+sudo systemctl start etcd
+```
+
+ns-azure:
+
+```
+sudo systemctl stop etcd
+sudo rm -rf /var/lib/etcd/default/member
+sudo systemctl start etcd
+```
