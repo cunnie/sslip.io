@@ -49,7 +49,6 @@ lpass login brian.cunnie@gmail.com --trust
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem
 sudo curl -o etcd.conf -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-aws.conf
-lpass show --note etcd-ca-key.pem | sudo tee ca-key.pem
 lpass show --note etcd-key.pem | sudo tee etcd-key.pem
 sudo chmod 400 *key*
 sudo chown etcd:etcd *key*
@@ -79,11 +78,11 @@ Now let's set up etcd on ns-azure:
 ```shell
 ssh ns-azure.sslip.io
 sudo mkdir /etc/etcd # default's okay: root:root 755
+cd /etc/etcd
 lpass login brian.cunnie@gmail.com --trust
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem
 sudo curl -o /etc/default/etcd -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-azure.conf
-lpass show --note etcd-ca-key.pem | sudo tee ca-key.pem
 lpass show --note etcd-key.pem | sudo tee etcd-key.pem
 sudo chmod 400 *key*
 sudo chown etcd:etcd *key*
@@ -97,6 +96,8 @@ sudo systemctl enable etcd
 sudo systemctl stop etcd
 sudo systemctl start etcd
 sudo journalctl -xefu etcd # look for any errors on startup
+sudo systemctl restart sslip.io-dns
+dig @localhost metrics.status.sslip.io txt +short | grep "Key-value store:" # should be "etcd"
 ```
 
 If the messages look innocuous (ignore "serving client traffic insecurely; this
