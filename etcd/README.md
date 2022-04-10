@@ -38,51 +38,18 @@ cfssl gencert \
 
 The key is saved in LastPass as `etcd-key.pem`
 
-#### Configure ns-aws.sslip.io
+#### Configure ns-aws.sslip.io & ns-azure.sslip.io
 
-Now let's set up etcd on ns-aws:
-
-```shell
-ssh ns-aws.sslip.io
-cd /etc/etcd
-lpass login brian.cunnie@gmail.com --trust
-sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem
-sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem
-sudo curl -o etcd.conf -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-aws.conf
-lpass show --note etcd-key.pem | sudo tee etcd-key.pem
-sudo chmod 400 *key*
-sudo chown etcd:etcd *key*
-```
-
-Let's fire up etcd:
+Now let's set up etcd on either ns-aws or ns-azure:
 
 ```shell
-sudo systemctl daemon-reload
-sudo systemctl enable etcd
-sudo systemctl stop etcd
-sudo systemctl start etcd
-sudo journalctl -xefu etcd # look for any errors on startup
-```
-
-If the messages look innocuous (ignore "serving client traffic insecurely; this
-is strongly discouraged!"), then check the cluster:
-
-```shell
-etcdctl member list # "8e9e05c52164694d, started, default, http://localhost:2380, http://localhost:2379, false"
-```
-
-#### Configure ns-azure.sslip.io
-
-Now let's set up etcd on ns-azure:
-
-```shell
-ssh ns-azure.sslip.io
 sudo mkdir /etc/etcd # default's okay: root:root 755
+IAAS=${HOST/ns-/}
 cd /etc/etcd
-lpass login brian.cunnie@gmail.com --trust
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem
 sudo curl -OL https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem
-sudo curl -o /etc/default/etcd -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-azure.conf
+sudo curl -o /etc/default/etcd -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd-$IAAS.conf
+lpass login brian.cunnie@gmail.com --trust
 lpass show --note etcd-key.pem | sudo tee etcd-key.pem
 sudo chmod 400 *key*
 sudo chown etcd:etcd *key*
@@ -109,15 +76,7 @@ etcdctl member list # "8e9e05c52164694d, started, default, http://localhost:2380
 
 ### Wiping old data
 
-ns-aws:
-
-```
-sudo systemctl stop etcd
-sudo rm -r /var/lib/etcd/default.etcd/member
-sudo systemctl start etcd
-```
-
-ns-azure:
+ns-aws & ns-azure:
 
 ```
 sudo systemctl stop etcd
