@@ -17,7 +17,7 @@ developers; the website targets users.
 
 ```bash
 git clone git@github.com:cunnie/sslip.io.git
-cd sslip.io/bosh-release/src/sslip.io-dns-server/
+cd sslip.io/src/sslip.io-dns-server/
 sudo go run main.go
  # sudo is required on Linux, but not on macOS, to bind to privileged port 53
 ```
@@ -50,9 +50,10 @@ sudo ~/go/bin/ginkgo -r .
 - `k8s/document_root/` contains the HTML content of the sslip.io website. Please
   run `tidy -im -w 120 k8s/document_root/index.html` before submitting pull
   requests
-- `bosh-release/` contains the [BOSH](https://bosh.io/docs/) release. BOSH is
-  the mechanism we use to deploy the servers, and the sslip.io BOSH release is a
-  packaging of the DNS server (analogous to a `.msi`, `.pkg`, `.deb` or `.rpm`)
+- `bosh-release/` _[deprecated]_ contains the [BOSH](https://bosh.io/docs/)
+  release. BOSH is the mechanism we previously used to deploy the servers, and
+  the sslip.io BOSH release is a packaging of the DNS server (analogous to a
+  `.msi`, `.pkg`, `.deb` or `.rpm`)
 
 ## DNS Server
 
