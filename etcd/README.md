@@ -68,10 +68,16 @@ dig @localhost metrics.status.sslip.io txt +short | grep "Key-value store:" # sh
 ```
 
 If the messages look innocuous (ignore "serving client traffic insecurely; this
-is strongly discouraged!"), then check the cluster:
+is strongly discouraged!").
+
+Check the cluster:
 
 ```shell
-etcdctl member list # "8e9e05c52164694d, started, default, http://localhost:2380, http://localhost:2379, false"
+etcdctl member list # first time: "8e9e05c52164694d, started, default, http://localhost:2380, http://localhost:2379, false"
+  # existing cluster:
+  660f0ebfd9c21a95: name=ns-aws peerURLs=https://ns-aws.sslip.io:2380 clientURLs=http://localhost:2379 isLeader=true
+  6e7e4616e1032417: name=ns-azure peerURLs=https://ns-azure.sslip.io:2380 clientURLs=http://localhost:2379 isLeader=false
+  b77b5c23840fa42b: name=ns-gce peerURLs=https://ns-gce.sslip.io:2380 clientURLs= isLeader=false
 ```
 
 ### Wiping old data
@@ -83,3 +89,9 @@ sudo systemctl stop etcd
 sudo rm -rf /var/lib/etcd/default/member
 sudo systemctl start etcd
 ```
+
+### Troubleshooting
+
+If `sudo journalctl -xefu etcd` errors with `member xxx has already been
+bootstrapped`, then edit `/etc/default/etcd` and set
+`ETCD_INITIAL_CLUSTER_STATE="existing"` (previously was `"new"`).
