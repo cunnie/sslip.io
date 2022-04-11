@@ -182,7 +182,7 @@ var _ = Describe("Xip", func() {
 					Entry("getting that value → that value", "my-key.k-v.io.", []string{"MyValue"}),
 					Entry("getting that value with an UPPERCASE key → that value", "MY-KEY.k-v.io.", []string{"MyValue"}),
 					Entry("explicitly getting that value → that value", "GeT.my-key.k-v.io.", []string{"MyValue"}),
-					Entry("deleting that value → the deleted value", "DelETe.my-key.k-v.io.", []string{"MyValue"}),
+					Entry("deleting that value → empty array", "DelETe.my-key.k-v.io.", []string{}),
 					Entry("getting that deleted value → empty array", "my-key.k-v.io.", []string{}),
 					// errors
 					Entry("getting a non-existent key → empty array", "nonexistent.k-v.io.", []string{}),

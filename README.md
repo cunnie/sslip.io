@@ -31,7 +31,7 @@ dig @localhost 192.168.0.1.sslip.io +short
 ## Quick Start Tests
 
 ```bash
-go get github.com/onsi/ginkgo/v2/ginkgo
+go install github.com/onsi/ginkgo/v2/ginkgo@latest
 go get github.com/onsi/gomega/...
 sudo ~/go/bin/ginkgo -r .
  # sudo is required on Linux, but not on macOS, to bind to privileged port 53
