@@ -147,8 +147,8 @@ var _ = Describe("sslip.io-dns-server", func() {
 				`TypeTXT my-key.k-v.io. \? \["MyValue"\]`),
 			Entry(`deleting a value: TXT for delete.my-key.k-v.io"`,
 				"@127.0.0.1 delete.my-key.k-v.io txt +short",
-				`"MyValue"`,
-				`TypeTXT delete.my-key.k-v.io. \? \["MyValue"\]`),
+				`\A\z`,
+				`TypeTXT delete.my-key.k-v.io. \? nil, SOA delete.my-key.k-v.io. briancunnie.gmail.com. 2022020800 900 900 1800 180\n$`),
 			Entry(`getting a non-existent value: TXT for my-key.k-v.io"`,
 				"@127.0.0.1 my-key.k-v.io txt +short",
 				`\A\z`,
@@ -256,14 +256,21 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession, 1).Should(Exit(0))
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT b.k-v.io. \? \["a"\]`))
 			})
-			It(`the DELETE has a three-minute TTL`, func() {
+			It(`the DELETE returns no records so that value cached in downstream DNS servers expires more quickly`, func() {
 				digArgs = "@localhost delete.b.k-v.io txt -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`delete.b.k-v.io.	180	IN	TXT	"a"`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.b.k-v.io. \? \["a"\]`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.b.k-v.io. \? nil, SOA delete.b.k-v.io. briancunnie.gmail.com. 2022020800 900 900 1800 180`))
+			})
+			It(`the DELETE on a non-existent key behaves the same as the DELETE on an existing key`, func() {
+				digArgs = "@localhost delete.b.k-v.io txt -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.b.k-v.io. \? nil, SOA delete.b.k-v.io. briancunnie.gmail.com. 2022020800 900 900 1800 180`))
 			})
 		})
 		When(`a record for an "_acme-challenge" domain is queried`, func() {

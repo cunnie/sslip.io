@@ -88,7 +88,6 @@ type KvCustomizations map[string][]dnsmessage.TXTResource
 // There's nothing like global variables to make my heart pound with joy.
 // Some of these are global because they are, in essence, constants which
 // I don't want to waste time recreating with every function call.
-// But `Customizations` is a true global variable.
 var (
 	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])-){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
@@ -116,7 +115,15 @@ var (
 	VersionDate     = "0001/01/01-99:99:99-0800"
 	VersionGitHash  = "cafexxx"
 
-	MetricsBufferSize = 100
+	MetricsBufferSize = 100 // big enough to run our tests, and small enough to prevent DNS amplification attacks
+
+	// etcdContextTimeout — the duration (context) that we wait for etcd to get back to us
+	// - etcd queries on the nameserver take as long as 482 milliseconds on the "slow" server, 247 on the "fast"
+	// - round-trip time from my house in San Francisco to ns-azure in Singapore is 190 milliseconds
+	// - time between queries with `dig` on my macOS Monterey is 5000 milliseconds, three queries before giving up
+	// - quadruple the headroom for queries 4 x 482 = 1928, should still leave enough room to get answer back
+	//   within the 5000 milliseconds
+	etcdContextTimeout = 1928 * time.Millisecond
 
 	TxtKvCustomizations = KvCustomizations{}
 	Customizations      = DomainCustomizations{
@@ -652,6 +659,7 @@ func NameToA(fqdnString string) []dnsmessage.AResource {
 			ipv4address := net.ParseIP(match).To4()
 			// We shouldn't reach here because `match` should always be valid, but we're not optimists
 			if ipv4address == nil {
+				// e.g. "ubuntu20.04.235.249.181-notify.sslip.io."
 				log.Printf("----> Should be valid A but isn't: %s\n", fqdn) // TODO: delete this
 				return []dnsmessage.AResource{}
 			}
@@ -864,7 +872,7 @@ func (x *Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
 		}
 		return nil, nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
 	defer cancel()
 	resp, err := x.Etcd.Get(ctx, key)
 	if err != nil {
@@ -888,7 +896,7 @@ func (x *Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
 		}
 		return TxtKvCustomizations[key], nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
 	defer cancel()
 	_, err := x.Etcd.Put(ctx, key, value)
 	if err != nil {
@@ -899,28 +907,18 @@ func (x *Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
 
 func (x *Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
 	if x.isEtcdNil() {
-		if deletedKey, ok := TxtKvCustomizations[key]; ok {
+		if _, ok := TxtKvCustomizations[key]; ok {
 			delete(TxtKvCustomizations, key)
-			return deletedKey, nil
 		}
 		return nil, nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
 	defer cancel()
-	getResp, err := x.Etcd.Get(ctx, key) // is the key set?
+	_, err := x.Etcd.Delete(ctx, key)
 	if err != nil {
-		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
+		return nil, fmt.Errorf("couldn't DELETE (key %s): %w", key, err)
 	}
-	if len(getResp.Kvs) == 0 { // nothing to delete
-		return []dnsmessage.TXTResource{}, nil
-	}
-	// the key is set; we need to delete it
-	value := string(getResp.Kvs[0].Value)
-	_, err = x.Etcd.Delete(ctx, key)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't DELETE (%s: %s): %w", key, value, err)
-	}
-	return []dnsmessage.TXTResource{{[]string{value}}}, nil
+	return nil, nil
 }
 
 // soaLogMessage returns an easy-to-read string for logging SOA Answers/Authorities
@@ -1174,7 +1172,7 @@ func clientv3New(etcdEndpoint string) (*clientv3.Client, error) {
 		return nil, err
 	}
 	// Let's do a query to determine if etcd is really, truly there
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
 	defer cancel()
 	_, err = etcdCli.Get(ctx, "some-silly-key, doesn't matter if it exists")
 	if err != nil {
