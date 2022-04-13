@@ -7,7 +7,7 @@ mv sslip.io-dns-server/{go.*,main.go,xip} src/
 cd src/
 ldflags="-X xip/xip.VersionSemantic=2.5.1 \
          -X xip/xip.VersionDate=$(date +%Y/%m/%d-%H:%M:%S%z) \
-         -X xip/xip.VersionGitHash=c3c1d2a"
+         -X xip/xip.VersionGitHash=0c18937"
 go build \
     -ldflags="$ldflags" \
     -o ${BOSH_INSTALL_TARGET}/bin/sslip.io-dns-server
