@@ -118,7 +118,7 @@ describe domain do
     end
 
     it "deletes a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
-      expect(`dig @#{whois_nameserver} delete.sslipio-spec.k-v.io TXT +short`).to match(/^"MyKey"$/)
+      expect(`dig @#{whois_nameserver} delete.sslipio-spec.k-v.io TXT +short`).to match(/^$/)
     end
 
     it "gets a key-value @#{whois_nameserver} sslipio-spec.k-v.io" do
