@@ -19,6 +19,10 @@ spec:
       - name: sslip-container
         image: cunnie/sslip.io-dns-server:latest
         imagePullPolicy: Always
+        command:
+        - /usr/sbin/sslip.io-dns-server
+        - -etcdHost
+        - k-v-io-etcd-cluster.default.svc.cluster.local:2379
         ports:
         - containerPort: 53
           protocol: UDP
