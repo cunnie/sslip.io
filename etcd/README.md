@@ -13,30 +13,60 @@ communicate over TLS, but our clients won't).
 - `ca-csr.json`. Again, 30 years.
 
 ```shell
-cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+cfssl gencert -initca ca-csr.json | cfssljson -bare etcd-ca
 ```
 
-The key is saved in LastPass as `etcd-ca-key.pem`
+The key is saved in LastPass as `etcd-ca-key.pem`.
 
 Let's use our newly-created CA to generate the etcd certificates. Note
 that we throw almost every IP address/hostname we can think of into the
 SANs field (why not?):
 
 ```shell
+GKE_NODE_PUBLIC_IPv4=$(gcloud compute instances list --format=json |
+  jq -r '[.[].networkInterfaces[0].accessConfigs[0].natIP] | join(",")')
 PUBLIC_HOSTNAMES=ns-aws.sslip.io,ns-azure.sslip.io,ns-gce.sslip.io
 HOSTNAMES=ns-aws,ns-azure,ns-gce
-IPv4=127.0.0.1,52.0.56.137,52.187.42.158,104.155.144.4
+IPv4=127.0.0.1,52.0.56.137,52.187.42.158,104.155.144.4,$GKE_NODE_PUBLIC_IPv4
 IPv6=::1,2600:1f18:aaf:6900::a
 cfssl gencert \
   -ca=ca.pem \
-  -ca-key=ca-key.pem \
+  -ca-key=etcd-ca-key.pem \
   -config=ca-config.json \
   -hostname=${PUBLIC_HOSTNAMES},${HOSTNAMES},${IPv4},${IPv6} \
   -profile=etcd \
   etcd-csr.json | cfssljson -bare etcd
 ```
 
-The key is saved in LastPass as `etcd-key.pem`
+The key is saved in LastPass as `etcd-key.pem`.
+
+#### Generating a New Cert for a New etcd Node
+
+Let's say you've introduced _new_ IPv4 addresses, or that you've recreated your
+GKE clusters, and all the addresses have changed, then you'll need to
+regenerate the certificates:
+
+```
+lpass show --note etcd-ca-key.pem > etcd-ca-key.pem
+lpass show --note etcd-key.pem > etcd-key.pem
+GKE_NODE_PUBLIC_IPv4=$(gcloud compute instances list --format=json |
+  jq -r '[.[].networkInterfaces[0].accessConfigs[0].natIP] | join(",")')
+PUBLIC_HOSTNAMES=ns-aws.sslip.io,ns-azure.sslip.io,ns-gce.sslip.io
+HOSTNAMES=ns-aws,ns-azure,ns-gce
+IPv4=127.0.0.1,52.0.56.137,52.187.42.158,104.155.144.4,$GKE_NODE_PUBLIC_IPv4
+IPv6=::1,2600:1f18:aaf:6900::a
+
+cfssl gencsr \
+  -key=etcd-key.pem \
+  -hostname=${PUBLIC_HOSTNAMES},${HOSTNAMES},${IPv4},${IPv6} \
+  -cert=etcd.pem | cfssljson -bare etcd
+cfssl sign \
+  -ca=ca.pem \
+  -ca-key=etcd-ca-key.pem \
+  -config=ca-config.json \
+  -profile=etcd \
+  etcd.csr | cfssljson -bare etcd
+```
 
 #### Configure ns-aws.sslip.io & ns-azure.sslip.io
 
