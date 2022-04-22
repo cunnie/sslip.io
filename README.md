@@ -47,8 +47,8 @@ sudo ~/go/bin/ginkgo -r .
   ```bash
   DOMAIN=sslip.io rspec --format documentation --color spec/
   ```
-- `k8s/document_root/` contains the HTML content of the sslip.io website. Please
-  run `tidy -im -w 120 k8s/document_root/index.html` before submitting pull
+- `k8s/document_root_sslip.io/` contains the HTML content of the sslip.io website. Please
+  run `tidy -im -w 120 k8s/document_root_sslip.io/index.html` before submitting pull
   requests
 - `bosh-release/` _[deprecated]_ contains the [BOSH](https://bosh.io/docs/)
   release. BOSH is the mechanism we previously used to deploy the servers, and

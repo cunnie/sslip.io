@@ -14,7 +14,7 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   spec/check-dns_spec.rb
 # update the download instructions on the website
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
-  k8s/document_root/index.html \
+  k8s/document_root_sslip.io/index.html \
   k8s/Dockerfile-sslip.io-dns-server
 # update the git hash for the TXT record for version.status.sslip.io for BOSH release
 sed -i '' "s/VersionGitHash=[0-9a-fA-F]*/VersionGitHash=$(git rev-parse --short HEAD)/g" \
@@ -93,9 +93,9 @@ fly -t nono trigger-job -j dockerfiles/build-and-push-sslip.io-dns-server
 ```
 Update the webservers with the HTML with new versions:
 ```bash
-ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root/index.html
-ssh ns-aws.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root/index.html
-ssh ns-azure.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root/index.html
+ssh nono.io curl -L -o /www/sslip.io/document_root_sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
+ssh ns-aws.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
+ssh ns-azure.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 ```
 Update GCP/GKE with the new executable:
 ```bash
