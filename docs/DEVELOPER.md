@@ -1,11 +1,11 @@
-## Updating BOSH Releases
+## Release Procedure
 
-These instructions are meant primarily for me when deploying a new BOSH release;
+These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.5.1
-export VERSION=2.5.2
+export OLD_VERSION=2.5.2
+export VERSION=2.5.3
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -16,15 +16,12 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
   k8s/document_root_sslip.io/index.html \
   k8s/Dockerfile-sslip.io-dns-server
-# update the git hash for the TXT record for version.status.sslip.io for BOSH release
-sed -i '' "s/VersionGitHash=[0-9a-fA-F]*/VersionGitHash=$(git rev-parse --short HEAD)/g" \
-  bosh-release/packages/sslip.io-dns-server/packaging
 bin/make_all
 # Start the server, assuming macOS M1. Adjust path for GOOS, GOARCH. Linux requires `sudo`
 bin/sslip.io-dns-server-darwin-arm64
 # In another window
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=2.5.2
+export VERSION=2.5.3
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
