@@ -154,6 +154,11 @@ var (
 				}, nil // Sender Policy Framework
 			},
 		},
+		"k-v.io.": {
+			A: []dnsmessage.AResource{
+				{A: [4]byte{104, 155, 144, 4}},
+			},
+		},
 		// a global nameserver for sslip.io, a conglomeration of ns-{aws,azure,gce}.sslip.io
 		"ns.sslip.io.": {
 			A: []dnsmessage.AResource{
