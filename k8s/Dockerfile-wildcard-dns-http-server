@@ -39,7 +39,7 @@
 
 FROM alpine AS sslip.io
 
-LABEL maintainer="brian.cunnie@gmail.com"
+LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 
 COPY wildcard-dns-http-server /usr/sbin/wildcard-dns-http-server
 

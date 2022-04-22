@@ -21,7 +21,7 @@
 #
 FROM alpine AS sslip.io
 
-LABEL maintainer="brian.cunnie@gmail.com"
+LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 
 RUN apk update && apk add bind-tools
 
