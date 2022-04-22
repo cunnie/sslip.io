@@ -64,6 +64,10 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(digResults))
 				Eventually(serverSession.Err).Should(Say(serverLogMessage))
 			},
+			Entry("A (customized) for k-v.io",
+				"@localhost k-v.io +short",
+				`\A104.155.144.4\n\z`,
+				`TypeA k-v.io. \? 104.155.144.4\n$`),
 			Entry("A (customized) for sslip.io",
 				"@localhost sslip.io +short",
 				`\A78.46.204.247\n\z`,
