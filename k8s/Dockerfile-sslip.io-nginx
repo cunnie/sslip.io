@@ -27,8 +27,7 @@ RUN dnf install -y \
     net-tools \
     nginx \
     nmap-ncat \
-    procps-ng \
-
+    procps-ng
 
 RUN mv /usr/share/nginx/html /usr/share/nginx/html-orig
 
