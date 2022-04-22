@@ -26,7 +26,7 @@ RUN dnf install -y nginx
 
 RUN mv /usr/share/nginx/html /usr/share/nginx/html-orig
 
-COPY document_root /usr/share/nginx/html
+COPY document_root_sslip.io /usr/share/nginx/html
 
 ENTRYPOINT [ "/usr/sbin/nginx", "-g", "daemon off;" ]
 
