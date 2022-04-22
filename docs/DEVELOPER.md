@@ -76,13 +76,11 @@ ssh ns-aws sudo shutdown -r now
 sleep 10; while ! dig @ns-aws.sslip.io ns-aws.sslip.io; do sleep 5; done # wait until it's back up before rebooting ns-azure
 ssh ns-azure sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-azure sudo shutdown -r now
-sleep 10; while ! dig @ns-aws.sslip.io ns-aws.sslip.io; do sleep 5; done # wait until it's back up before rebooting ns-azure
+sleep 10; while ! dig @ns-azure.sslip.io ns-azure.sslip.io; do sleep 5; done # wait until it's back up before rebooting ns-azure
 dig @ns-aws.sslip.io   version.status.sslip.io txt +short # confirm new version
 dig @ns-azure.sslip.io version.status.sslip.io txt +short # confirm new version
 ```
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
-- Drag and drop `~/Downloads/sslip.io-release-${VERSION}.tgz` to the _Attach
-  binaries..._ section
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
 - Click "Publish release"
 ```bash
@@ -90,7 +88,7 @@ fly -t nono trigger-job -j dockerfiles/build-and-push-sslip.io-dns-server
 ```
 Update the webservers with the HTML with new versions:
 ```bash
-ssh nono.io curl -L -o /www/sslip.io/document_root_sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
+ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 ssh ns-aws.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 ssh ns-azure.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 ```
@@ -98,9 +96,7 @@ Update GCP/GKE with the new executable:
 ```bash
 kubectl rollout restart deployment/sslip.io
 kubectl rollout restart deployment/sslip.io-nginx
-dig @ns-aws.nono.io txt version.status.sslip.io +short
-dig @ns-azure.nono.io txt version.status.sslip.io +short
-dig @ns-gce.nono.io txt version.status.sslip.io +short
+for IAAS in aws azure gce; do printf "\n$IAAS:\n"; dig @ns-$IAAS.sslip.io version.status.sslip.io txt +short; done
 fly -t nono trigger-job -j sslip.io/dns-servers
 ```
 Browse to <https://ci.nono.io/teams/main/pipelines/sslip.io>
