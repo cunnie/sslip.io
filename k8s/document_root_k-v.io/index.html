@@ -33,50 +33,26 @@
   <link href="starter-template.css" rel="stylesheet">
 </head>
 <body>
-  <!--
-  <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-    <a class="navbar-brand" href="#">k-v.io</a>
-    <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item active">
-          <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Link</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true"
-          aria-expanded="false">Dropdown</a>
-          <div class="dropdown-menu" aria-labelledby="dropdown01">
-            <a class="dropdown-item" href="#">Action</a> <a class="dropdown-item" href="#">Another action</a> <a class=
-            "dropdown-item" href="#">Something else here</a>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </nav>
-        -->
   <main role="main" class="container">
     <div class="starter-template">
       <h1>k-v.io</h1>
-      <p>A DNS-based Key-Value Store.</p>
+      <p>A DNS-based Key-Value Store. <a href="https://ci.nono.io/teams/main/pipelines/sslip.io"><img alt="badge" src=
+      "https://ci.nono.io/api/v1/teams/main/pipelines/sslip.io/badge"></a></p>
       <h2>Quick Start</h2>
       <p>In the following examples, <i>my-key</i> is the key, and <i>my-value</i> is the value.</p>
       <ul>
-        <li>To set a key: <code>dig put.my-value.my-key.k-v.io txt +short</code></li>
-        <li>To get a key: <code>dig my-key.k-v.io txt +short</code></li>
-        <li>To delete a key: <code>dig delete.my-key.k-v.io txt +short</code></li>
+        <li>To set a key: <code>dig @ns.sslip.io put.my-value.my-key.k-v.io txt +short</code></li>
+        <li>To get a key: <code>dig @ns.sslip.io my-key.k-v.io txt +short</code></li>
+        <li>To delete a key: <code>dig @ns.sslip.io delete.my-key.k-v.io txt +short</code></li>
       </ul>
-      <p>Notes:</p>
+      <h3>Notes:</h3>
       <ul>
         <li>Values are stored as TXT records.</li>
         <li>Keys must be valid DNS subdomains, i.e. only alphanumerics and dashes, and cannot exceed 63 characters.
         "my-key" is valid, but "my#key" is not.</li>
-        <li>Values can be one or more subdomains, i.e. alphanumerics, dashes, and dots. For example, <code>dig
-        put.3.14159.pi.k-v.io txt +short</code> sets the the key "pi" to the value "3.14159".</li>
+        <li>Values can be one or more subdomains, i.e. alphanumerics, dashes, and <i>dots</i>, and are truncated to 63
+        characters. For example, <code>dig put.3.14159.pi.k-v.io txt +short</code> sets the the key "pi" to the value
+        "3.14159".</li>
         <li>If you need special characters ("!@#$%^😊"), consider <a href=
         "https://en.wikipedia.org/wiki/Base32">Base32</a> encoding, but remember that the padding character ("=") is
         illegal.
@@ -85,27 +61,66 @@
         delete.pi.k-v.io txt +short</code>.</li>
         <li>The verb <code>get</code> is the default verb: <code>dig pi.k-v.io txt +short</code> is identical to
         <code>dig get.pi.k-v.io txt +short</code>.</li>
-        <li>When you change or delete a key, it may take up to 3 minutes for the change to propagate due to DNS
-        caching.</li>
-        <li>There's no security: you may set the key "best-rugby-team" to the value "all-blacks", and someone else
-        could change it a minute later to "springboks".</li>
+        <li>There's no read security: when you set a key "my-super-secret-password" to the value "dont-tell-anyone",
+        anyone can read it.</li>
+        <li>There's no write security: you may set the key "best-rugby-team" to the value "all-blacks", and someone
+        else could change it a minute later to "springboks".</li>
         <li>If you don't want someone to mess with your keys, you should probably use GUIDs or something fairly unique
         as a key, e.g. <code>dig put.my-value.df616686-26e8-4da8-8104-a24aa0196bc7.k-v.io txt +short</code></li>
-        <li>There are three servers that back this service: two in the USA, one in Singapore, on different platforms:
-        AWS, Azure, and Google Cloud.</li>
-        <li>The underlying key-value store is an etcd cluster. I chose etcd for no particular reason other than that's
-        what Kubernetes uses.</li>
         <li>I have no idea how well this system will scale.</li>
         <li>I'll probably expire keys that haven't been accessed in a month, but I haven't written that code yet.</li>
         <li>This project is very much in beta. Assume you may lose your keys at any time.</li>
       </ul>
+      <h3>DNS Caching/Propagation:</h3>
+      <p>You don't need to specify our nameservers ("<code>@ns.sslip.io</code>") in your <code>dig</code> invocations
+      if you don't mind dealing with the vagaries of DNS caching and propagation. Here are some of the problems you'll
+      face:</p>
+      <ul>
+        <li>When you change or delete a key, it may take up to 3 minutes for the change to propagate due to DNS
+        caching.</li>
+        <li>DNS propagation/caching is particularly troublesome when doing multiple write operations on a key within a
+        3-minute period. The first one takes effect, the second one doesn't because it's cached at the upstream
+        nameservers & never reaches the <i>k-v.io</i> nameservers.</li>
+      </ul>
+      <h3>Technical Notes:</h3>
+      <ul>
+        <li>There are three servers that back this service: two in the USA, one in Singapore, on three different
+        platforms: AWS, Azure, and Google Cloud.</li>
+        <li>The underlying key-value store is an etcd cluster. I chose etcd for no particular reason other than it's
+        what Kubernetes uses.</li>
+        <li>The <i>k-v.io</i> source code is in Golang, is hosted at <a href=
+        "https://github.com/cunnie/sslip.io">GitHub</a>, and is licensed under the Apache 2.0 license.
+        </li>
+        <li>Much of the deployment information (terraform files, Kubernetes manifests) is also freely available at a
+        <a href="https://github.com/cunnie/deployments/tree/main/terraform/gcp/gke">different GitHub repo</a>, and some
+        of the workstation configuration is at a <a href=
+        "https://github.com/cunnie/bin/blob/main/install_ns-aws.sh">third GitHub repo</a>. Yes, it's an organizational
+        challenge.
+        </li>
+        <li>The DNS server code is a mash-up of key-value store and <a href="https://sslip.io">mapping hostnames with
+        embedded IP addresses to those addresses</a> (e.g. <code>127.0.0.1.sslip.io</code> → <code>127.0.0.1</code>).
+        In a perfect world, I'd have separated the codebase into two and deployed <i>k-v.io</i> on a second set of
+        three nameservers; however, I had neither the time nor the inclination to manage a 2nd set of DNS servers. So
+        here we are.
+        </li>
+        <li>If you have suggestions (or notice that something's broken), please open a <a href=
+        "https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a>.
+        </li>
+        <li>I was motivated to create this service because at my job we use S3 as a key-value store, and getting at the
+        keys is a challenge because we need the AWS credentials, and to get at those credentials we need to use CredHub
+        (a Vault-like secrets store). It's a lot of hoops to jump through to find out something as innocuous as the
+        version number of the latest candidate build.</li>
+        <li>
+          <a href="https://dnskv.com/">dnskv.com</a> is a similar service with a rich set of options.
+        </li>
+      </ul>
     </div>
   </main><!-- /.container -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity=
-  "sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script> 
+  "sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
   <script>
   window.jQuery || document.write('<script src="/docs/4.3/assets/js/vendor/jquery-slim.min.js"><\/script>')
-  </script> 
+  </script>
   <script src="/docs/4.3/dist/js/bootstrap.bundle.min.js" integrity=
   "sha384-xrRywqdh3PHs8keKZN+8zzc5TX0GRTLCcmivcbNJWm2rs5C8PRhcEn3czEjhAO9o" crossorigin="anonymous"></script>
 </body>
