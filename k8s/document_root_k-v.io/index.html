@@ -33,8 +33,9 @@
   <link href="starter-template.css" rel="stylesheet">
 </head>
 <body>
+  <!--
   <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-    <a class="navbar-brand" href="#">Navbar</a>
+    <a class="navbar-brand" href="#">k-v.io</a>
     <div class="collapse navbar-collapse" id="navbarsExampleDefault">
       <ul class="navbar-nav mr-auto">
         <li class="nav-item active">
@@ -55,24 +56,57 @@
           </div>
         </li>
       </ul>
-      <form class="form-inline my-2 my-lg-0">
-        <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search"> <button class=
-        "btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-      </form>
     </div>
   </nav>
+        -->
   <main role="main" class="container">
     <div class="starter-template">
-      <h1>Bootstrap starter template</h1>
-      <p class="lead">Use this document as a way to quickly start any new project.<br>
-      All you get is this text and a mostly barebones HTML document.</p>
+      <h1>k-v.io</h1>
+      <p>A DNS-based Key-Value Store.</p>
+      <h2>Quick Start</h2>
+      <p>In the following examples, <i>my-key</i> is the key, and <i>my-value</i> is the value.</p>
+      <ul>
+        <li>To set a key: <code>dig put.my-value.my-key.k-v.io txt +short</code></li>
+        <li>To get a key: <code>dig my-key.k-v.io txt +short</code></li>
+        <li>To delete a key: <code>dig delete.my-key.k-v.io txt +short</code></li>
+      </ul>
+      <p>Notes:</p>
+      <ul>
+        <li>Values are stored as TXT records.</li>
+        <li>Keys must be valid DNS subdomains, i.e. only alphanumerics and dashes, and cannot exceed 63 characters.
+        "my-key" is valid, but "my#key" is not.</li>
+        <li>Values can be one or more subdomains, i.e. alphanumerics, dashes, and dots. For example, <code>dig
+        put.3.14159.pi.k-v.io txt +short</code> sets the the key "pi" to the value "3.14159".</li>
+        <li>If you need special characters ("!@#$%^😊"), consider <a href=
+        "https://en.wikipedia.org/wiki/Base32">Base32</a> encoding, but remember that the padding character ("=") is
+        illegal.
+        </li>
+        <li>The three verbs are <code>put</code>, <code>get</code>, and <code>delete</code>, e.g. <code>dig
+        delete.pi.k-v.io txt +short</code>.</li>
+        <li>The verb <code>get</code> is the default verb: <code>dig pi.k-v.io txt +short</code> is identical to
+        <code>dig get.pi.k-v.io txt +short</code>.</li>
+        <li>When you change or delete a key, it may take up to 3 minutes for the change to propagate due to DNS
+        caching.</li>
+        <li>There's no security: you may set the key "best-rugby-team" to the value "all-blacks", and someone else
+        could change it a minute later to "springboks".</li>
+        <li>If you don't want someone to mess with your keys, you should probably use GUIDs or something fairly unique
+        as a key, e.g. <code>dig put.my-value.df616686-26e8-4da8-8104-a24aa0196bc7.k-v.io txt +short</code></li>
+        <li>There are three servers that back this service: two in the USA, one in Singapore, on different platforms:
+        AWS, Azure, and Google Cloud.</li>
+        <li>The underlying key-value store is an etcd cluster. I chose etcd for no particular reason other than that's
+        what Kubernetes uses.</li>
+        <li>I have no idea how well this system will scale.</li>
+        <li>I'll probably expire keys that haven't been accessed in a month, but I haven't written that code yet.</li>
+        <li>This project is very much in beta. Assume you may lose your keys at any time.</li><code>dig get.pi.k-v.io
+        txt +short</code>.
+      </ul>
     </div>
   </main><!-- /.container -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity=
   "sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script> 
   <script>
   window.jQuery || document.write('<script src="/docs/4.3/assets/js/vendor/jquery-slim.min.js"><\/script>')
-  </script>
+  </script> 
   <script src="/docs/4.3/dist/js/bootstrap.bundle.min.js" integrity=
   "sha384-xrRywqdh3PHs8keKZN+8zzc5TX0GRTLCcmivcbNJWm2rs5C8PRhcEn3czEjhAO9o" crossorigin="anonymous"></script>
 </body>
