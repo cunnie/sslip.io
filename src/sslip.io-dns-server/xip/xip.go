@@ -93,7 +93,7 @@ var (
 	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])-){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
-	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`)
+	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
 	kvRE             = regexp.MustCompile(`\.k-v\.io\.$`)
 	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
 	nsAzureSslip, _  = dnsmessage.NewName("ns-azure.sslip.io.")
@@ -157,6 +157,12 @@ var (
 		"k-v.io.": {
 			A: []dnsmessage.AResource{
 				{A: [4]byte{104, 155, 144, 4}},
+			},
+		},
+		// don't let people procure *.k-v.io TLS certs via ACME DNS-01 challenge
+		"_acme-challenge.k-v.io.": {
+			TXT: func(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+				return []dnsmessage.TXTResource{{TXT: []string{"Please don't try to procure a k-v.io cert via DNS-01 challenge"}}}, nil
 			},
 		},
 		// a global nameserver for sslip.io, a conglomeration of ns-{aws,azure,gce}.sslip.io
@@ -756,15 +762,15 @@ func (x *Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 
 // TXTResources returns TXT records from Customizations or KvCustomizations
 func (x *Xip) TXTResources(fqdn string, ip net.IP) ([]dnsmessage.TXTResource, error) {
-	if kvRE.MatchString(fqdn) {
-		return x.kvTXTResources(fqdn)
-	}
 	if domain, ok := Customizations[strings.ToLower(fqdn)]; ok {
 		// Customizations[strings.ToLower(fqdn)] returns a _function_,
 		// we call that function, which has the same return signature as this method
 		if domain.TXT != nil {
 			return domain.TXT(x, ip)
 		}
+	}
+	if kvRE.MatchString(fqdn) {
+		return x.kvTXTResources(fqdn)
 	}
 	return nil, nil
 }
