@@ -157,6 +157,14 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 my-key.k-v.io txt +short",
 				`\A\z`,
 				`TypeTXT my-key.k-v.io. \? nil, SOA my-key.k-v.io. briancunnie.gmail.com. 2022020800 900 900 1800 180\n$`),
+			Entry(`setting a TXT for _acme-challenge.k-v.io appears to work (spoiler: it doesn't)'"`,
+				"@127.0.0.1 put.sneaky-boy._acme-challenge.k-v.io txt +short",
+				`sneaky-boy`,
+				`TypeTXT put.sneaky-boy._acme-challenge.k-v.io. \? \["sneaky-boy"\]`),
+			Entry(`get a TXT for _acme-challenge.k-v.io is blocked to foil Let's Encrypt ACME DNS-01 challenge"`,
+				"@127.0.0.1 _acme-challenge.k-v.io txt +short",
+				`Please don't try to procure a k-v.io cert via DNS-01 challenge`,
+				`TypeTXT _acme-challenge.k-v.io. \? \["Please don't try to procure a k-v.io cert via DNS-01 challenge"\]`),
 		)
 	})
 	Describe("for more complex assertions", func() {
