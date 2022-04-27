@@ -165,6 +165,14 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 _acme-challenge.k-v.io txt +short",
 				`Please don't try to procure a k-v.io cert via DNS-01 challenge`,
 				`TypeTXT _acme-challenge.k-v.io. \? \["Please don't try to procure a k-v.io cert via DNS-01 challenge"\]`),
+			Entry(`setting a TXT for _acme-challenge.subdomain-key.k-v.io doesn't expose DNS-01 vulnerability because all keys are on the main domain'"`,
+				"@127.0.0.1 put.baffled-boy._acme-challenge.subdomain-key.k-v.io txt +short",
+				`baffled-boy`,
+				`TypeTXT put.baffled-boy._acme-challenge.subdomain-key.k-v.io. \? \["baffled-boy._acme-challenge"\]`),
+			Entry(`get a TXT for _acme-challenge.a.b.c.subdomain-key.k-v.io ignores labels between "get" and the key`,
+				"@127.0.0.1 get._acme-challenge.a.b.c.subdomain-key.k-v.io txt +short",
+				`baffled-boy._acme-challenge`,
+				`TypeTXT get._acme-challenge.a.b.c.subdomain-key.k-v.io. \? \["baffled-boy._acme-challenge"\]`),
 		)
 	})
 	Describe("for more complex assertions", func() {
