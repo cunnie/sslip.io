@@ -120,6 +120,27 @@ sudo rm -rf /var/lib/etcd/default/member
 sudo systemctl start etcd
 ```
 
+### Deleting and Re-adding ns-azure
+
+This needs to be done when, for example, ns-azure is rebuilt from scratch.
+
+```bash
+ssh ns-aws
+etcdctl member list
+ # 6e7e4616e1032417: name=ns-azure peerURLs=https://ns-azure.sslip.io:2380 clientURLs=http://localhost:2379 isLeader=false
+etcdctl member remove 6e7e4616e1032417
+etcdctl member add ns-azure https://ns-azure.sslip.io:2380
+exit
+ssh ns-azure
+sudo systemctl stop etcd
+sudo rm -rf /var/lib/etcd/default/member
+sudo -E nvim /etc/default/etcd
+ # ETCD_INITIAL_CLUSTER_STATE="existing"
+sudo systemctl start etcd
+etcdctl member list
+sudo du -sH /var/lib/etcd/default/member
+```
+
 ### Troubleshooting
 
 If `sudo journalctl -xefu etcd` errors with `member xxx has already been
