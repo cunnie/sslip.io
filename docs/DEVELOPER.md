@@ -16,6 +16,9 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
   k8s/document_root_sslip.io/index.html \
   k8s/Dockerfile-sslip.io-dns-server
+# Optional: update the version for the ns-aws, ns-azure install scripts
+sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
+  ~/bin/install_ns-a*.sh
 bin/make_all
 # Start the server, assuming macOS M1. Adjust path for GOOS, GOARCH. Linux requires `sudo`
 bin/sslip.io-dns-server-darwin-arm64
