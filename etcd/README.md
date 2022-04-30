@@ -103,6 +103,7 @@ is strongly discouraged!").
 Check the cluster:
 
 ```shell
+export ETCDCTL_API=3
 etcdctl member list # first time: "8e9e05c52164694d, started, default, http://localhost:2380, http://localhost:2379, false"
   # existing cluster:
   660f0ebfd9c21a95: name=ns-aws peerURLs=https://ns-aws.sslip.io:2380 clientURLs=http://localhost:2379 isLeader=true
@@ -126,10 +127,11 @@ This needs to be done when, for example, ns-azure is rebuilt from scratch.
 
 ```bash
 ssh ns-aws
+export ETCDCTL_API=3
 etcdctl member list
  # 6e7e4616e1032417: name=ns-azure peerURLs=https://ns-azure.sslip.io:2380 clientURLs=http://localhost:2379 isLeader=false
 etcdctl member remove 6e7e4616e1032417
-etcdctl member add ns-azure https://ns-azure.sslip.io:2380
+etcdctl member add ns-azure --peer-urls=https://ns-azure.sslip.io:2380
 exit
 ssh ns-azure
 sudo systemctl stop etcd
