@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.5.2
-export VERSION=2.5.3
+export OLD_VERSION=2.5.3
+export VERSION=2.5.4
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -24,7 +24,7 @@ bin/make_all
 bin/sslip.io-dns-server-darwin-arm64
 # In another window
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=2.5.3
+export VERSION=2.5.4
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
@@ -68,7 +68,7 @@ exit
 # let's add our changes
 git add -p
 # and commit (but DON'T push)
-git ci -vm"Version $VERSION: DELETE on k-v.io returns no TXT records"
+git ci -vm"Version $VERSION: .acme_challenge.k-v.io isn't settable"
 git tag $VERSION
 git push
 git push --tags
