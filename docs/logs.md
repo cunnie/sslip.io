@@ -25,3 +25,13 @@ sed -E 's=.*(\.[^.]+\.[^.]+\.$)=\1=' < hosts.log | tr 'A-Z' 'a-z' | sort | uniq 
  # find the most looked-up IP addresses using the above hosts.log
 sort < /tmp/hosts.log | uniq -c | sort -n | tail -50
 ```
+
+```zsh
+ # Who's trying to find out their own IP via ip.sslip.io?
+ sudo journalctl --since yesterday -u sslip.io-dns | \
+   grep -v "nil, SOA" | \
+   grep "TypeTXT ip.sslip.io" | \
+   sed 's/.*TypeTXT ip.sslip.io. ? \["//; s/"\]$//' | \
+   sort | \
+   uniq -c
+```
