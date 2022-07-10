@@ -173,6 +173,22 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 get._acme-challenge.a.b.c.subdomain-key.k-v.io txt +short",
 				`baffled-boy._acme-challenge`,
 				`TypeTXT get._acme-challenge.a.b.c.subdomain-key.k-v.io. \? \["baffled-boy._acme-challenge"\]`),
+			Entry(`get a PTR for 1.0.168.192.in-addr.arpa returns 192.168.0.1.sslip.io`,
+				"@127.0.0.1 1.0.168.192.in-addr.arpa ptr +short",
+				`\A192.168.0.1.sslip.io.\n\z`,
+				`TypePTR 1.0.168.192.in-addr.arpa. \? 192.168.0.1.sslip.io.`),
+			Entry(`get a PTR for 1.0.0.127.blah.in-addr.arpa returns no records`,
+				"@127.0.0.1 1.0.0.127.blah.in-addr.arpa ptr +short",
+				`\A\z`,
+				`TypePTR 1.0.0.127.blah.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022042500 900 900 1800 180\n$`),
+			Entry(`get a PTR for blah.1.0.0.127.in-addr.arpa returns no records`,
+				"@127.0.0.1 blah.1.0.0.127.in-addr.arpa ptr +short",
+				`\A\z`,
+				`TypePTR blah.1.0.0.127.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022042500 900 900 1800 180\n$`),
+			Entry(`get a PTR for 0.0.127.in-addr.arpa returns no records`,
+				"@127.0.0.1 0.0.127.in-addr.arpa ptr +short",
+				`\A\z`,
+				`TypePTR 0.0.127.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022042500 900 900 1800 180\n$`),
 		)
 	})
 	Describe("for more complex assertions", func() {

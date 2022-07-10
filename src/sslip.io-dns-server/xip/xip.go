@@ -12,6 +12,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/netip"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -93,6 +94,7 @@ var (
 	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])-){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
+	ipv4ReverseRE    = regexp.MustCompile(`^(.*)\.in-addr\.arpa\.$`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
 	kvRE             = regexp.MustCompile(`\.k-v\.io\.$`)
 	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
@@ -557,6 +559,40 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 			}
 			return response, logMessage + strings.Join(logMessageTXTss, ", "), nil
 		}
+	case dnsmessage.TypePTR:
+		{
+			var ptr *dnsmessage.PTRResource
+			ptr = PTRResource([]byte(q.Name.String()))
+			if ptr == nil {
+				// No Answers, only 1 Authorities
+				soaHeader, soaResource := SOAAuthority(dnsmessage.MustNewName("sslip.io."))
+				response.Authorities = append(response.Authorities,
+					func(b *dnsmessage.Builder) error {
+						if err = b.SOAResource(soaHeader, soaResource); err != nil {
+							return err
+						}
+						return nil
+					})
+				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+			}
+			//x.Metrics.AnsweredQueries++
+			response.Answers = append(response.Answers,
+				// 1 CNAME record, via Customizations
+				func(b *dnsmessage.Builder) error {
+					err = b.PTRResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypePTR,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, *ptr)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+			return response, logMessage + ptr.PTR.String(), nil
+		}
 	default:
 		{
 			// default is the same case as an A/AAAA record which is not found,
@@ -799,6 +835,33 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 		Expire:  1800,
 		MinTTL:  180,
 	}
+}
+
+// PTRResource returns the PTR record, otherwise nil
+func PTRResource(fqdn []byte) *dnsmessage.PTRResource {
+	// "reverse", for example, means "1.0.0.127", as in "1.0.0.127.in-addr.arpa"
+	// the regular IP would be "127.0.0.1"
+	if ipv4ReverseRE.Match(fqdn) {
+		reversedIPv4 := ipv4ReverseRE.FindSubmatch(fqdn)[1]
+		reversedIPv4address := net.ParseIP(string(reversedIPv4)).To4()
+		if reversedIPv4address == nil {
+			return nil
+		}
+		ip := netip.AddrFrom4([4]byte{
+			reversedIPv4address[3],
+			reversedIPv4address[2],
+			reversedIPv4address[1],
+			reversedIPv4address[0],
+		})
+		ptrName, err := dnsmessage.NewName(ip.String() + ".sslip.io.")
+		if err != nil {
+			return nil
+		}
+		return &dnsmessage.PTRResource{
+			PTR: ptrName,
+		}
+	}
+	return nil
 }
 
 // when TXT for "ip.sslip.io" is queried, return the IP address of the querier
