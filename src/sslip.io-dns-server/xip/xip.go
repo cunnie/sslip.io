@@ -856,7 +856,7 @@ func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 			reversedIPv4address[1],
 			reversedIPv4address[0],
 		})
-		ptrName, err := dnsmessage.NewName(ip.String() + ".sslip.io.")
+		ptrName, err := dnsmessage.NewName(strings.ReplaceAll(ip.String(), ".", "-") + ".sslip.io.")
 		if err != nil {
 			return nil
 		}
