@@ -51,7 +51,7 @@ type Metrics struct {
 	AnsweredAQueries                int
 	AnsweredAAAAQueries             int
 	AnsweredTXTSrcIPQueries         int
-	AnsweredXTVersionQueries        int
+	AnsweredTXTVersionQueries       int
 	AnsweredNSDNS01ChallengeQueries int
 	AnsweredBlockedQueries          int
 	AnsweredPTRQueriesIPv4          int
@@ -208,7 +208,7 @@ var (
 		},
 		"version.status.sslip.io.": {
 			TXT: func(x *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
-				x.Metrics.AnsweredXTVersionQueries++
+				x.Metrics.AnsweredTXTVersionQueries++
 				return []dnsmessage.TXTResource{
 					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
 					{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
@@ -924,7 +924,7 @@ func metricsSslipIo(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, er
 	metrics = append(metrics, fmt.Sprintf("AnsA: %d", x.Metrics.AnsweredAQueries))
 	metrics = append(metrics, fmt.Sprintf("AnsAAAA: %d", x.Metrics.AnsweredAAAAQueries))
 	metrics = append(metrics, fmt.Sprintf("Source IP TXT: %d", x.Metrics.AnsweredTXTSrcIPQueries))
-	metrics = append(metrics, fmt.Sprintf("Version TXT: %d", x.Metrics.AnsweredXTVersionQueries))
+	metrics = append(metrics, fmt.Sprintf("Version TXT: %d", x.Metrics.AnsweredTXTVersionQueries))
 	metrics = append(metrics, fmt.Sprintf("PTR IPv4/IPv6: %d/%d", x.Metrics.AnsweredPTRQueriesIPv4, x.Metrics.AnsweredPTRQueriesIPv6))
 	metrics = append(metrics, fmt.Sprintf("DNS-01 challenge: %d", x.Metrics.AnsweredNSDNS01ChallengeQueries))
 	metrics = append(metrics, fmt.Sprintf("Blocked: %d", x.Metrics.AnsweredBlockedQueries))
@@ -1046,7 +1046,7 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 		a.AnsweredAQueries == b.AnsweredAQueries &&
 		a.AnsweredAAAAQueries == b.AnsweredAAAAQueries &&
 		a.AnsweredTXTSrcIPQueries == b.AnsweredTXTSrcIPQueries &&
-		a.AnsweredXTVersionQueries == b.AnsweredXTVersionQueries &&
+		a.AnsweredTXTVersionQueries == b.AnsweredTXTVersionQueries &&
 		a.AnsweredNSDNS01ChallengeQueries == b.AnsweredNSDNS01ChallengeQueries &&
 		a.AnsweredBlockedQueries == b.AnsweredBlockedQueries {
 		return true
