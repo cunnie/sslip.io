@@ -124,6 +124,22 @@ var _ = Describe("IntegrationMetrics", func() {
 			actualMetrics = digAndGetMetrics("@localhost version.status.sslip.io txt +short -p " + strconv.Itoa(port))
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
+			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv4
+			expectedMetrics.Queries++
+			expectedMetrics.AnsweredQueries++
+			expectedMetrics.AnsweredPTRQueriesIPv4++
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost 1.2.3.4.in-addr.arpa ptr +short -p " + strconv.Itoa(port))
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv6
+			expectedMetrics.Queries++
+			expectedMetrics.AnsweredQueries++
+			expectedMetrics.AnsweredPTRQueriesIPv6++
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa ptr +short -p " + strconv.Itoa(port))
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
 			// TXT DNS-01 challenge record updates .Queries, .AnsweredNSDNS01ChallengeQueries
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredNSDNS01ChallengeQueries++
@@ -174,6 +190,7 @@ func getMetrics() (m xip.Metrics) {
 			"\"AnsAAAA: %d\"\n"+
 			"\"Source IP TXT: %d\"\n"+
 			"\"Version TXT: %d\"\n"+
+			"\"PTR IPv4/IPv6: %d/%d\"\n"+
 			"\"DNS-01 challenge: %d\"\n"+
 			"\"Blocked: %d\"\n",
 		&uptime,
@@ -187,6 +204,7 @@ func getMetrics() (m xip.Metrics) {
 		&m.AnsweredAAAAQueries,
 		&m.AnsweredTXTSrcIPQueries,
 		&m.AnsweredXTVersionQueries,
+		&m.AnsweredPTRQueriesIPv4, &m.AnsweredPTRQueriesIPv6,
 		&m.AnsweredNSDNS01ChallengeQueries,
 		&m.AnsweredBlockedQueries,
 	)
