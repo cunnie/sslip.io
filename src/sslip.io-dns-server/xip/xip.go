@@ -54,6 +54,8 @@ type Metrics struct {
 	AnsweredXTVersionQueries        int
 	AnsweredNSDNS01ChallengeQueries int
 	AnsweredBlockedQueries          int
+	AnsweredPTRQueriesIPv4          int
+	AnsweredPTRQueriesIPv6          int
 }
 
 // DomainCustomization is a value that is returned for a specific query.
@@ -563,7 +565,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 	case dnsmessage.TypePTR:
 		{
 			var ptr *dnsmessage.PTRResource
-			ptr = PTRResource([]byte(q.Name.String()))
+			ptr = x.PTRResource([]byte(q.Name.String()))
 			if ptr == nil {
 				// No Answers, only 1 Authorities
 				soaHeader, soaResource := SOAAuthority(dnsmessage.MustNewName("sslip.io."))
@@ -839,7 +841,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 }
 
 // PTRResource returns the PTR record, otherwise nil
-func PTRResource(fqdn []byte) *dnsmessage.PTRResource {
+func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 	// "reverse", for example, means "1.0.0.127", as in "1.0.0.127.in-addr.arpa"
 	// the regular IP would be "127.0.0.1"
 	if ipv4ReverseRE.Match(fqdn) {
@@ -858,6 +860,8 @@ func PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 		if err != nil {
 			return nil
 		}
+		x.Metrics.AnsweredQueries++
+		x.Metrics.AnsweredPTRQueriesIPv4++
 		return &dnsmessage.PTRResource{
 			PTR: ptrName,
 		}
@@ -883,6 +887,8 @@ func PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 		if err != nil {
 			return nil
 		}
+		x.Metrics.AnsweredQueries++
+		x.Metrics.AnsweredPTRQueriesIPv6++
 		return &dnsmessage.PTRResource{
 			PTR: ptrName,
 		}
@@ -919,6 +925,7 @@ func metricsSslipIo(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, er
 	metrics = append(metrics, fmt.Sprintf("AnsAAAA: %d", x.Metrics.AnsweredAAAAQueries))
 	metrics = append(metrics, fmt.Sprintf("Source IP TXT: %d", x.Metrics.AnsweredTXTSrcIPQueries))
 	metrics = append(metrics, fmt.Sprintf("Version TXT: %d", x.Metrics.AnsweredXTVersionQueries))
+	metrics = append(metrics, fmt.Sprintf("PTR IPv4/IPv6: %d/%d", x.Metrics.AnsweredPTRQueriesIPv4, x.Metrics.AnsweredPTRQueriesIPv6))
 	metrics = append(metrics, fmt.Sprintf("DNS-01 challenge: %d", x.Metrics.AnsweredNSDNS01ChallengeQueries))
 	metrics = append(metrics, fmt.Sprintf("Blocked: %d", x.Metrics.AnsweredBlockedQueries))
 	for _, metric := range metrics {
