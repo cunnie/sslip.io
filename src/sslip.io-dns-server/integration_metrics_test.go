@@ -116,10 +116,10 @@ var _ = Describe("IntegrationMetrics", func() {
 			actualMetrics = digAndGetMetrics("@localhost ip.sslip.io txt +short -p " + strconv.Itoa(port))
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
-			// TXT version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredXTVersionQueries
+			// TXT version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredTXTVersionQueries
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredQueries++
-			expectedMetrics.AnsweredXTVersionQueries++
+			expectedMetrics.AnsweredTXTVersionQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost version.status.sslip.io txt +short -p " + strconv.Itoa(port))
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
@@ -203,7 +203,7 @@ func getMetrics() (m xip.Metrics) {
 		&m.AnsweredAQueries,
 		&m.AnsweredAAAAQueries,
 		&m.AnsweredTXTSrcIPQueries,
-		&m.AnsweredXTVersionQueries,
+		&m.AnsweredTXTVersionQueries,
 		&m.AnsweredPTRQueriesIPv4, &m.AnsweredPTRQueriesIPv6,
 		&m.AnsweredNSDNS01ChallengeQueries,
 		&m.AnsweredBlockedQueries,
