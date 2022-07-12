@@ -95,6 +95,7 @@ var (
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
 	ipv4ReverseRE    = regexp.MustCompile(`^(.*)\.in-addr\.arpa\.$`)
+	ipv6ReverseRE    = regexp.MustCompile(`^(([0-9a-f]\.){32})ip6\.arpa\.`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
 	kvRE             = regexp.MustCompile(`\.k-v\.io\.$`)
 	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
@@ -854,6 +855,31 @@ func PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 			reversedIPv4address[0],
 		})
 		ptrName, err := dnsmessage.NewName(ip.String() + ".sslip.io.")
+		if err != nil {
+			return nil
+		}
+		return &dnsmessage.PTRResource{
+			PTR: ptrName,
+		}
+	}
+	if ipv6ReverseRE.Match(fqdn) {
+		b := ipv6ReverseRE.FindSubmatch(fqdn)[1]
+		fmt.Println(string(b))
+		reversed := []byte{
+			b[62], b[60], b[58], b[56], ':',
+			b[54], b[52], b[50], b[48], ':',
+			b[46], b[44], b[42], b[40], ':',
+			b[38], b[36], b[34], b[32], ':',
+			b[30], b[28], b[26], b[24], ':',
+			b[22], b[20], b[18], b[16], ':',
+			b[14], b[12], b[10], b[8], ':',
+			b[6], b[4], b[2], b[0],
+		}
+		ip := net.ParseIP(string(reversed)).To16()
+		if ip == nil {
+			return nil
+		}
+		ptrName, err := dnsmessage.NewName(strings.ReplaceAll(ip.String(), ":", "-") + ".sslip.io.")
 		if err != nil {
 			return nil
 		}
