@@ -124,6 +124,33 @@ var _ = Describe("IntegrationMetrics", func() {
 			actualMetrics = digAndGetMetrics("@localhost version.status.sslip.io txt +short -p " + strconv.Itoa(port))
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
+			// TXT put.value.key.k-v.io updates .Queries, .AnsweredQueries, .AnsweredTXTPutKvQueries
+			expectedMetrics.Queries++
+			expectedMetrics.AnsweredQueries++
+			expectedMetrics.AnsweredTXTPutKvQueries++
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost put.value.key.k-v.io txt +short -p " + strconv.Itoa(port))
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// TXT key.k-v.io updates .Queries, .AnsweredQueries, .AnsweredTXTGetKvQueries
+			expectedMetrics.Queries++
+			expectedMetrics.AnsweredQueries++
+			expectedMetrics.AnsweredTXTGetKvQueries++
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost key.k-v.io txt +short -p " + strconv.Itoa(port))
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
+			// TXT delete.key.k-v.io updates .Queries, .AnsweredTXTDelKvQueries
+			// It doesn't count as an "answered" query because it returns no record
+			expectedMetrics.Queries++
+			expectedMetrics.AnsweredTXTDelKvQueries++
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			actualMetrics = digAndGetMetrics("@localhost delete.key.k-v.io txt +short -p " + strconv.Itoa(port))
+			fmt.Println()
+			fmt.Println(expectedMetrics)
+			fmt.Println(actualMetrics)
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
 			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv4
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredQueries++
@@ -190,6 +217,7 @@ func getMetrics() (m xip.Metrics) {
 			"\"AnsAAAA: %d\"\n"+
 			"\"Source IP TXT: %d\"\n"+
 			"\"Version TXT: %d\"\n"+
+			"\"Key-Value TXT GET/PUT/DEL: %d/%d/%d\"\n"+
 			"\"PTR IPv4/IPv6: %d/%d\"\n"+
 			"\"DNS-01 challenge: %d\"\n"+
 			"\"Blocked: %d\"\n",
@@ -204,6 +232,7 @@ func getMetrics() (m xip.Metrics) {
 		&m.AnsweredAAAAQueries,
 		&m.AnsweredTXTSrcIPQueries,
 		&m.AnsweredTXTVersionQueries,
+		&m.AnsweredTXTGetKvQueries, &m.AnsweredTXTPutKvQueries, &m.AnsweredTXTDelKvQueries,
 		&m.AnsweredPTRQueriesIPv4, &m.AnsweredPTRQueriesIPv6,
 		&m.AnsweredNSDNS01ChallengeQueries,
 		&m.AnsweredBlockedQueries,

@@ -52,6 +52,9 @@ type Metrics struct {
 	AnsweredAAAAQueries             int
 	AnsweredTXTSrcIPQueries         int
 	AnsweredTXTVersionQueries       int
+	AnsweredTXTGetKvQueries         int
+	AnsweredTXTPutKvQueries         int
+	AnsweredTXTDelKvQueries         int
 	AnsweredNSDNS01ChallengeQueries int
 	AnsweredBlockedQueries          int
 	AnsweredPTRQueriesIPv4          int
@@ -925,6 +928,7 @@ func metricsSslipIo(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, er
 	metrics = append(metrics, fmt.Sprintf("AnsAAAA: %d", x.Metrics.AnsweredAAAAQueries))
 	metrics = append(metrics, fmt.Sprintf("Source IP TXT: %d", x.Metrics.AnsweredTXTSrcIPQueries))
 	metrics = append(metrics, fmt.Sprintf("Version TXT: %d", x.Metrics.AnsweredTXTVersionQueries))
+	metrics = append(metrics, fmt.Sprintf("Key-Value TXT GET/PUT/DEL: %d/%d/%d", x.Metrics.AnsweredTXTGetKvQueries, x.Metrics.AnsweredTXTPutKvQueries, x.Metrics.AnsweredTXTDelKvQueries))
 	metrics = append(metrics, fmt.Sprintf("PTR IPv4/IPv6: %d/%d", x.Metrics.AnsweredPTRQueriesIPv4, x.Metrics.AnsweredPTRQueriesIPv6))
 	metrics = append(metrics, fmt.Sprintf("DNS-01 challenge: %d", x.Metrics.AnsweredNSDNS01ChallengeQueries))
 	metrics = append(metrics, fmt.Sprintf("Blocked: %d", x.Metrics.AnsweredBlockedQueries))
@@ -975,6 +979,7 @@ func (x *Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
 func (x *Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
 	if x.isEtcdNil() {
 		if txtRecord, ok := TxtKvCustomizations[key]; ok {
+			x.Metrics.AnsweredTXTGetKvQueries++
 			return txtRecord, nil
 		}
 		return nil, nil
@@ -986,6 +991,7 @@ func (x *Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
 		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
 	}
 	if len(resp.Kvs) > 0 {
+		x.Metrics.AnsweredTXTGetKvQueries++
 		return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
 	}
 	return []dnsmessage.TXTResource{}, nil
@@ -1001,6 +1007,7 @@ func (x *Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
 				[]string{value},
 			},
 		}
+		x.Metrics.AnsweredTXTPutKvQueries++
 		return TxtKvCustomizations[key], nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
@@ -1009,12 +1016,14 @@ func (x *Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
 	}
+	x.Metrics.AnsweredTXTPutKvQueries++
 	return []dnsmessage.TXTResource{{[]string{value}}}, nil
 }
 
 func (x *Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
 	if x.isEtcdNil() {
 		if _, ok := TxtKvCustomizations[key]; ok {
+			x.Metrics.AnsweredTXTDelKvQueries++
 			delete(TxtKvCustomizations, key)
 		}
 		return nil, nil
@@ -1025,6 +1034,7 @@ func (x *Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("couldn't DELETE (key %s): %w", key, err)
 	}
+	x.Metrics.AnsweredTXTDelKvQueries++
 	return nil, nil
 }
 
@@ -1047,6 +1057,11 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 		a.AnsweredAAAAQueries == b.AnsweredAAAAQueries &&
 		a.AnsweredTXTSrcIPQueries == b.AnsweredTXTSrcIPQueries &&
 		a.AnsweredTXTVersionQueries == b.AnsweredTXTVersionQueries &&
+		a.AnsweredTXTGetKvQueries == b.AnsweredTXTGetKvQueries &&
+		a.AnsweredTXTPutKvQueries == b.AnsweredTXTPutKvQueries &&
+		a.AnsweredTXTDelKvQueries == b.AnsweredTXTDelKvQueries &&
+		a.AnsweredPTRQueriesIPv4 == b.AnsweredPTRQueriesIPv4 &&
+		a.AnsweredPTRQueriesIPv6 == b.AnsweredPTRQueriesIPv6 &&
 		a.AnsweredNSDNS01ChallengeQueries == b.AnsweredNSDNS01ChallengeQueries &&
 		a.AnsweredBlockedQueries == b.AnsweredBlockedQueries {
 		return true
