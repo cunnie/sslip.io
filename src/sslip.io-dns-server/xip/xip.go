@@ -910,27 +910,25 @@ func metricsSslipIo(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, er
 	<-x.DnsAmplificationAttackDelay
 	var metrics []string
 	uptime := time.Since(x.Metrics.Start)
-	metrics = append(metrics, fmt.Sprintf("Uptime (seconds): %.0f", uptime.Seconds()))
+	metrics = append(metrics, fmt.Sprintf("Uptime: %.0f", uptime.Seconds()))
 	keyValueStore := "etcd"
 	if x.isEtcdNil() {
 		keyValueStore = "builtin"
 	}
-	metrics = append(metrics, "Key-value store: "+keyValueStore)
+	metrics = append(metrics, "KV Store: "+keyValueStore)
 	metrics = append(metrics, fmt.Sprintf("Blocklist: %s %d,%d",
 		x.BlocklistUpdated.Format("2006-01-02 15:04:05-07"),
 		len(x.BlocklistStrings),
 		len(x.BlocklistCDIRs)))
-	metrics = append(metrics, fmt.Sprintf("Queries: %d", x.Metrics.Queries))
-	metrics = append(metrics, fmt.Sprintf("Queries/second: %.1f", float64(x.Metrics.Queries)/uptime.Seconds()))
-	metrics = append(metrics, fmt.Sprintf("AnsQueries: %d", x.Metrics.AnsweredQueries))
-	metrics = append(metrics, fmt.Sprintf("AnsQueries/second: %.1f", float64(x.Metrics.AnsweredQueries)/uptime.Seconds()))
-	metrics = append(metrics, fmt.Sprintf("AnsA: %d", x.Metrics.AnsweredAQueries))
-	metrics = append(metrics, fmt.Sprintf("AnsAAAA: %d", x.Metrics.AnsweredAAAAQueries))
-	metrics = append(metrics, fmt.Sprintf("Source IP TXT: %d", x.Metrics.AnsweredTXTSrcIPQueries))
-	metrics = append(metrics, fmt.Sprintf("Version TXT: %d", x.Metrics.AnsweredTXTVersionQueries))
-	metrics = append(metrics, fmt.Sprintf("Key-Value TXT GET/PUT/DEL: %d/%d/%d", x.Metrics.AnsweredTXTGetKvQueries, x.Metrics.AnsweredTXTPutKvQueries, x.Metrics.AnsweredTXTDelKvQueries))
+	metrics = append(metrics, fmt.Sprintf("Queries: %d (%.1f/s)", x.Metrics.Queries, float64(x.Metrics.Queries)/uptime.Seconds()))
+	metrics = append(metrics, fmt.Sprintf("Answered Queries: %d (%.1f/s)", x.Metrics.AnsweredQueries, float64(x.Metrics.AnsweredQueries)/uptime.Seconds()))
+	metrics = append(metrics, fmt.Sprintf("A: %d", x.Metrics.AnsweredAQueries))
+	metrics = append(metrics, fmt.Sprintf("AAAA: %d", x.Metrics.AnsweredAAAAQueries))
+	metrics = append(metrics, fmt.Sprintf("TXT Source: %d", x.Metrics.AnsweredTXTSrcIPQueries))
+	metrics = append(metrics, fmt.Sprintf("TXT Version: %d", x.Metrics.AnsweredTXTVersionQueries))
+	metrics = append(metrics, fmt.Sprintf("TXT KV GET/PUT/DEL: %d/%d/%d", x.Metrics.AnsweredTXTGetKvQueries, x.Metrics.AnsweredTXTPutKvQueries, x.Metrics.AnsweredTXTDelKvQueries))
 	metrics = append(metrics, fmt.Sprintf("PTR IPv4/IPv6: %d/%d", x.Metrics.AnsweredPTRQueriesIPv4, x.Metrics.AnsweredPTRQueriesIPv6))
-	metrics = append(metrics, fmt.Sprintf("DNS-01 challenge: %d", x.Metrics.AnsweredNSDNS01ChallengeQueries))
+	metrics = append(metrics, fmt.Sprintf("NS DNS-01: %d", x.Metrics.AnsweredNSDNS01ChallengeQueries))
 	metrics = append(metrics, fmt.Sprintf("Blocked: %d", x.Metrics.AnsweredBlockedQueries))
 	for _, metric := range metrics {
 		txtResources = append(txtResources, dnsmessage.TXTResource{TXT: []string{metric}})
