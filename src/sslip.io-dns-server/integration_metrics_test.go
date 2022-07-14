@@ -146,9 +146,6 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredTXTDelKvQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost delete.key.k-v.io txt +short -p " + strconv.Itoa(port))
-			fmt.Println()
-			fmt.Println(expectedMetrics)
-			fmt.Println(actualMetrics)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv4
@@ -206,28 +203,24 @@ func getMetrics() (m xip.Metrics) {
 	var uptime int
 	var junk string
 	_, err = fmt.Sscanf(string(stdout),
-		"\"Uptime (seconds): %d\"\n"+
-			"\"Key-value store: %s\n"+ // %s "swallows" the double-quote at the end
+		"\"Uptime: %d\"\n"+
+			"\"KV Store: %s\n"+ // %s "swallows" the double-quote at the end
 			"\"Blocklist: %s %s %s\n"+
-			"\"Queries: %d\"\n"+
-			"\"Queries/second: %s\n"+
-			"\"AnsQueries: %d\"\n"+
-			"\"AnsQueries/second: %s\n"+
-			"\"AnsA: %d\"\n"+
-			"\"AnsAAAA: %d\"\n"+
-			"\"Source IP TXT: %d\"\n"+
-			"\"Version TXT: %d\"\n"+
-			"\"Key-Value TXT GET/PUT/DEL: %d/%d/%d\"\n"+
+			"\"Queries: %d (%s\n"+ // %s "swallows" the `/s"` at the end
+			"\"Answered Queries: %d (%s\n"+ // %s "swallows" the `/s"` at the end
+			"\"A: %d\"\n"+
+			"\"AAAA: %d\"\n"+
+			"\"TXT Source: %d\"\n"+
+			"\"TXT Version: %d\"\n"+
+			"\"TXT KV GET/PUT/DEL: %d/%d/%d\"\n"+
 			"\"PTR IPv4/IPv6: %d/%d\"\n"+
-			"\"DNS-01 challenge: %d\"\n"+
+			"\"NS DNS-01: %d\"\n"+
 			"\"Blocked: %d\"\n",
 		&uptime,
 		&junk,
 		&junk, &junk, &junk,
-		&m.Queries,
-		&junk,
-		&m.AnsweredQueries,
-		&junk,
+		&m.Queries, &junk,
+		&m.AnsweredQueries, &junk,
 		&m.AnsweredAQueries,
 		&m.AnsweredAAAAQueries,
 		&m.AnsweredTXTSrcIPQueries,
