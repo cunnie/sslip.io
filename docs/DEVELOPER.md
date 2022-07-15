@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.5.3
-export VERSION=2.5.4
+export OLD_VERSION=2.5.4
+export VERSION=2.6.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -24,7 +24,7 @@ bin/make_all
 bin/sslip.io-dns-server-darwin-arm64
 # In another window
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=2.5.4
+export VERSION=2.6.0
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
@@ -60,8 +60,10 @@ dig @$DNS_SERVER_IP delete.my-key.k-v.io txt +short
 echo
 echo " ===" # separator because the results are too similar
 dig @$DNS_SERVER_IP my-key.k-v.io txt +short # returns nothing
+dig @$DNS_SERVER_IP 1.0.0.127.in-addr.arpa ptr +short
+echo "127-0-0-1.sslip.io."
 dig @$DNS_SERVER_IP metrics.status.sslip.io txt +short | grep '"Queries: '
-echo '"Queries: 16"'
+echo '"Queries: 17"'
 # close the second window
 exit
 # stop the DNS server; we don't need it anymore
