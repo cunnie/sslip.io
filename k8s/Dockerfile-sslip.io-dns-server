@@ -26,7 +26,7 @@ LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 RUN apk update && apk add bind-tools
 
 ARG TARGETARCH # amd64, arm64 (so I can run on AWS graviton2)
-RUN wget https://github.com/cunnie/sslip.io/releases/download/2.5.4/sslip.io-dns-server-linux-$TARGETARCH \
+RUN wget https://github.com/cunnie/sslip.io/releases/download/2.6.0/sslip.io-dns-server-linux-$TARGETARCH \
     -O /usr/sbin/sslip.io-dns-server; \
   chmod 755 /usr/sbin/sslip.io-dns-server
 

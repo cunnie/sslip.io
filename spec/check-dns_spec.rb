@@ -18,7 +18,7 @@ def get_whois_nameservers(domain)
 end
 
 domain = ENV['DOMAIN'] || 'example.com'
-sslip_version = '2.5.4'
+sslip_version = '2.6.0'
 whois_nameservers = get_whois_nameservers(domain)
 
 describe domain do
