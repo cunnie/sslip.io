@@ -113,10 +113,11 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
       accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
       <div class="alert alert-warning" role="alert">
-        2021-11-27 FYI (for your information), we've switched to using our own nameservers (sslip.io) instead of the
-        old nono.io nameservers. <b>You don't need to change anything.</b> Don't worry if you're pointing to the old
-        nameservers—they'll continue to work properly. In fact, under the hood they are the same nameservers; the
-        change is merely cosmetic: we've created sslip.io DNS records for them.
+        <b>Do not use these name servers for general-purpose name resolution</b>; instead, continue to use
+        <code>1.1.1.1</code>, <code>8.8.8.8</code>, <code>9.9.9.9</code> or whatever name server you're currently
+        using. The sslip.io name servers are not <a href=
+        "https://en.wikipedia.org/wiki/Public_recursive_name_server">public recursive name servers</a>. They will not
+        resolve regular domain names (e.g. "<a href="https://google.com">google.com</a>").
       </div>
       <table class="table">
         <thead>
@@ -196,8 +197,8 @@ dig @ns.sslip.io txt ip.sslip.io +short    # sample reply "2607:fb90:464:ae1e:ed
 dig @ns.sslip.io txt ip.sslip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
 dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
       <div class="alert alert-warning" role="alert">
-        When querying for your IP address, always <b>include the sslip.io nameserver</b> (e.g. <i>@ns.sslip.io</i>). If
-        omitted, you won't get your IP address; instead, you'll get the IP address of your upstream nameserver.
+        When querying for your IP address, always <b>include the sslip.io name server</b> (e.g. <i>@ns.sslip.io</i>).
+        If omitted, you won't get your IP address; instead, you'll get the IP address of your upstream name server.
       </div>
       <p>This feature was inspired by Google's DNS lookup, i.e. <code>dig txt o-o.myaddr.l.google.com @8.8.8.8
       +short</code>. There are also popular HTTP-based services for determining your public IP address:</p>
@@ -307,7 +308,7 @@ dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
         <dd>This consists of two numbers; the first is the number of responses to IPv4 PTR queries
         (<code>1.0.0.127.in-addr.arpa.</code> → <code>127-0-0-1.sslip.io.</code>), the second, IPv6 PTR queries</dd>
         <dt>NS DNS-01</dt>
-        <dd>The number of responses which included a delegation of the NS (nameserver) to satisfy a certificate
+        <dd>The number of responses which included a delegation of the NS (name server) to satisfy a certificate
         authority's DNS-01 challenge. This lookup is used for generating wildcard certificates from Let's Encrypt and
         other certificate authority. Technically this is not a "successful" query in that we don't return a record in
         the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-gce.sslip.io
@@ -333,14 +334,14 @@ dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
       <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
       more often an indication that when the servers were last checked (currently every six hours), the CI (continuous
       integration) <a href="https://ci.nono.io/teams/main/pipelines/sslip.io">server</a> had difficulty reaching one of
-      the three sslip.io nameservers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
+      the three sslip.io name servers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
       out]</a></sup></p>
       <p><a id="timeout"><sup>[connection timed out]</sup></a></p>
       <p>DNS runs over <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a> which has no guaranteed
       delivery, and it’s not uncommon for the packets to get lost in transmission. DNS clients are programmed to
-      seamlessly query a different server when that happens. That’s why DNS, by fiat, requires at least two nameservers
-      (for redundancy). From <a href="https://tools.ietf.org/html/rfc1034">IETF (Internet Engineering Task Force) RFC
-      (Request for Comment) 1034</a>:</p>
+      seamlessly query a different server when that happens. That’s why DNS, by fiat, requires at least two name
+      servers (for redundancy). From <a href="https://tools.ietf.org/html/rfc1034">IETF (Internet Engineering Task
+      Force) RFC (Request for Comment) 1034</a>:</p>
       <blockquote>
         <p>A given zone will be available from several name servers to insure its availability in spite of host or
         communication link failure. By administrative fiat, we require every zone to be available on at least two
@@ -379,6 +380,11 @@ Placed at the end of the document so the pages load faster -->
       '//www.google-analytics.com/analytics.js', 'ga');
     ga('create', 'UA-43107212-2', 'auto');
     ga('send', 'pageview');
-  </script>
+  </script>About HTML Tidy: https://github.com/htacg/tidy-html5 Bug reports and comments:
+  https://github.com/htacg/tidy-html5/issues Official mailing list: https://lists.w3.org/Archives/Public/public-htacg/
+  Latest HTML specification: http://dev.w3.org/html5/spec-author-view/ Validate your HTML documents:
+  http://validator.w3.org/nu/ Lobby your company to join the W3C: http://www.w3.org/Consortium Do you speak a language
+  other than English, or a different variant of English? Consider helping us to localize HTML Tidy. For details please
+  see https://github.com/htacg/tidy-html5/blob/master/README/LOCALIZE.md
 </body>
 </html>
