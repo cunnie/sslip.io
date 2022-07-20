@@ -89,18 +89,19 @@ type DomainCustomizations map[string]DomainCustomization
 // KvCustomizations is a lookup table for custom TXT records
 // e.g. KvCustomizations["my-key"] = []dnsmessage.TXTResource{ TXT: { "my-value" } }
 // The key should NOT include ".k-v.io."
+// It's used when there's no etcd server running
 type KvCustomizations map[string][]dnsmessage.TXTResource
 
 // There's nothing like global variables to make my heart pound with joy.
 // Some of these are global because they are, in essence, constants which
 // I don't want to waste time recreating with every function call.
 var (
-	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
-	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?[0-9])?[0-9])-){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
+	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
+	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?\d)?\d)-){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
-	ipv6RE           = regexp.MustCompile(`(^|[.-])(([0-9a-fA-F]{1,4}-){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,7}-|([0-9a-fA-F]{1,4}-){1,6}-[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}-){1,5}(-[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}-){1,4}(-[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}-){1,3}(-[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}-){1,2}(-[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}-((-[0-9a-fA-F]{1,4}){1,6})|-((-[0-9a-fA-F]{1,4}){1,7}|-)|fe80-(-[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))($|[.-])`)
+	ipv6RE           = regexp.MustCompile(`(^|[.-])(([[:xdigit:]]{1,4}-){7}[[:xdigit:]]{1,4}|([[:xdigit:]]{1,4}-){1,7}-|([[:xdigit:]]{1,4}-){1,6}-[[:xdigit:]]{1,4}|([[:xdigit:]]{1,4}-){1,5}(-[[:xdigit:]]{1,4}){1,2}|([[:xdigit:]]{1,4}-){1,4}(-[[:xdigit:]]{1,4}){1,3}|([[:xdigit:]]{1,4}-){1,3}(-[[:xdigit:]]{1,4}){1,4}|([[:xdigit:]]{1,4}-){1,2}(-[[:xdigit:]]{1,4}){1,5}|[[:xdigit:]]{1,4}-((-[[:xdigit:]]{1,4}){1,6})|-((-[[:xdigit:]]{1,4}){1,7}|-)|fe80-(-[[:xdigit:]]{0,4}){0,4}%[\da-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d)|([[:xdigit:]]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
 	ipv4ReverseRE    = regexp.MustCompile(`^(.*)\.in-addr\.arpa\.$`)
-	ipv6ReverseRE    = regexp.MustCompile(`^(([0-9a-f]\.){32})ip6\.arpa\.`)
+	ipv6ReverseRE    = regexp.MustCompile(`^(([[:xdigit:]]\.){32})ip6\.arpa\.`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
 	kvRE             = regexp.MustCompile(`\.k-v\.io\.$`)
 	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
@@ -1074,6 +1075,7 @@ func readBlocklist(blocklistURL string) (blocklistStrings []string, blocklistCID
 	if err != nil {
 		log.Println(fmt.Errorf(`failed to download blocklist "%s": %w`, blocklistURL, err))
 	} else {
+		//noinspection GoUnhandledErrorResult
 		defer resp.Body.Close()
 		if resp.StatusCode > 299 {
 			log.Printf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
@@ -1092,8 +1094,8 @@ func readBlocklist(blocklistURL string) (blocklistStrings []string, blocklistCID
 func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklists []net.IPNet, err error) {
 	scanner := bufio.NewScanner(blocklist)
 	comments := regexp.MustCompile(`#.*`)
-	invalidDNSchars := regexp.MustCompile(`[^-_0-9a-z]`)
-	invalidDNScharsWithSlashesDotsAndColons := regexp.MustCompile(`[^-_0-9a-z/.:]`)
+	invalidDNSchars := regexp.MustCompile(`[^-\da-z]`)
+	invalidDNScharsWithSlashesDotsAndColons := regexp.MustCompile(`[^-_\da-z/.:]`)
 
 	for scanner.Scan() {
 		line := scanner.Text()
