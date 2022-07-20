@@ -31,7 +31,7 @@ func main() {
 	case err == nil:
 		log.Printf("Successfully bound to all interfaces, port %d.\n", *bindPort)
 		wg.Add(1)
-		readFrom(conn, &wg, x, *blocklistURL)
+		readFrom(conn, &wg, x)
 	case isErrorPermissionsError(err):
 		log.Printf("Try invoking me with `sudo` because I don't have permission to bind to port %d.\n", *bindPort)
 		log.Fatal(err.Error())
@@ -55,7 +55,7 @@ func main() {
 			} else {
 				wg.Add(1)
 				boundIPsPorts = append(boundIPsPorts, conn.LocalAddr().String())
-				go readFrom(conn, &wg, x, *blocklistURL)
+				go readFrom(conn, &wg, x)
 			}
 		}
 		if len(boundIPsPorts) > 0 {
@@ -70,7 +70,7 @@ func main() {
 	wg.Wait()
 }
 
-func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x *xip.Xip, blocklistURL string) {
+func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x *xip.Xip) {
 	defer wg.Done()
 	for {
 		query := make([]byte, 512)
