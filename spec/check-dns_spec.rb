@@ -106,7 +106,7 @@ describe domain do
 
     it "gets the source (querier's) IP address" do
       # Look on my Regular Expressions, ye mighty, and despair!
-      expect(`dig @#{whois_nameserver} TXT ip.#{domain} +short`).to match(/^"([0-9]+\.[0-9]+\.[0-9]+\.[0-9+])|(([0-9a-fA-F]*:){2,7}[0-9a-fA-F]*)"$/)
+      expect(`dig @#{whois_nameserver} TXT ip.#{domain} +short`).to match(/^"(\d+\.\d+\.\d+\.\d+)|(([[:xdigit:]]*:){2,7}[[:xdigit:]]*)"$/)
     end
 
     context "k-v.io tested on the #{whois_nameserver} nameserver" do
