@@ -153,15 +153,7 @@ var (
 					MX:   mx2,
 				},
 			},
-			TXT: func(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
-				// Although multiple TXT records with multiple strings are allowed, we're sticking
-				// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
-				// and that's what google.com does.
-				return []dnsmessage.TXTResource{
-					{TXT: []string{"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"}}, // ProtonMail verification; don't delete
-					{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},
-				}, nil // Sender Policy Framework
-			},
+			TXT: TXTSslipIoSPF,
 		},
 		"k-v.io.": {
 			A: []dnsmessage.AResource{
@@ -208,7 +200,7 @@ var (
 		},
 		// Special-purpose TXT records
 		"ip.sslip.io.": {
-			TXT: ipSslipIo,
+			TXT: TXTIp,
 		},
 		"version.status.sslip.io.": {
 			TXT: func(x *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
@@ -221,7 +213,7 @@ var (
 			},
 		},
 		"metrics.status.sslip.io.": {
-			TXT: metricsSslipIo,
+			TXT: TXTMetrics,
 		},
 	}
 )
@@ -900,14 +892,25 @@ func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 	return nil
 }
 
+// SFP records for sslio.io
+func TXTSslipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+	// Although multiple TXT records with multiple strings are allowed, we're sticking
+	// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
+	// and that's what google.com does.
+	return []dnsmessage.TXTResource{
+		{TXT: []string{"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"}}, // ProtonMail verification; don't delete
+		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},
+	}, nil // Sender Policy Framework
+}
+
 // when TXT for "ip.sslip.io" is queried, return the IP address of the querier
-func ipSslipIo(x *Xip, srcAddr net.IP) ([]dnsmessage.TXTResource, error) {
+func TXTIp(x *Xip, srcAddr net.IP) ([]dnsmessage.TXTResource, error) {
 	x.Metrics.AnsweredTXTSrcIPQueries++
 	return []dnsmessage.TXTResource{{TXT: []string{srcAddr.String()}}}, nil
 }
 
 // when TXT for "metrics.sslip.io" is queried, return the cumulative metrics
-func metricsSslipIo(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err error) {
+func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err error) {
 	<-x.DnsAmplificationAttackDelay
 	var metrics []string
 	uptime := time.Since(x.Metrics.Start)
