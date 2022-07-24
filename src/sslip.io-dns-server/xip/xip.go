@@ -892,7 +892,7 @@ func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 	return nil
 }
 
-// SFP records for sslio.io
+// TXTSslipIoSPF SFP records for sslio.io
 func TXTSslipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 	// Although multiple TXT records with multiple strings are allowed, we're sticking
 	// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
@@ -903,13 +903,13 @@ func TXTSslipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 	}, nil // Sender Policy Framework
 }
 
-// when TXT for "ip.sslip.io" is queried, return the IP address of the querier
+// TXTIp when TXT for "ip.sslip.io" is queried, return the IP address of the querier
 func TXTIp(x *Xip, srcAddr net.IP) ([]dnsmessage.TXTResource, error) {
 	x.Metrics.AnsweredTXTSrcIPQueries++
 	return []dnsmessage.TXTResource{{TXT: []string{srcAddr.String()}}}, nil
 }
 
-// when TXT for "metrics.sslip.io" is queried, return the cumulative metrics
+// TXTMetrics when TXT for "metrics.sslip.io" is queried, return the cumulative metrics
 func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err error) {
 	<-x.DnsAmplificationAttackDelay
 	var metrics []string
