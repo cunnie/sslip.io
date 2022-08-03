@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"log"
 	"net"
 	"os/exec"
 	"strconv"
@@ -17,17 +18,10 @@ import (
 var err error
 var serverCmd *exec.Cmd
 var serverSession *Session
-var port = 53
+var port = getFreePort()
 
 var _ = BeforeSuite(func() {
 	// Try to bind to the privileged first (for macOS), the fall back to unprivileged
-	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: port})
-	if err != nil {
-		port = 3553 // unprivileged, a.k.a. "Red Box Recorder ADP" from /etc/services
-	} else {
-		err = conn.Close()
-		Expect(err).ToNot(HaveOccurred())
-	}
 	serverPath, err := Build("main.go")
 	Expect(err).ToNot(HaveOccurred())
 	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port))
@@ -444,3 +438,31 @@ var _ = Describe("sslip.io-dns-server", func() {
 		)
 	})
 })
+
+var listenPort = 1023 // lowest unprivileged port - 1 (immediately incremented)
+
+// getFreePort should always succeed unless something awful has happened, e.g. port exhaustion
+func getFreePort() int {
+	for {
+		listenPort += 1
+		switch {
+		case listenPort > 65535:
+			listenPort = 1023 // we've reached the highest port, start over
+		case isPortFree(listenPort):
+			return listenPort
+		}
+	}
+}
+
+func isPortFree(port int) bool {
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: port})
+	if err != nil {
+		return false
+	}
+	err = conn.Close()
+	if err != nil {
+		log.Printf("I couldn't close port %d", port)
+		return false
+	}
+	return true
+}
