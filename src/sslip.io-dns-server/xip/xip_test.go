@@ -164,7 +164,7 @@ var _ = Describe("Xip", func() {
 				Expect(len(txts)).To(Equal(0))
 			})
 		})
-		When(`the domain "k-v.io is queried"`, func() {
+		When(`the domain "k-v.io is queried"`, Ordered, func() {
 			txtTests := func() {
 				DescribeTable(`the domain "k-v.io" is queried for TXT records`,
 					func(fqdn string, txts []string) {

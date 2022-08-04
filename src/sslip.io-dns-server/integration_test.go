@@ -56,69 +56,69 @@ var _ = Describe("sslip.io-dns-server", func() {
 				// of negative assertions (e.g. "^$")
 				Eventually(digSession, 1).Should(Exit(0))
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(digResults))
-				Eventually(serverSession.Err).Should(Say(serverLogMessage))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(serverLogMessage))
 			},
 			Entry("A (customized) for k-v.io",
 				"@localhost k-v.io +short",
 				`\A104.155.144.4\n\z`,
-				`TypeA k-v.io. \? 104.155.144.4\n$`),
+				`TypeA k-v.io. \? 104.155.144.4\n`),
 			Entry("A (customized) for sslip.io",
 				"@localhost sslip.io +short",
 				`\A78.46.204.247\n\z`,
-				`TypeA sslip.io. \? 78.46.204.247\n$`),
+				`TypeA sslip.io. \? 78.46.204.247\n`),
 			Entry("A (or lack thereof) for example.com",
 				"@localhost example.com +short",
 				`\A\z`,
-				`TypeA example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypeA example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry("A for www-127-0-0-1.sslip.io",
 				"@localhost www-127-0-0-1.sslip.io +short",
 				`\A127.0.0.1\n\z`,
-				`TypeA www-127-0-0-1.sslip.io. \? 127.0.0.1\n$`),
+				`TypeA www-127-0-0-1.sslip.io. \? 127.0.0.1\n`),
 			Entry("A for www.192.168.0.1.sslip.io",
 				"@localhost www.192.168.0.1.sslip.io +short",
 				`\A192.168.0.1\n\z`,
-				`TypeA www.192.168.0.1.sslip.io. \? 192.168.0.1\n$`),
+				`TypeA www.192.168.0.1.sslip.io. \? 192.168.0.1\n`),
 			Entry("AAAA (customized) for sslip.io",
 				"@localhost sslip.io aaaa +short",
 				`\A2a01:4f8:c17:b8f::2\n\z`,
-				`TypeAAAA sslip.io. \? 2a01:4f8:c17:b8f::2\n$`),
+				`TypeAAAA sslip.io. \? 2a01:4f8:c17:b8f::2\n`),
 			Entry("AAAA not found for example.com",
 				"@localhost example.com aaaa +short",
 				`\A\z`,
-				`TypeAAAA example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypeAAAA example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry("AAAA for www-2601-646-100-69f0-1c09-bae7-aa42-146c.sslip.io",
 				"@localhost www-2601-646-100-69f0-1c09-bae7-aa42-146c.sslip.io aaaa +short",
 				`\A2601:646:100:69f0:1c09:bae7:aa42:146c\n\z`,
-				`TypeAAAA www-2601-646-100-69f0-1c09-bae7-aa42-146c.sslip.io. \? 2601:646:100:69f0:1c09:bae7:aa42:146c\n$`),
+				`TypeAAAA www-2601-646-100-69f0-1c09-bae7-aa42-146c.sslip.io. \? 2601:646:100:69f0:1c09:bae7:aa42:146c\n`),
 			Entry("ALL (ANY) is NOT implemented",
 				// `+notcp` required for dig 9.11.25-RedHat-9.11.25-2.fc32 to avoid "connection refused"
 				"@localhost sslip.io any +notcp",
 				` status: NOTIMP,`,
-				`TypeALL sslip.io. \? NotImplemented\n$`),
+				`TypeALL sslip.io. \? NotImplemented\n`),
 			Entry("CNAME (customized) for protonmail._domainkey.sslip.io",
 				"@localhost protonmail._domainkey.sslip.io cname +short",
 				`\Aprotonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.\n\z`,
-				`TypeCNAME protonmail._domainkey.sslip.io. \? protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.\n$`),
+				`TypeCNAME protonmail._domainkey.sslip.io. \? protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.\n`),
 			Entry("CNAME not found for example.com",
 				"@localhost example.com cname +short",
 				`\A\z`,
-				`TypeCNAME example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypeCNAME example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry("MX for example.com",
 				"@localhost example.com mx +short",
 				`\A0 example.com.\n\z`,
-				`TypeMX example.com. \? 0 example.com.\n$`),
+				`TypeMX example.com. \? 0 example.com.\n`),
 			Entry("SOA for sslip.io",
 				"@localhost sslip.io soa +short",
 				`\Asslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n\z`,
-				`TypeSOA sslip.io. \? sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypeSOA sslip.io. \? sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry("SOA for example.com",
 				"@localhost example.com soa +short",
 				`\Aexample.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n\z`,
-				`TypeSOA example.com. \? example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypeSOA example.com. \? example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry("SRV (or other record that we don't implement) for example.com",
 				"@localhost example.com srv +short",
 				`\A\z`,
-				`TypeSRV example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypeSRV example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry(`TXT for version.status.sslip.io is the version number of the xip software (which gets overwritten during linking)`,
 				"@127.0.0.1 version.status.sslip.io txt +short",
 				`\A"0.0.0"\n"0001/01/01-99:99:99-0800"\n"cafexxx"\n\z`,
@@ -130,27 +130,19 @@ var _ = Describe("sslip.io-dns-server", func() {
 			Entry(`TXT is the querier's IPv4 address and the domain is NOT "ip.sslip.io"`,
 				"@127.0.0.1 example.com txt +short",
 				`\A\z`,
-				`TypeTXT example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
-			Entry(`getting a non-existent value: TXT for my-key.k-v.io"`,
-				"@127.0.0.1 my-key.k-v.io txt +short",
+				`TypeTXT example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
+			Entry(`getting a non-existent value: TXT for non-existent.k-v.io"`,
+				"@127.0.0.1 non-existent.k-v.io txt +short",
 				`\A\z`,
-				`TypeTXT my-key.k-v.io. \? nil, SOA my-key.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypeTXT non-existent.k-v.io. \? nil, SOA non-existent.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry(`putting a value: TXT for put.MyValue.MY-KEY.k-v.io"`,
 				"@127.0.0.1 put.MyValue.MY-KEY.k-v.io txt +short",
 				`"MyValue"`,
 				`TypeTXT put.MyValue.MY-KEY.k-v.io. \? \["MyValue"\]`),
-			Entry(`getting a value: TXT for my-key.k-v.io"`,
-				"@127.0.0.1 my-key.k-v.io txt +short",
-				`"MyValue"`,
-				`TypeTXT my-key.k-v.io. \? \["MyValue"\]`),
 			Entry(`deleting a value: TXT for delete.my-key.k-v.io"`,
 				"@127.0.0.1 delete.my-key.k-v.io txt +short",
 				`\A\z`,
-				`TypeTXT delete.my-key.k-v.io. \? nil, SOA delete.my-key.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
-			Entry(`getting a non-existent value: TXT for my-key.k-v.io"`,
-				"@127.0.0.1 my-key.k-v.io txt +short",
-				`\A\z`,
-				`TypeTXT my-key.k-v.io. \? nil, SOA my-key.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypeTXT delete.my-key.k-v.io. \? nil, SOA delete.my-key.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry(`setting a TXT for _acme-challenge.k-v.io appears to work (spoiler: it doesn't)'"`,
 				"@127.0.0.1 put.sneaky-boy._acme-challenge.k-v.io txt +short",
 				`sneaky-boy`,
@@ -159,14 +151,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 _acme-challenge.k-v.io txt +short",
 				`Please don't try to procure a k-v.io cert via DNS-01 challenge`,
 				`TypeTXT _acme-challenge.k-v.io. \? \["Please don't try to procure a k-v.io cert via DNS-01 challenge"\]`),
-			Entry(`setting a TXT for _acme-challenge.subdomain-key.k-v.io doesn't expose DNS-01 vulnerability because all keys are on the main domain'"`,
-				"@127.0.0.1 put.baffled-boy._acme-challenge.subdomain-key.k-v.io txt +short",
-				`baffled-boy`,
-				`TypeTXT put.baffled-boy._acme-challenge.subdomain-key.k-v.io. \? \["baffled-boy._acme-challenge"\]`),
-			Entry(`get a TXT for _acme-challenge.a.b.c.subdomain-key.k-v.io ignores labels between "get" and the key`,
-				"@127.0.0.1 get._acme-challenge.a.b.c.subdomain-key.k-v.io txt +short",
-				`baffled-boy._acme-challenge`,
-				`TypeTXT get._acme-challenge.a.b.c.subdomain-key.k-v.io. \? \["baffled-boy._acme-challenge"\]`),
 			Entry(`get a PTR for 1.0.168.192.in-addr.arpa returns 192-168-0-1.sslip.io`,
 				"@127.0.0.1 1.0.168.192.in-addr.arpa ptr +short",
 				`\A192-168-0-1.sslip.io.\n\z`,
@@ -174,15 +158,15 @@ var _ = Describe("sslip.io-dns-server", func() {
 			Entry(`get a PTR for 1.0.0.127.blah.in-addr.arpa returns no records`,
 				"@127.0.0.1 1.0.0.127.blah.in-addr.arpa ptr +short",
 				`\A\z`,
-				`TypePTR 1.0.0.127.blah.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypePTR 1.0.0.127.blah.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry(`get a PTR for blah.1.0.0.127.in-addr.arpa returns no records`,
 				"@127.0.0.1 blah.1.0.0.127.in-addr.arpa ptr +short",
 				`\A\z`,
-				`TypePTR blah.1.0.0.127.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypePTR blah.1.0.0.127.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry(`get a PTR for 0.0.127.in-addr.arpa returns no records`,
 				"@127.0.0.1 0.0.127.in-addr.arpa ptr +short",
 				`\A\z`,
-				`TypePTR 0.0.127.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypePTR 0.0.127.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry(`get a PTR for 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa returns 2601-646-100-69f0-14ce-6eea-9204-bba2.sslip.io`,
 				"@127.0.0.1 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa ptr +short",
 				`\A2601-646-100-69f0-14ce-6eea-9204-bba2.sslip.io.\n\z`,
@@ -190,15 +174,15 @@ var _ = Describe("sslip.io-dns-server", func() {
 			Entry(`get a PTR for 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.blah.ip6.arpa returns no records`,
 				"@127.0.0.1 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.blah.ip6.arpa ptr +short",
 				`\A\z`,
-				`TypePTR 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.blah.ip6.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypePTR 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.blah.ip6.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry(`get a PTR for b2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa returns no records`,
 				"@127.0.0.1 b2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa ptr +short",
 				`\A\z`,
-				`TypePTR b2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypePTR b2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 			Entry(`get a PTR for b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa returns no records`,
 				"@127.0.0.1 b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa ptr +short",
 				`\A\z`,
-				`TypePTR b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n$`),
+				`TypePTR b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2022071400 900 900 1800 180\n`),
 		)
 	})
 	Describe("for more complex assertions", func() {
@@ -285,38 +269,75 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When(`a TXT record for a host under the "k-v.io" domain is queried`, func() {
 			It(`the PUT has a three-minute TTL`, func() {
+				digArgs = "@localhost put.a.a.k-v.io txt -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`put.a.a.k-v.io.		180	IN	TXT	"a"`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT put.a.a.k-v.io. \? \["a"\]`))
+			})
+			It(`the GET has a three-minute TTL`, func() {
+				// create (PUT) the key
 				digArgs = "@localhost put.a.b.k-v.io txt -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`put.a.b.k-v.io.		180	IN	TXT	"a"`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT put.a.b.k-v.io. \? \["a"\]`))
-			})
-			It(`the GET has a three-minute TTL`, func() {
+				// retrieve (GET) the key
 				digArgs = "@localhost b.k-v.io txt -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`b.k-v.io.		180	IN	TXT	"a"`))
 				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(digSession.Out.Contents()), 3).Should(MatchRegexp(`b.k-v.io.		180	IN	TXT	"a"`))
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT b.k-v.io. \? \["a"\]`))
 			})
 			It(`the DELETE returns no records so that value cached in downstream DNS servers expires more quickly`, func() {
-				digArgs = "@localhost delete.b.k-v.io txt -p " + strconv.Itoa(port)
+				// create (PUT) the key
+				digArgs = "@localhost put.a.c.k-v.io txt -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.b.k-v.io. \? nil, SOA delete.b.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180`))
+				// DELETE the key
+				digArgs = "@localhost delete.c.k-v.io txt -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.c.k-v.io. \? nil, SOA delete.c.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180`))
 			})
 			It(`the DELETE on a non-existent key behaves the same as the DELETE on an existing key`, func() {
-				digArgs = "@localhost delete.b.k-v.io txt -p " + strconv.Itoa(port)
+				// DELETE the key (make sure it's gone)
+				digArgs = "@localhost delete.d.k-v.io txt -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.b.k-v.io. \? nil, SOA delete.b.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180`))
+				// DELETE again to test the non-existent behavior
+				digArgs = "@localhost delete.d.k-v.io txt -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.d.k-v.io. \? nil, SOA delete.d.k-v.io. briancunnie.gmail.com. 2022071400 900 900 1800 180`))
+			})
+			It(`setting a TXT for _acme-challenge.subdomain-key.k-v.io doesn't expose DNS-01 vulnerability`, func() {
+				// set (PUT) the key
+				digArgs = "@localhost put.baffled-boy._acme-challenge.subdomain-key.k-v.io txt +short -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession, 1).Should(Exit(0))
+				// GET the key
+				digArgs = "@localhost get.subdomain-key.k-v.io txt +short -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(digSession.Out.Contents()), 3).Should(MatchRegexp(`"baffled-boy._acme-challenge"`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT get.subdomain-key.k-v.io. \? \["baffled-boy._acme-challenge"\]`))
 			})
 		})
 		When(`a record for an "_acme-challenge" domain is queried`, func() {
@@ -459,6 +480,11 @@ func isPortFree(port int) bool {
 	if err != nil {
 		return false
 	}
+	// we must Sleep() in order to avoid a race condition when tests
+	// are run in parallel (`ginkgo -p`) and the `ListenUDP()` and `Close()`
+	// happen too closely allowing the same port to be used twice
+	// 4ms is flaky on an Apple M2, 5ms is 10% flaky. We multiply 10x to 50ms
+	time.Sleep(50 * time.Millisecond)
 	err = conn.Close()
 	if err != nil {
 		log.Printf("I couldn't close port %d", port)
