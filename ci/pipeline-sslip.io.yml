@@ -23,7 +23,7 @@ jobs:
         path: zsh
         args:
         - -c
-        - etcd > /dev/null 2>&1 & ginkgo -r .
+        - etcd > /dev/null 2>&1 & ginkgo -r -p .
 - name: dns-servers
   public: true
   plan:
