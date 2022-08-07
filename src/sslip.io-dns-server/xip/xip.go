@@ -240,26 +240,20 @@ func NewXip(etcdEndpoint, blocklistURL string) (x *Xip, logmessages []string) {
 	// determine whether to use a local key-value store instead
 	x.Etcd, err = clientv3New(etcdEndpoint)
 	if err != nil {
-		logmessages = append(logmessages, fmt.Sprintf("failed to connect to etcd at %s; using local key-value store instead: %s", etcdEndpoint, err.Error()))
+		logmessages = append(logmessages, fmt.Sprintf("failed to connect to etcd at %s, using local key-value store instead: %s", etcdEndpoint, err.Error()))
 	} else {
 		logmessages = append(logmessages, fmt.Sprintf("Successfully connected to etcd at %s", etcdEndpoint))
 	}
 	// don't `defer etcdCli.Close()`: "The Client has internal state (watchers and leases), so
 	// Clients should be reused instead of created as needed"
 
+	// Download the blocklist
+	logmessages = append(logmessages, x.downloadBlockList(blocklistURL))
 	// re-download the blocklist every hour so I don't need to restart servers after updating blocklist
 	go func() {
 		for {
-			blocklistStrings, blocklistCDIRs, err := readBlocklist(blocklistURL)
-			if err != nil {
-				logmessages = append(logmessages, fmt.Sprintf("couldn't get blocklist at %s: %s", blocklistURL, err.Error()))
-			} else {
-				logmessages = append(logmessages, fmt.Sprintf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, blocklistStrings, blocklistCDIRs))
-				x.BlocklistStrings = blocklistStrings
-				x.BlocklistCDIRs = blocklistCDIRs
-				x.BlocklistUpdated = time.Now()
-			}
 			time.Sleep(1 * time.Hour)
+			_ = x.downloadBlockList(blocklistURL) // uh-oh, I lose the log message.
 		}
 	}()
 
@@ -295,11 +289,12 @@ func NewXip(etcdEndpoint, blocklistURL string) (x *Xip, logmessages []string) {
 // QueryResponse are not as hard.
 //
 // Examples of log strings returned:
-//   78.46.204.247.33654: TypeA 127-0-0-1.sslip.io ? 127.0.0.1
-//   78.46.204.247.33654: TypeA non-existent.sslip.io ? nil, SOA
-//   78.46.204.247.33654: TypeNS www.example.com ? NS
-//   78.46.204.247.33654: TypeSOA www.example.com ? SOA
-//   2600::.33654: TypeAAAA --1.sslip.io ? ::1
+//
+//	78.46.204.247.33654: TypeA 127-0-0-1.sslip.io ? 127.0.0.1
+//	78.46.204.247.33654: TypeA non-existent.sslip.io ? nil, SOA
+//	78.46.204.247.33654: TypeNS www.example.com ? NS
+//	78.46.204.247.33654: TypeSOA www.example.com ? SOA
+//	2600::.33654: TypeAAAA --1.sslip.io ? ::1
 func (x *Xip) QueryResponse(queryBytes []byte, srcAddr net.IP) (responseBytes []byte, logMessage string, err error) {
 	var queryHeader dnsmessage.Header
 	var p dnsmessage.Parser
@@ -374,7 +369,8 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 			RCode:              dnsmessage.RCodeSuccess, // assume success, may be replaced later
 		},
 	}
-	if IsAcmeChallenge(q.Name.String()) && !x.blocklist(q.Name.String()) { // thanks @NormanR
+	if IsAcmeChallenge(q.Name.String()) && !x.blocklist(q.Name.String()) {
+		// thanks, @NormanR
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
 		// dig _acme-challenge.127-0-0-1.sslip.io mx → NS 127-0-0-1.sslip.io
 		response.Header.Authoritative = false // we're delegating, so we're not authoritative
@@ -610,7 +606,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 	}
 }
 
-// NSResponse sets the Answers/Authorities depending whether we're delegating or authoritative
+// NSResponse sets the Answers/Authorities depending upon whether we're delegating or authoritative
 // (whether it's an "_acme-challenge." domain or not). Either way, it supplies the Additionals
 // (IP addresses of the nameservers).
 func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage string) (Response, string, error) {
@@ -1071,29 +1067,29 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 	return false
 }
 
-// readBlocklist downloads the blocklist of domains & CIDRs that are forbidden
-// because they're used for phishing (e.g. "raiffeisen")
-func readBlocklist(blocklistURL string) (blocklistStrings []string, blocklistCIDRs []net.IPNet, err error) {
+func (x *Xip) downloadBlockList(blocklistURL string) string {
 	resp, err := http.Get(blocklistURL)
 	if err != nil {
-		log.Println(fmt.Errorf(`failed to download blocklist "%s": %w`, blocklistURL, err))
-	} else {
-		//noinspection GoUnhandledErrorResult
-		defer resp.Body.Close()
-		if resp.StatusCode > 299 {
-			log.Printf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
-		} else {
-			blocklistStrings, blocklistCIDRs, err = ReadBlocklist(resp.Body)
-			if err != nil {
-				log.Println(fmt.Errorf(`failed to parse blocklist "%s": %w`, blocklistURL, err))
-			}
-		}
+		return fmt.Sprintf(`failed to download blocklist "%s": %s`, blocklistURL, err.Error())
 	}
-	return blocklistStrings, blocklistCIDRs, err
+	//noinspection GoUnhandledErrorResult
+	defer resp.Body.Close()
+	if resp.StatusCode > 299 {
+		return fmt.Sprintf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
+	}
+	blocklistStrings, blocklistCIDRs, err := ReadBlocklist(resp.Body)
+	if err != nil {
+		return fmt.Sprintf(`failed to parse blocklist "%s": %s`, blocklistURL, err.Error())
+	}
+	x.BlocklistStrings = blocklistStrings
+	x.BlocklistCDIRs = blocklistCIDRs
+	x.BlocklistUpdated = time.Now()
+	return fmt.Sprintf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, x.BlocklistStrings, x.BlocklistCDIRs)
 }
 
 // ReadBlocklist "sanitizes" the block list, removing comments, invalid characters
-// and lowercasing the names to be blocked
+// and lowercasing the names to be blocked.
+// public to make testing easier
 func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklists []net.IPNet, err error) {
 	scanner := bufio.NewScanner(blocklist)
 	comments := regexp.MustCompile(`#.*`)

@@ -29,9 +29,7 @@ func main() {
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {
 	case err == nil:
-		log.Printf("Successfully bound to all interfaces, port %d.\n", *bindPort)
-		wg.Add(1)
-		readFrom(conn, &wg, x)
+		log.Printf("Successfully bound to all IPs, port %d.\n", *bindPort)
 	case isErrorPermissionsError(err):
 		log.Printf("Try invoking me with `sudo` because I don't have permission to bind to port %d.\n", *bindPort)
 		log.Fatal(err.Error())
@@ -58,15 +56,19 @@ func main() {
 				go readFrom(conn, &wg, x)
 			}
 		}
-		if len(boundIPsPorts) > 0 {
-			log.Printf(`I bound to the following: "%s"`, strings.Join(boundIPsPorts, `", "`))
+		if len(boundIPsPorts) == 0 {
+			log.Fatalf("I couldn't bind to any IPs on port %d, so I'm exiting", *bindPort)
 		}
+		log.Printf(`I bound to the following IPs: "%s"`, strings.Join(boundIPsPorts, `", "`))
 		if len(unboundIPs) > 0 {
 			log.Printf(`I couldn't bind to the following IPs: "%s"`, strings.Join(unboundIPs, `", "`))
 		}
 	default:
 		log.Fatal(err.Error())
 	}
+	log.Printf("Ready to answer queries")
+	wg.Add(1)
+	readFrom(conn, &wg, x)
 	wg.Wait()
 }
 
