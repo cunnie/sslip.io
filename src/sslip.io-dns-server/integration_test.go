@@ -23,7 +23,7 @@ var serverPath, _ = Build("main.go")
 
 var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
-	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port))
+	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://../../etc/blocklist.txt")
 	serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 	// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)

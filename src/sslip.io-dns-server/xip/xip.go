@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -1068,16 +1069,31 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 }
 
 func (x *Xip) downloadBlockList(blocklistURL string) string {
-	resp, err := http.Get(blocklistURL)
-	if err != nil {
-		return fmt.Sprintf(`failed to download blocklist "%s": %s`, blocklistURL, err.Error())
+	var err error
+	var blocklistReader io.ReadCloser
+	// file protocol's purpose is so I can run tests while flyiing with no internet
+	fileProtocolRE := regexp.MustCompile(`^file://`)
+	if fileProtocolRE.MatchString(blocklistURL) {
+		blocklistPath := strings.TrimPrefix(blocklistURL, "file://")
+		blocklistReader, err = os.Open(blocklistPath)
+		if err != nil {
+			return fmt.Sprintf(`failed to open blocklist "%s": %s`, blocklistPath, err.Error())
+		}
+		//noinspection GoUnhandledErrorResult
+		defer blocklistReader.Close()
+	} else {
+		resp, err := http.Get(blocklistURL)
+		if err != nil {
+			return fmt.Sprintf(`failed to download blocklist "%s": %s`, blocklistURL, err.Error())
+		}
+		blocklistReader = resp.Body
+		//noinspection GoUnhandledErrorResult
+		defer blocklistReader.Close()
+		if resp.StatusCode > 299 {
+			return fmt.Sprintf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
+		}
 	}
-	//noinspection GoUnhandledErrorResult
-	defer resp.Body.Close()
-	if resp.StatusCode > 299 {
-		return fmt.Sprintf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
-	}
-	blocklistStrings, blocklistCIDRs, err := ReadBlocklist(resp.Body)
+	blocklistStrings, blocklistCIDRs, err := ReadBlocklist(blocklistReader)
 	if err != nil {
 		return fmt.Sprintf(`failed to parse blocklist "%s": %s`, blocklistURL, err.Error())
 	}
