@@ -463,6 +463,10 @@ var listenPort = 1023 // lowest unprivileged port - 1 (immediately incremented)
 
 // getFreePort should always succeed unless something awful has happened, e.g. port exhaustion
 func getFreePort() int {
+	// we randomize the start based on the millisecond to avoid collisions in our test
+	// we also bind for a millisecond (in `isPortFree()` to make sure we don't collide
+	// with another test running in parallel
+	listenPort = (time.Now().Nanosecond() / 1000000) + 1024
 	for {
 		listenPort += 1
 		switch {
@@ -481,9 +485,8 @@ func isPortFree(port int) bool {
 	}
 	// we must Sleep() in order to avoid a race condition when tests
 	// are run in parallel (`ginkgo -p`) and the `ListenUDP()` and `Close()`
-	// happen too closely allowing the same port to be used twice
-	// 4ms is flaky on an Apple M2, 5ms is 10% flaky. We multiply 10x to 50ms
-	time.Sleep(50 * time.Millisecond)
+	// we sleep for a millisecond because the port is randomized based on the millisecond.
+	time.Sleep(1 * time.Millisecond)
 	err = conn.Close()
 	if err != nil {
 		log.Printf("I couldn't close port %d", port)
