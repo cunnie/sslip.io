@@ -9,7 +9,6 @@ import (
 	"xip/xip"
 
 	. "github.com/onsi/ginkgo/v2"
-
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 )
@@ -19,20 +18,20 @@ var _ = Describe("IntegrationMetrics", func() {
 		// One big `It()` block because these tests cannot be run in parallel (singleton)
 		It("should update metrics", func() {
 			var actualMetrics xip.Metrics
-			expectedMetrics := getMetrics()
+			expectedMetrics := getMetrics(port)
 
 			// A updates .Queries, .AnsweredQueries, .AnsweredAQueries
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredAQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost 127.0.0.1.sslip.io +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost 127.0.0.1.sslip.io +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// A (non-existent) record updates .Queries
 			expectedMetrics.Queries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// A blocked updates .Queries, .AnsweredQueries, .AnsweredBlockedQueries
@@ -41,7 +40,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredBlockedQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			dig("@localhost bank-of-raiffeisen.127.0.0.1.sslip.io +short -p " + strconv.Itoa(port))
-			actualMetrics = getMetrics()
+			actualMetrics = getMetrics(port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// AAAA updates .Queries, .AnsweredQueries, .AnsweredAAAAQueries
@@ -49,34 +48,34 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredAAAAQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost 2600--.sslip.io aaaa +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost 2600--.sslip.io aaaa +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// AAAA (non-existent) updates .Queries
 			expectedMetrics.Queries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io aaaa +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io aaaa +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// MX (customized) updates .Queries, .AnsweredQueries
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost sslip.io mx +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost sslip.io mx +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// MX updates .Queries, AnsweredQueries
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io mx +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io mx +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// NS updates .Queries, AnsweredQueries
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io ns +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io ns +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// NS DNS-01 challenge record updates .Queries, .AnsweredNSDNS01ChallengeQueries
@@ -84,7 +83,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			// DNS-01 challenges don't count as successful because we're not authoritative; we're delegating
 			expectedMetrics.AnsweredNSDNS01ChallengeQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost _acme-challenge.fe80--.sslip.io NS +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost _acme-challenge.fe80--.sslip.io NS +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// Always successful: SOA
@@ -92,20 +91,20 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			dig("@localhost non-existent.sslip.io soa +short -p " + strconv.Itoa(port))
-			actualMetrics = getMetrics()
+			actualMetrics = getMetrics(port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT sslip.io (customized) updates .Queries, .AnsweredQueries,
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost sslip.io txt +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost sslip.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT sslip.io (non-existent) updates .Queries, .AnsweredQueries,
 			expectedMetrics.Queries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io txt +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT ip.sslip.io updates .Queries, .AnsweredQueries, .AnsweredTXTSrcIPQueries
@@ -113,7 +112,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredTXTSrcIPQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost ip.sslip.io txt +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost ip.sslip.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredTXTVersionQueries
@@ -121,7 +120,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredTXTVersionQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost version.status.sslip.io txt +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost version.status.sslip.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT put.value.key.k-v.io updates .Queries, .AnsweredQueries, .AnsweredTXTPutKvQueries
@@ -129,7 +128,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredTXTPutKvQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost put.value.key.k-v.io txt +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost put.value.key.k-v.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT key.k-v.io updates .Queries, .AnsweredQueries, .AnsweredTXTGetKvQueries
@@ -137,7 +136,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredTXTGetKvQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost key.k-v.io txt +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost key.k-v.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT delete.key.k-v.io updates .Queries, .AnsweredTXTDelKvQueries
@@ -145,7 +144,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredTXTDelKvQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost delete.key.k-v.io txt +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost delete.key.k-v.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv4
@@ -153,7 +152,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredPTRQueriesIPv4++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost 1.2.3.4.in-addr.arpa ptr +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost 1.2.3.4.in-addr.arpa ptr +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv6
@@ -161,14 +160,14 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredPTRQueriesIPv6++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa ptr +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa ptr +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT DNS-01 challenge record updates .Queries, .AnsweredNSDNS01ChallengeQueries
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredNSDNS01ChallengeQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost _acme-challenge.fe80--.sslip.io txt +short -p " + strconv.Itoa(port))
+			actualMetrics = digAndGetMetrics("@localhost _acme-challenge.fe80--.sslip.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 		})
 	})
@@ -183,9 +182,9 @@ func bumpExpectedToAccountForMetricsQuery(metrics xip.Metrics) xip.Metrics {
 	return metrics
 }
 
-func digAndGetMetrics(digArgs string) xip.Metrics {
+func digAndGetMetrics(digArgs string, port int) xip.Metrics {
 	dig(digArgs)
-	return getMetrics()
+	return getMetrics(port)
 }
 
 func dig(digArgs string) {
@@ -195,7 +194,7 @@ func dig(digArgs string) {
 	Eventually(digSession, 1).Should(Exit(0))
 }
 
-func getMetrics() (m xip.Metrics) {
+func getMetrics(port int) (m xip.Metrics) {
 	digArgs := "@localhost metrics.status.sslip.io txt +short -p " + strconv.Itoa(port)
 	digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
 	stdout, err := digCmd.Output()

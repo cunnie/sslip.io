@@ -19,10 +19,9 @@ var err error
 var serverCmd *exec.Cmd
 var serverSession *Session
 var port = getFreePort()
+var serverPath, _ = Build("main.go")
 
 var _ = BeforeSuite(func() {
-	// Try to bind to the privileged first (for macOS), the fall back to unprivileged
-	serverPath, err := Build("main.go")
 	Expect(err).ToNot(HaveOccurred())
 	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port))
 	serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
