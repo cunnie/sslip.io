@@ -15,12 +15,15 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd client endpoint")
-	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `URL containing a list of "forbidden" names`)
+	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd client endpoint; falls back to builtin key-value store if unable to connect")
+	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `URL containing a list of "forbidden" names/CIDRs`)
+	var nameservers = flag.String("nameservers", "ns-aws.sslip.io.,ns-azure.sslip.io.,ns-gce.sslip.io.", "comma-separated list of nameservers")
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	flag.Parse()
+	log.Printf("etcd endpoint: %s, blocklist URL: %s, name servers: %s, bind port: %d",
+		*etcdEndpoint, *blocklistURL, *nameservers, *bindPort)
 
-	x, logmessages := xip.NewXip(*etcdEndpoint, *blocklistURL)
+	x, logmessages := xip.NewXip(*etcdEndpoint, *blocklistURL, strings.Split(*nameservers, ","))
 	for _, logmessage := range logmessages {
 		log.Println(logmessage)
 	}

@@ -80,35 +80,49 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("NSResources()", func() {
-		var x = &xip.Xip{}
-		It("returns an array of hard-coded name servers", func() {
-			randomDomain := random8ByteString() + ".com."
-			ns := x.NSResources(randomDomain)
-			Expect(len(ns)).To(Equal(3))
-			Expect(ns[0].NS.String()).To(Equal("ns-aws.sslip.io."))
-			Expect(ns[1].NS.String()).To(Equal("ns-azure.sslip.io."))
-			Expect(ns[2].NS.String()).To(Equal("ns-gce.sslip.io."))
+		When("we use the default nameservers", func() {
+			var x, _ = xip.NewXip("localhost:2379", "file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."})
+			It("returns the name servers", func() {
+				randomDomain := random8ByteString() + ".com."
+				ns := x.NSResources(randomDomain)
+				Expect(len(ns)).To(Equal(3))
+				Expect(ns[0].NS.String()).To(Equal("ns-aws.sslip.io."))
+				Expect(ns[1].NS.String()).To(Equal("ns-azure.sslip.io."))
+				Expect(ns[2].NS.String()).To(Equal("ns-gce.sslip.io."))
+			})
+			When(`the domain name contains "_acme-challenge."`, func() {
+				When("the domain name has an embedded IP", func() {
+					It(`returns an array of one NS record pointing to the domain name _sans_ "acme-challenge."`, func() {
+						randomDomain := "192.168.0.1." + random8ByteString() + ".com."
+						ns := x.NSResources("_acme-challenge." + randomDomain)
+						Expect(len(ns)).To(Equal(1))
+						Expect(ns[0].NS.String()).To(Equal(randomDomain))
+						aResources := xip.NameToA(randomDomain)
+						Expect(len(aResources)).To(Equal(1))
+						Expect(err).ToNot(HaveOccurred())
+						Expect(aResources[0].A).To(Equal([4]byte{192, 168, 0, 1}))
+					})
+				})
+				When("the domain name does not have an embedded IP", func() {
+					It("returns the default trinity of nameservers", func() {
+						randomDomain := "_acme-challenge." + random8ByteString() + ".com."
+						ns := x.NSResources(randomDomain)
+						Expect(len(ns)).To(Equal(3))
+					})
+				})
+			})
 		})
-		When(`the domain name contains "_acme-challenge."`, func() {
-			When("the domain name has an embedded IP", func() {
-				It(`returns an array of one NS record pointing to the domain name _sans_ "acme-challenge."`, func() {
-					randomDomain := "192.168.0.1." + random8ByteString() + ".com."
-					ns := x.NSResources("_acme-challenge." + randomDomain)
-					Expect(len(ns)).To(Equal(1))
-					Expect(ns[0].NS.String()).To(Equal(randomDomain))
-					aResources := xip.NameToA(randomDomain)
-					Expect(len(aResources)).To(Equal(1))
-					Expect(err).ToNot(HaveOccurred())
-					Expect(aResources[0].A).To(Equal([4]byte{192, 168, 0, 1}))
-				})
+		When("we override the default nameservers", func() {
+			var x, _ = xip.NewXip("localhost:2379", "file:///", []string{"mickey", "minn.ie.", "goo.fy"})
+			It("returns the configured servers", func() {
+				randomDomain := random8ByteString() + ".com."
+				ns := x.NSResources(randomDomain)
+				Expect(len(ns)).To(Equal(3))
+				Expect(ns[0].NS.String()).To(Equal("mickey."))
+				Expect(ns[1].NS.String()).To(Equal("minn.ie."))
+				Expect(ns[2].NS.String()).To(Equal("goo.fy."))
 			})
-			When("the domain name does not have an embedded IP", func() {
-				It("returns the default trinity of nameservers", func() {
-					randomDomain := "_acme-challenge." + random8ByteString() + ".com."
-					ns := x.NSResources(randomDomain)
-					Expect(len(ns)).To(Equal(3))
-				})
-			})
+
 		})
 	})
 
