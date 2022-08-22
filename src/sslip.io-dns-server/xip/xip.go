@@ -36,12 +36,13 @@ type V3client interface {
 
 // Xip is meant to be a singleton that holds global state for the DNS server
 type Xip struct {
-	Etcd                        V3client      // etcd client for `k-v.io`
-	DnsAmplificationAttackDelay chan struct{} // for throttling metrics.status.sslip.io
-	Metrics                     Metrics       // DNS server metrics
-	BlocklistStrings            []string      // list of blacklisted strings that shouldn't appear in public hostnames
-	BlocklistCDIRs              []net.IPNet   // list of blacklisted strings that shouldn't appear in public hostnames
-	BlocklistUpdated            time.Time     // The most recent time the Blocklist was updated
+	Etcd                        V3client                // etcd client for `k-v.io`
+	DnsAmplificationAttackDelay chan struct{}           // for throttling metrics.status.sslip.io
+	Metrics                     Metrics                 // DNS server metrics
+	BlocklistStrings            []string                // list of blacklisted strings that shouldn't appear in public hostnames
+	BlocklistCDIRs              []net.IPNet             // list of blacklisted strings that shouldn't appear in public hostnames
+	BlocklistUpdated            time.Time               // The most recent time the Blocklist was updated
+	NameServers                 []dnsmessage.NSResource // The list of authoritative name servers (NS)
 }
 
 // Metrics contains the counters of the important/interesting queries
@@ -105,14 +106,6 @@ var (
 	ipv6ReverseRE    = regexp.MustCompile(`^(([[:xdigit:]]\.){32})ip6\.arpa\.`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
 	kvRE             = regexp.MustCompile(`\.k-v\.io\.$`)
-	nsAwsSslip, _    = dnsmessage.NewName("ns-aws.sslip.io.")
-	nsAzureSslip, _  = dnsmessage.NewName("ns-azure.sslip.io.")
-	nsGceSslip, _    = dnsmessage.NewName("ns-gce.sslip.io.")
-	NameServers      = []dnsmessage.NSResource{
-		{NS: nsAwsSslip},
-		{NS: nsAzureSslip},
-		{NS: nsGceSslip},
-	}
 
 	mbox, _  = dnsmessage.NewName("briancunnie.gmail.com.")
 	mx1, _   = dnsmessage.NewName("mail.protonmail.ch.")
@@ -234,7 +227,7 @@ type Response struct {
 }
 
 // NewXip follows convention for constructors: https://go.dev/doc/effective_go#allocation_new
-func NewXip(etcdEndpoint, blocklistURL string) (x *Xip, logmessages []string) {
+func NewXip(etcdEndpoint, blocklistURL string, nameservers []string) (x *Xip, logmessages []string) {
 	var err error
 	x = &Xip{Metrics: Metrics{Start: time.Now()}}
 	// connect to `etcd`; if there's an error, set etcdCli to `nil` and that to
@@ -257,6 +250,16 @@ func NewXip(etcdEndpoint, blocklistURL string) (x *Xip, logmessages []string) {
 			_ = x.downloadBlockList(blocklistURL) // uh-oh, I lose the log message.
 		}
 	}()
+
+	// Parse and set our nameservers
+	for _, ns := range nameservers {
+		// all nameservers must be absolute (end in ".")
+		if ns[len(ns)-1] != '.' {
+			ns += "."
+		}
+		x.NameServers = append(x.NameServers, dnsmessage.NSResource{
+			NS: dnsmessage.MustNewName(ns)})
+	}
 
 	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
 	// The endpoint we're worried about is metrics.status.sslip.io, whose reply is
@@ -617,37 +620,13 @@ func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage str
 		// we're authoritative, so we reply with the answers
 		response.Answers = append(response.Answers,
 			func(b *dnsmessage.Builder) error {
-				for _, nameServer := range nameServers {
-					err := b.NSResource(dnsmessage.ResourceHeader{
-						Name:   name,
-						Type:   dnsmessage.TypeNS,
-						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-						Length: 0,
-					}, nameServer)
-					if err != nil {
-						return err
-					}
-				}
-				return nil
+				return buildNSRecords(b, name, x.NameServers)
 			})
 	} else {
 		// we're NOT authoritative, so we reply who is authoritative
 		response.Authorities = append(response.Authorities,
 			func(b *dnsmessage.Builder) error {
-				for _, nameServer := range nameServers {
-					err := b.NSResource(dnsmessage.ResourceHeader{
-						Name:   name,
-						Type:   dnsmessage.TypeNS,
-						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-						Length: 0,
-					}, nameServer)
-					if err != nil {
-						return err
-					}
-				}
-				return nil
+				return buildNSRecords(b, name, nameServers)
 			})
 		logMessage += "nil, NS " // we're not supplying an answer; we're supplying the NS record that's authoritative
 	}
@@ -685,6 +664,22 @@ func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage str
 		logMessages = append(logMessages, nameServer.NS.String())
 	}
 	return response, logMessage + strings.Join(logMessages, ", "), nil
+}
+
+func buildNSRecords(b *dnsmessage.Builder, name dnsmessage.Name, nameServers []dnsmessage.NSResource) error {
+	for _, nameServer := range nameServers {
+		err := b.NSResource(dnsmessage.ResourceHeader{
+			Name:   name,
+			Type:   dnsmessage.TypeNS,
+			Class:  dnsmessage.ClassINET,
+			TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+			Length: 0,
+		}, nameServer)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NameToA returns an []AResource that matched the hostname; it returns an
@@ -780,7 +775,7 @@ func (x *Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 	if x.blocklist(fqdnString) {
 		x.Metrics.AnsweredQueries++
 		x.Metrics.AnsweredBlockedQueries++
-		return NameServers
+		return x.NameServers
 	}
 	if IsAcmeChallenge(fqdnString) {
 		x.Metrics.AnsweredNSDNS01ChallengeQueries++
@@ -789,7 +784,7 @@ func (x *Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 		return []dnsmessage.NSResource{{NS: ns}}
 	}
 	x.Metrics.AnsweredQueries++
-	return NameServers
+	return x.NameServers
 }
 
 // TXTResources returns TXT records from Customizations or KvCustomizations
@@ -861,7 +856,6 @@ func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 	}
 	if ipv6ReverseRE.Match(fqdn) {
 		b := ipv6ReverseRE.FindSubmatch(fqdn)[1]
-		fmt.Println(string(b))
 		reversed := []byte{
 			b[62], b[60], b[58], b[56], ':',
 			b[54], b[52], b[50], b[48], ':',

@@ -34,7 +34,6 @@ dig @localhost 192.168.0.1.sslip.io +short
 go install github.com/onsi/ginkgo/v2/ginkgo@latest
 go get github.com/onsi/gomega/...
 ~/go/bin/ginkgo -r -p .
- # sudo is required on Linux, but not on macOS, to bind to privileged port 53
 ```
 
 ## Directory Structure
@@ -63,17 +62,20 @@ the source:
 - it binds to port 53, but can be overridden on the command line with the
   `-port`, e.g. `go run main.go -port 9553`
 - it only binds to UDP (no TCP, sorry)
-- The SOA record is hard-coded with the exception of the _MNAME_ (primary master
-  name server) record, which is set to the queried hostname (e.g. `dig
-  big.apple.com @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
+- The SOA record is hard-coded except the _MNAME_ (primary master name server)
+  record, which is set to the queried hostname (e.g. `dig big.apple.com
+  @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
   `big.apple.com.`
-- The NS records are hard-coded (`ns-aws.sslip.io`, `ns-azure.sslip.io`,
-  `ns-gce.sslip.io`). Exception: `_acme-challenge` records are handled
+- The NS records default to `ns-aws.sslip.io`, `ns-azure.sslip.io`,
+  `ns-gce.sslip.io`; however, they can be overridden via the `-nameservers`
+  flag, e.g. `go run main.go -nameservers ns1.example.com,ns2.example.com`). If
+  you override the name servers, don't forget to set address records for the
+  new name servers. Exception: `_acme-challenge` records are handled
   differently to accommodate the procurement of Let's Encrypt wildcard
   certificates; you can read more about that procedure [here](docs/wildcard.md)
 - The MX records are hard-coded to the queried hostname with a preference of 0,
-  with the exception of `sslip.io` itself, which has custom MX records to enable
-  email delivery to ProtonMail
+  except `sslip.io` itself, which has custom MX records to enable email
+  delivery to ProtonMail
 - There are no SRV records
 
 ### Acknowledgements
