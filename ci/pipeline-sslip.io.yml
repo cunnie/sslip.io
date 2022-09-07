@@ -34,6 +34,78 @@ jobs:
     attempts: 2
     params:
       DOMAIN: sslip.io
+- name: build-and-push-sslip.io-dns-server
+  plan:
+  - get: sslip.io-src
+    trigger: true
+  - task: build-task-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: vito/oci-build-task
+      inputs:
+      - name: sslip.io-src
+      outputs:
+      - name: image
+      params:
+        CONTEXT: sslip.io-src/k8s/
+        DOCKERFILE: sslip.io-src/k8s/Dockerfile-sslip.io-dns-server
+      run:
+        path: build
+  - put: sslip.io-dns-server
+    params:
+      image: image/image.tar
+- name: build-and-push-k-v.io-nginx
+  plan:
+  - get: k-v.io-html
+    trigger: true
+  - task: build-task-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: vito/oci-build-task
+      inputs:
+      - name: k-v.io-html
+      outputs:
+      - name: image
+      params:
+        CONTEXT: k-v.io-html/k8s/
+        DOCKERFILE: k-v.io-html/k8s/Dockerfile-k-v.io-nginx
+      run:
+        path: build
+  - put: k-v.io-nginx
+    params:
+      image: image/image.tar
+- name: build-and-push-sslip.io-nginx
+  plan:
+  - get: sslip.io-html
+    trigger: true
+  - task: build-task-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: vito/oci-build-task
+      inputs:
+      - name: sslip.io-html
+      outputs:
+      - name: image
+      params:
+        CONTEXT: sslip.io-html/k8s/
+        DOCKERFILE: sslip.io-html/k8s/Dockerfile-sslip.io-nginx
+      run:
+        path: build
+  - put: sslip.io-nginx
+    params:
+      image: image/image.tar
 
 resources:
 - name: sslip.io
@@ -46,3 +118,60 @@ resources:
   type: time
   icon: clock
   source: {interval: 6h}
+
+# The repo with our sslip.io executable
+- name: sslip.io-src
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/cunnie/sslip.io.git
+    paths:
+    - src
+
+# The repo with our k-v.io nginx/HTML Dockerfile
+- name: k-v.io-html
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/cunnie/sslip.io.git
+    paths:
+    - k8s/document_root_k-v.io
+
+# The repo with our sslip.io nginx/HTML Dockerfile
+- name: sslip.io-html
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/cunnie/sslip.io.git
+    paths:
+    - k8s/document_root_sslip.io
+
+# Where we will push the k-v.io nginx Docker image with HTML assets
+- name: k-v.io-nginx
+  type: registry-image
+  icon: docker
+  source:
+    repository: cunnie/k-v.io-nginx
+    username: cunnie
+    password: ((docker_token))
+    tag: latest
+
+# Where we will push the sslip.io nginx Docker image with HTML assets
+- name: sslip.io-nginx
+  type: registry-image
+  icon: docker
+  source:
+    repository: cunnie/sslip.io-nginx
+    username: cunnie
+    password: ((docker_token))
+    tag: latest
+
+# Where we will push the Docker image with the DNS server
+- name: sslip.io-dns-server
+  type: registry-image
+  icon: docker
+  source:
+    repository: cunnie/sslip.io-dns-server
+    username: cunnie
+    password: ((docker_token))
+    tag: latest
