@@ -16,7 +16,7 @@ developers; the website targets users.
 ## Quick Start
 
 ```bash
-git clone git@github.com:cunnie/sslip.io.git
+git clone https://github.com/cunnie/sslip.io.git
 cd sslip.io/src/sslip.io-dns-server/
 sudo go run main.go
  # sudo is required on Linux, but not on macOS, to bind to privileged port 53
