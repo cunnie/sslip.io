@@ -36,7 +36,7 @@ jobs:
       DOMAIN: sslip.io
 - name: build-and-push-sslip.io-dns-server
   plan:
-  - get: sslip.io-src
+  - get: sslip.io-release
     trigger: true
   - task: build-task-image
     privileged: true
@@ -45,14 +45,14 @@ jobs:
       image_resource:
         type: registry-image
         source:
-          repository: vito/oci-build-task
+          repository: concourse/oci-build-task
       inputs:
-      - name: sslip.io-src
+      - name: sslip.io-release
       outputs:
       - name: image
       params:
-        CONTEXT: sslip.io-src/k8s/
-        DOCKERFILE: sslip.io-src/k8s/Dockerfile-sslip.io-dns-server
+        CONTEXT: sslip.io-release/k8s/
+        DOCKERFILE: sslip.io-release/k8s/Dockerfile-sslip.io-dns-server
       run:
         path: build
   - put: sslip.io-dns-server
@@ -60,7 +60,7 @@ jobs:
       image: image/image.tar
 - name: build-and-push-k-v.io-nginx
   plan:
-  - get: k-v.io-html
+  - get: sslip.io-release
     trigger: true
   - task: build-task-image
     privileged: true
@@ -69,14 +69,14 @@ jobs:
       image_resource:
         type: registry-image
         source:
-          repository: vito/oci-build-task
+          repository: concourse/oci-build-task
       inputs:
-      - name: k-v.io-html
+      - name: sslip.io-release
       outputs:
       - name: image
       params:
-        CONTEXT: k-v.io-html/k8s/
-        DOCKERFILE: k-v.io-html/k8s/Dockerfile-k-v.io-nginx
+        CONTEXT: sslip.io-release/k8s/
+        DOCKERFILE: sslip.io-release/k8s/Dockerfile-k-v.io-nginx
       run:
         path: build
   - put: k-v.io-nginx
@@ -84,7 +84,7 @@ jobs:
       image: image/image.tar
 - name: build-and-push-sslip.io-nginx
   plan:
-  - get: sslip.io-html
+  - get: sslip.io-release
     trigger: true
   - task: build-task-image
     privileged: true
@@ -93,14 +93,14 @@ jobs:
       image_resource:
         type: registry-image
         source:
-          repository: vito/oci-build-task
+          repository: concourse/oci-build-task
       inputs:
-      - name: sslip.io-html
+      - name: sslip.io-release
       outputs:
       - name: image
       params:
-        CONTEXT: sslip.io-html/k8s/
-        DOCKERFILE: sslip.io-html/k8s/Dockerfile-sslip.io-nginx
+        CONTEXT: sslip.io-release/k8s/
+        DOCKERFILE: sslip.io-release/k8s/Dockerfile-sslip.io-nginx
       run:
         path: build
   - put: sslip.io-nginx
@@ -112,7 +112,7 @@ resources:
   type: git
   icon: github
   source:
-    uri: https://github.com/cunnie/sslip.io
+    uri: https://github.com/cunnie/sslip.io.git
 
 - name: every-six-hours
   type: time
@@ -120,31 +120,12 @@ resources:
   source: {interval: 6h}
 
 # The repo with our sslip.io executable
-- name: sslip.io-src
+- name: sslip.io-release
   type: git
   icon: github
   source:
     uri: https://github.com/cunnie/sslip.io.git
-    paths:
-    - src
-
-# The repo with our k-v.io nginx/HTML Dockerfile
-- name: k-v.io-html
-  type: git
-  icon: github
-  source:
-    uri: https://github.com/cunnie/sslip.io.git
-    paths:
-    - k8s/document_root_k-v.io
-
-# The repo with our sslip.io nginx/HTML Dockerfile
-- name: sslip.io-html
-  type: git
-  icon: github
-  source:
-    uri: https://github.com/cunnie/sslip.io.git
-    paths:
-    - k8s/document_root_sslip.io
+    tag_filter: "*" # _any_ tag will do, but only tags will do
 
 # Where we will push the k-v.io nginx Docker image with HTML assets
 - name: k-v.io-nginx
