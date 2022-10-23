@@ -19,15 +19,15 @@
 #    dig +short 127.0.0.1.example.com @localhost -p 3353
 #    127.0.0.1
 #
-FROM alpine AS sslip.io
+FROM fedora
 
 LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 
-RUN apk update && apk add bind-tools
+RUN dnf install -y bind-utils
 
 ARG TARGETARCH # amd64, arm64 (so I can run on AWS graviton2)
-RUN wget https://github.com/cunnie/sslip.io/releases/download/2.6.0/sslip.io-dns-server-linux-$TARGETARCH \
-    -O /usr/sbin/sslip.io-dns-server; \
+RUN curl https://github.com/cunnie/sslip.io/releases/download/2.6.0/sslip.io-dns-server-linux-$TARGETARCH \
+    -o /usr/sbin/sslip.io-dns-server; \
   chmod 755 /usr/sbin/sslip.io-dns-server
 
 CMD ["/usr/sbin/sslip.io-dns-server"]
