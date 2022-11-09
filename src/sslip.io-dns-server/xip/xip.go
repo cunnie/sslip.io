@@ -118,7 +118,7 @@ var (
 	VersionDate     = "0001/01/01-99:99:99-0800"
 	VersionGitHash  = "cafexxx"
 
-	MetricsBufferSize = 100 // big enough to run our tests, and small enough to prevent DNS amplification attacks
+	MetricsBufferSize = 200 // big enough to run our tests, and small enough to prevent DNS amplification attacks
 
 	// etcdContextTimeout — the duration (context) that we wait for etcd to get back to us
 	// - etcd queries on the nameserver take as long as 482 milliseconds on the "slow" server, 247 on the "fast"
@@ -131,12 +131,6 @@ var (
 	TxtKvCustomizations = KvCustomizations{}
 	Customizations      = DomainCustomizations{
 		"sslip.io.": {
-			A: []dnsmessage.AResource{
-				{A: [4]byte{78, 46, 204, 247}},
-			},
-			AAAA: []dnsmessage.AAAAResource{
-				{AAAA: [16]byte{42, 1, 4, 248, 12, 23, 11, 143, 0, 0, 0, 0, 0, 0, 0, 2}},
-			},
 			MX: []dnsmessage.MXResource{
 				{
 					Pref: 10,
@@ -149,33 +143,13 @@ var (
 			},
 			TXT: TXTSslipIoSPF,
 		},
-		"k-v.io.": {
-			A: []dnsmessage.AResource{
-				{A: [4]byte{104, 155, 144, 4}},
-			},
-		},
 		// don't let people procure *.k-v.io TLS certs via ACME DNS-01 challenge
 		"_acme-challenge.k-v.io.": {
 			TXT: func(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 				return []dnsmessage.TXTResource{{TXT: []string{"Please don't try to procure a k-v.io cert via DNS-01 challenge"}}}, nil
 			},
 		},
-		// a global nameserver for sslip.io, a conglomeration of ns-{aws,azure,gce}.sslip.io
-		"ns.sslip.io.": {
-			A: []dnsmessage.AResource{
-				{A: [4]byte{52, 0, 56, 137}},
-				{A: [4]byte{52, 187, 42, 158}},
-				{A: [4]byte{104, 155, 144, 4}},
-			},
-			AAAA: []dnsmessage.AAAAResource{{AAAA: [16]byte{0x26, 0, 0x1f, 0x18, 0x0a, 0xaf, 0x69, 0, 0, 0, 0, 0, 0, 0, 0, 0xa}}},
-		},
 		// nameserver addresses; we get queries for those every once in a while
-		"ns-aws.sslip.io.": {
-			A:    []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}},
-			AAAA: []dnsmessage.AAAAResource{{AAAA: [16]byte{0x26, 0, 0x1f, 0x18, 0x0a, 0xaf, 0x69, 0, 0, 0, 0, 0, 0, 0, 0, 0xa}}},
-		},
-		"ns-azure.sslip.io.": {A: []dnsmessage.AResource{{A: [4]byte{52, 187, 42, 158}}}},
-		"ns-gce.sslip.io.":   {A: []dnsmessage.AResource{{A: [4]byte{104, 155, 144, 4}}}},
 		// CNAMEs for sslip.io for DKIM signing
 		"protonmail._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
@@ -227,7 +201,7 @@ type Response struct {
 }
 
 // NewXip follows convention for constructors: https://go.dev/doc/effective_go#allocation_new
-func NewXip(etcdEndpoint, blocklistURL string, nameservers []string) (x *Xip, logmessages []string) {
+func NewXip(etcdEndpoint, blocklistURL string, nameservers []string, addresses []string) (x *Xip, logmessages []string) {
 	var err error
 	x = &Xip{Metrics: Metrics{Start: time.Now()}}
 	// connect to `etcd`; if there's an error, set etcdCli to `nil` and that to
@@ -253,12 +227,70 @@ func NewXip(etcdEndpoint, blocklistURL string, nameservers []string) (x *Xip, lo
 
 	// Parse and set our nameservers
 	for _, ns := range nameservers {
+		if len(ns) == 0 {
+			logmessages = append(logmessages, fmt.Sprintf(`-nameservers: ignoring zero-length nameserver ""`))
+			continue
+		}
 		// all nameservers must be absolute (end in ".")
 		if ns[len(ns)-1] != '.' {
 			ns += "."
 		}
+		// nameservers must be DNS-compliant
+		nsName, err := dnsmessage.NewName(ns)
+		if err != nil {
+			logmessages = append(logmessages, fmt.Sprintf(`-nameservers: ignoring invalid nameserver "%s"`, ns))
+			continue
+		}
 		x.NameServers = append(x.NameServers, dnsmessage.NSResource{
-			NS: dnsmessage.MustNewName(ns)})
+			NS: nsName})
+		logmessages = append(logmessages, fmt.Sprintf(`Adding nameserver "%s"`, ns))
+	}
+	// Parse and set our addresses
+	for _, address := range addresses {
+		hostAddr := strings.Split(address, "=")
+		if len(hostAddr) != 2 {
+			logmessages = append(logmessages, fmt.Sprintf(`-addresses: arguments should be in the format "host=ip", not "%s"`, address))
+			continue
+		}
+		host := hostAddr[0]
+		ip := net.ParseIP(hostAddr[1])
+		// all hosts must be absolute (end in ".")
+		if host[len(host)-1] != '.' {
+			host += "."
+		}
+		if ip == nil { // bad IP address
+			logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" is not assigned a valid IP "%s"`, hostAddr, ip.String()))
+			continue
+		}
+		if ip.To4() != nil { // we have an IPv4
+			var ABytes [4]byte
+			// copy the _last_ four bytes of the 16-byte IP, not the first four bytes. Cost me 2 hours.
+			copy(ABytes[0:4], ip[12:])
+			// Thanks https://stackoverflow.com/questions/42605337/cannot-assign-to-struct-field-in-a-map
+			var hostEntry = DomainCustomization{}
+			if _, ok := Customizations[host]; ok {
+				hostEntry = Customizations[host]
+			}
+			hostEntry.A = append(hostEntry.A, dnsmessage.AResource{A: ABytes})
+			Customizations[host] = hostEntry
+		} else {
+			// We're pretty sure it's IPv6 at this point, but we check anyway
+			if ip.To16() == nil { // it's not IPv6, and I don't know what it is
+				logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" is not IPv4 or IPv6 "%s"`, hostAddr, ip.String()))
+				continue
+			}
+			var AAAABytes [16]byte
+			copy(AAAABytes[0:16], ip)
+			// Thanks https://stackoverflow.com/questions/42605337/cannot-assign-to-struct-field-in-a-map
+			var hostEntry = DomainCustomization{}
+			if _, ok := Customizations[host]; ok {
+				hostEntry = Customizations[host]
+			}
+			hostEntry.AAAA = append(hostEntry.AAAA, dnsmessage.AAAAResource{AAAA: AAAABytes})
+			Customizations[host] = hostEntry
+		}
+		// print out the added records in a manner similar to the way they're set on the cmdline
+		logmessages = append(logmessages, fmt.Sprintf(`Adding record "%s=%s"`, host, ip))
 	}
 
 	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
@@ -1065,7 +1097,8 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 func (x *Xip) downloadBlockList(blocklistURL string) string {
 	var err error
 	var blocklistReader io.ReadCloser
-	// file protocol's purpose is so I can run tests while flyiing with no internet
+	// file protocol's purpose: so I can run tests while flying with no internet
+	// secondary purpose: don't hammer GitHub when running tests
 	fileProtocolRE := regexp.MustCompile(`^file://`)
 	if fileProtocolRE.MatchString(blocklistURL) {
 		blocklistPath := strings.TrimPrefix(blocklistURL, "file://")

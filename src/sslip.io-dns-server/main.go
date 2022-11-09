@@ -18,12 +18,24 @@ func main() {
 	var etcdEndpoint = flag.String("etcdHost", "localhost:2379", "etcd client endpoint; falls back to builtin key-value store if unable to connect")
 	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `URL containing a list of "forbidden" names/CIDRs`)
 	var nameservers = flag.String("nameservers", "ns-aws.sslip.io.,ns-azure.sslip.io.,ns-gce.sslip.io.", "comma-separated list of nameservers")
+	var addresses = flag.String("addresses",
+		"sslip.io=78.46.204.247,"+
+			"sslip.io=2a01:4f8:c17:b8f::2,"+
+			"k-v.io=104.155.144.4,"+
+			"ns.sslip.io=52.0.56.137,"+
+			"ns.sslip.io=52.187.42.158,"+
+			"ns.sslip.io=104.155.144.4,"+
+			"ns.sslip.io=2600:1f18:aaf:6900::a,"+
+			"ns-aws.sslip.io=52.0.56.137,"+
+			"ns-aws.sslip.io=2600:1f18:aaf:6900::a,"+
+			"ns-azure.sslip.io=52.187.42.158,"+
+			"ns-gce.sslip.io=104.155.144.4", "comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If unsure, add to the list rather than replace")
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	flag.Parse()
 	log.Printf("etcd endpoint: %s, blocklist URL: %s, name servers: %s, bind port: %d",
 		*etcdEndpoint, *blocklistURL, *nameservers, *bindPort)
 
-	x, logmessages := xip.NewXip(*etcdEndpoint, *blocklistURL, strings.Split(*nameservers, ","))
+	x, logmessages := xip.NewXip(*etcdEndpoint, *blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","))
 	for _, logmessage := range logmessages {
 		log.Println(logmessage)
 	}
