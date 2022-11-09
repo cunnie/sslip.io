@@ -27,8 +27,11 @@ jobs:
 - name: dns-servers
   public: true
   plan:
-  - {get: sslip.io,   trigger: true}
-  - {get: every-six-hours,         trigger: true}
+  - get: sslip.io
+    resource: sslip.io-release
+    trigger: true
+  - get: every-six-hours
+    trigger: true
   - task: check-dns
     file: sslip.io/ci/tasks/check-dns.yml
     attempts: 2
@@ -36,7 +39,7 @@ jobs:
       DOMAIN: sslip.io
 - name: build-and-push-sslip.io-dns-server
   plan:
-  - get: sslip.io
+  - get: sslip.io-release
     trigger: true
   - task: build-task-image
     privileged: true
@@ -47,12 +50,12 @@ jobs:
         source:
           repository: concourse/oci-build-task
       inputs:
-      - name: sslip.io
+      - name: sslip.io-release
       outputs:
       - name: image
       params:
-        CONTEXT: sslip.io/k8s/
-        DOCKERFILE: sslip.io/k8s/Dockerfile-sslip.io-dns-server
+        CONTEXT: sslip.io-release/k8s/
+        DOCKERFILE: sslip.io-release/k8s/Dockerfile-sslip.io-dns-server
         IMAGE_PLATFORM: linux/arm64,linux/amd64
         OUTPUT_OCI: true
       run:
@@ -63,7 +66,7 @@ jobs:
 
 - name: build-and-push-k-v.io-nginx
   plan:
-  - get: sslip.io
+  - get: sslip.io-release
     trigger: true
   - task: build-task-image
     privileged: true
@@ -74,12 +77,12 @@ jobs:
         source:
           repository: concourse/oci-build-task
       inputs:
-      - name: sslip.io
+      - name: sslip.io-release
       outputs:
       - name: image
       params:
-        CONTEXT: sslip.io/k8s/
-        DOCKERFILE: sslip.io/k8s/Dockerfile-k-v.io-nginx
+        CONTEXT: sslip.io-release/k8s/
+        DOCKERFILE: sslip.io-release/k8s/Dockerfile-k-v.io-nginx
         IMAGE_PLATFORM: linux/arm64,linux/amd64
         OUTPUT_OCI: true
       run:
@@ -90,7 +93,7 @@ jobs:
 
 - name: build-and-push-sslip.io-nginx
   plan:
-  - get: sslip.io
+  - get: sslip.io-release
     trigger: true
   - task: build-task-image
     privileged: true
@@ -101,12 +104,12 @@ jobs:
         source:
           repository: concourse/oci-build-task
       inputs:
-      - name: sslip.io
+      - name: sslip.io-release
       outputs:
       - name: image
       params:
-        CONTEXT: sslip.io/k8s/
-        DOCKERFILE: sslip.io/k8s/Dockerfile-sslip.io-nginx
+        CONTEXT: sslip.io-release/k8s/
+        DOCKERFILE: sslip.io-release/k8s/Dockerfile-sslip.io-nginx
         IMAGE_PLATFORM: linux/arm64,linux/amd64
         OUTPUT_OCI: true
       run:
@@ -133,12 +136,21 @@ resources:
   icon: clock
   source: {interval: 6h}
 
-- name: sslip.io
+# "sslip.io-release" is a tagged version used in production, used
+# when creating Docker images, testing production servers
+- name: sslip.io-release
   type: git
   icon: github
   source:
     uri: https://github.com/cunnie/sslip.io.git
     tag_filter: "*" # _any_ tag will do, but only tags will do
+
+# Used for unit tests (always test the latest)
+- name: sslip.io
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/cunnie/sslip.io.git
 
 # Where we will push the k-v.io nginx Docker image with HTML assets
 - name: k-v.io-nginx
