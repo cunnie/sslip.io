@@ -36,6 +36,33 @@ go get github.com/onsi/gomega/...
 ~/go/bin/ginkgo -r -p .
 ```
 
+## Customizing Your Own Nameservers
+
+You can customize your nameserver and address records (NS, A, and AAAA), which
+can be particularly useful in an internetless (air-gapped) environment. This can
+be done with a combination of the `-nameservers` flag and the `-addresses` flag.
+
+For example, let's say you're the DNS admin for pivotal.io, and you'd like to
+have a subdomain, "xip.pivotal.io", that does sslip.io-style lookups (e.g.
+"127.0.0.1.xip.pivotal.io" would resolve to "127.0.0.1"). Let's say you have two
+servers that you've set aside for this purpose:
+
+- ns-sslip-0.pivotal.io, 10.8.8.8 (IPv4)
+- ns-sslip-1.pivotal.io, fc88:: (IPv6)
+
+First, you'd delegate the subdomain "xip.pivotal.io" to those nameservers, and
+then you'd run the following command run on each of the two servers:
+
+```bash
+go run main.go \
+  -nameservers=ns-sslip-0.pivotal.io,ns-sslip-1.pivotal.io \
+  -addresses ns-sslip-0.pivotal.io=10.8.8.8,ns-sslip-1.pivotal.io=fc88::
+```
+
+**Note: These nameservers are not general-purpose nameservers; for example,
+they won't look up google.com. They are not recursive.** Don't ever configure a
+machine to point to these nameservers.
+
 ## Directory Structure
 
 - `src/` contains the source code to the DNS server
@@ -56,23 +83,28 @@ go get github.com/onsi/gomega/...
 
 ## DNS Server
 
-The DNS server is written in Golang and is not configurable without modifying
-the source:
+The DNS server is written in Golang and can be configured via flags passed to
+the command line.
 
 - it binds to port 53, but can be overridden on the command line with the
   `-port`, e.g. `go run main.go -port 9553`
 - it only binds to UDP (no TCP, sorry)
-- The SOA record is hard-coded except the _MNAME_ (primary master name server)
-  record, which is set to the queried hostname (e.g. `dig big.apple.com
-  @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
-  `big.apple.com.`
 - The NS records default to `ns-aws.sslip.io`, `ns-azure.sslip.io`,
   `ns-gce.sslip.io`; however, they can be overridden via the `-nameservers`
   flag, e.g. `go run main.go -nameservers ns1.example.com,ns2.example.com`). If
   you override the name servers, don't forget to set address records for the
-  new name servers. Exception: `_acme-challenge` records are handled
-  differently to accommodate the procurement of Let's Encrypt wildcard
-  certificates; you can read more about that procedure [here](docs/wildcard.md)
+  new name servers with the `-addresses` flag. Exception: `_acme-challenge`
+  records are handled differently to accommodate the procurement of Let's
+  Encrypt wildcard certificates; you can read more about that procedure
+  [here](docs/wildcard.md)
+- You can add custom records via the `-addresses` flag; here's a typical
+  example where we set an IPv4 record & IPv6 record for a single host:
+  `-addresses
+  ns-aws.sslip.io.=52.0.56.137,ns-aws.sslip.io.=2600:1f18:aaf:6900::a`
+- The SOA record is hard-coded except the _MNAME_ (primary master name server)
+  record, which is set to the queried hostname (e.g. `dig big.apple.com
+  @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
+  `big.apple.com.`
 - The MX records are hard-coded to the queried hostname with a preference of 0,
   except `sslip.io` itself, which has custom MX records to enable email
   delivery to ProtonMail
