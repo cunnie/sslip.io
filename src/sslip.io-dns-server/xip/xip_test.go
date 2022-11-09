@@ -81,7 +81,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("NSResources()", func() {
 		When("we use the default nameservers", func() {
-			var x, _ = xip.NewXip("localhost:2379", "file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."})
+			var x, _ = xip.NewXip("localhost:2379", "file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{})
 			It("returns the name servers", func() {
 				randomDomain := random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -113,7 +113,7 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		When("we override the default nameservers", func() {
-			var x, _ = xip.NewXip("localhost:2379", "file:///", []string{"mickey", "minn.ie.", "goo.fy"})
+			var x, _ = xip.NewXip("localhost:2379", "file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{})
 			It("returns the configured servers", func() {
 				randomDomain := random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -244,18 +244,16 @@ var _ = Describe("Xip", func() {
 	})
 
 	Describe("NameToA()", func() {
+		xip.Customizations["custom.record."] = xip.DomainCustomization{A: []dnsmessage.AResource{
+			{A: [4]byte{78, 46, 204, 247}},
+		}}
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedA dnsmessage.AResource) {
 				ipv4Answers := xip.NameToA(fqdn)
 				Expect(len(ipv4Answers)).To(Equal(1))
 				Expect(ipv4Answers[0]).To(Equal(expectedA))
 			},
-			// sslip.io website
-			Entry("sslip.io", "ssLIP.io.", dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}}),
-			// nameservers
-			Entry("ns-aws.sslip.io.", "ns-aws.sslip.io.", dnsmessage.AResource{A: [4]byte{52, 0, 56, 137}}),
-			Entry("ns-azure.sslip.io.", "ns-azure.sslip.io.", dnsmessage.AResource{A: [4]byte{52, 187, 42, 158}}),
-			Entry("ns-gce.sslip.io.", "ns-gce.sslip.io.", dnsmessage.AResource{A: [4]byte{104, 155, 144, 4}}),
+			Entry("custom record", "CusTom.RecOrd.", dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}}),
 			// dots
 			Entry("loopback", "127.0.0.1", dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}}),
 			Entry("255 with domain", "255.254.253.252.com", dnsmessage.AResource{A: [4]byte{255, 254, 253, 252}}),
@@ -362,10 +360,6 @@ var _ = Describe("Xip", func() {
 				Expect(len(ipv6Answers)).To(Equal(1))
 				Expect(ipv6Answers[0]).To(Equal(expectedAAAA))
 			},
-			// sslip.io website
-			Entry("sslip.io", "SSLip.io.", xip.Customizations["sslip.io."].AAAA[0]),
-			// nameservers
-			Entry("ns-aws.sslip.io.", "ns-aws.sslip.io.", xip.Customizations["ns-aws.sslip.io."].AAAA[0]),
 			// dashes only
 			Entry("loopback", "--1", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
 			Entry("ff with domain", "fffe-fdfc-fbfa-f9f8-f7f6-f5f4-f3f2-f1f0.com", dnsmessage.AAAAResource{AAAA: [16]byte{255, 254, 253, 252, 251, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240}}),

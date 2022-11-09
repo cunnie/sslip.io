@@ -35,7 +35,7 @@ var _ = Describe("flags", func() {
 		BeforeEach(func() {
 			flags = []string{"-nameservers=mickey.minnie.,daffy.duck"}
 		})
-		It("returns all the records, appending dots as needed", func() {
+		It("returns all the NS records, appending dots as needed", func() {
 			digArgs := "@localhost example.com ns -p " + strconv.Itoa(port)
 			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
 			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
@@ -45,7 +45,69 @@ var _ = Describe("flags", func() {
 			Eventually(digSession).Should(Say(`mickey.minnie.\n`))
 			Eventually(digSession).Should(Say(`daffy.duck.\n`))
 			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding nameserver "mickey\.minnie\."\n`))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding nameserver "daffy\.duck\."\n`))
 			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? mickey\.minnie\., daffy\.duck\.\n`))
+		})
+		When("a nameserver is an empty string", func() {
+			BeforeEach(func() {
+				flags = []string{"-nameservers="}
+			})
+			It("should message that it's skipping that nameserver and continue", func() {
+				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-nameservers: ignoring zero-length nameserver ""`))
+			})
+		})
+		When("a nameserver is too long (>255 chars)", func() {
+			var tooLongDomainName = "abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789" +
+				"abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789" +
+				"abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789" +
+				"abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789"
+
+			BeforeEach(func() {
+				flags = []string{"-nameservers=" + tooLongDomainName}
+			})
+			It("should message that it's skipping that nameserver and continue", func() {
+				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-nameservers: ignoring invalid nameserver "` + tooLongDomainName))
+			})
+		})
+	})
+	When("-addresses is set", func() {
+		BeforeEach(func() {
+			flags = []string{"-addresses=a.b.c=1.2.3.4,a.b.c=5.6.7.8,a.b.c=2600::"}
+		})
+		It("returns the addresses when the A records of the hostnames are queried", func() {
+			digArgs := "@localhost a.b.c A -p " + strconv.Itoa(port)
+			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0`))
+			Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
+			Eventually(digSession).Should(Say(`1.2.3.4\n`))
+			Eventually(digSession).Should(Say(`5.6.7.8\n`))
+			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding record "a.b.c.=1.2.3.4"\n`))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding record "a.b.c.=5.6.7.8"\n`))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding record "a.b.c.=2600::"\n`))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA a\.b\.c\. \? 1\.2\.3\.4, 5\.6\.7\.8\n`))
+		})
+		It("returns the addresses when the AAAA records of the hostnames are queried", func() {
+			digArgs := "@localhost a.b.c AAAA -p " + strconv.Itoa(port)
+			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
+			Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
+			Eventually(digSession).Should(Say(`2600::\n`))
+			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeAAAA a\.b\.c\. \? 2600::\n`))
+		})
+		When(`addresses don't include an "="`, func() {
+			BeforeEach(func() {
+				flags = []string{"-addresses=a.b.c"}
+			})
+			It("should message that it's skipping that address and continue", func() {
+				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-addresses: arguments should be in the format "host=ip", not "a.b.c"`))
+			})
 		})
 	})
 })
