@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.5.4
-export VERSION=2.6.0
+export OLD_VERSION=2.6.0
+export VERSION=2.6.1
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -16,15 +16,27 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
   k8s/document_root_sslip.io/index.html \
   k8s/Dockerfile-sslip.io-dns-server
-# Optional: update the version for the ns-aws, ns-azure install scripts
+```
+Optional: Update the version for the ns-aws, ns-azure install scripts
+```bash
+pushd ~/bin
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
   ~/bin/install_ns-a*.sh
+git add -p
+git ci -m"Update sslip.io DNS server $OLD_VERSION → $VERSION"
+git push
+popd
+```
+Build & start the new executables:
+```bash
 bin/make_all
 # Start the server, assuming macOS M1. Adjust path for GOOS, GOARCH. Linux requires `sudo`
 bin/sslip.io-dns-server-darwin-arm64
-# In another window
+```
+Test from another window:
+```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=2.6.0
+export VERSION=2.6.1
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
@@ -63,14 +75,14 @@ dig @$DNS_SERVER_IP my-key.k-v.io txt +short # returns nothing
 dig @$DNS_SERVER_IP 1.0.0.127.in-addr.arpa ptr +short
 echo "127-0-0-1.sslip.io."
 dig @$DNS_SERVER_IP metrics.status.sslip.io txt +short | grep '"Queries: '
-echo '"Queries: 17"'
-# close the second window
-exit
-# stop the DNS server; we don't need it anymore
-# let's add our changes
+echo '"Queries: 17 (?.?/s)"'
+```
+Review the output then close the second window. Stop the server in the
+original window. Commit our changes:
+```bash
 git add -p
 # and commit (but DON'T push)
-git ci -vm"Version $VERSION: .acme_challenge.k-v.io isn't settable"
+git ci -vm"$VERSION: \`-addresses\` flag enables custom addresses"
 git tag $VERSION
 git push
 git push --tags
