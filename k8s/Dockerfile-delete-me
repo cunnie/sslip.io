@@ -1,8 +1,0 @@
-#
-# cunnie/delete-me
-#
-# test Dockerfile
-#
-FROM alpine
-
-LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
