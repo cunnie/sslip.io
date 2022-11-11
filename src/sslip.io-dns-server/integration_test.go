@@ -486,7 +486,7 @@ func isPortFree(port int) bool {
 	// we must Sleep() in order to avoid a race condition when tests
 	// are run in parallel (`ginkgo -p`) and the `ListenUDP()` and `Close()`
 	// we sleep for a millisecond because the port is randomized based on the millisecond.
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 	err = conn.Close()
 	if err != nil {
 		log.Printf("I couldn't close port %d", port)
