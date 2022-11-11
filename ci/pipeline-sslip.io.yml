@@ -41,6 +41,7 @@ jobs:
   plan:
   - get: sslip.io-release
     trigger: true
+  - get: sslip.io
   - task: build-task-image
     privileged: true
     config:
@@ -50,12 +51,12 @@ jobs:
         source:
           repository: concourse/oci-build-task
       inputs:
-      - name: sslip.io-release
+      - name: sslip.io
       outputs:
       - name: image
       params:
-        CONTEXT: sslip.io-release/k8s/
-        DOCKERFILE: sslip.io-release/k8s/Dockerfile-sslip.io-dns-server
+        CONTEXT: sslip.io/k8s/
+        DOCKERFILE: sslip.io/k8s/Dockerfile-sslip.io-dns-server
         IMAGE_PLATFORM: linux/arm64,linux/amd64
         OUTPUT_OCI: true
       run:
@@ -68,6 +69,7 @@ jobs:
   plan:
   - get: sslip.io-release
     trigger: true
+  - get: sslip.io
   - task: build-task-image
     privileged: true
     config:
@@ -77,12 +79,12 @@ jobs:
         source:
           repository: concourse/oci-build-task
       inputs:
-      - name: sslip.io-release
+      - name: sslip.io
       outputs:
       - name: image
       params:
-        CONTEXT: sslip.io-release/k8s/
-        DOCKERFILE: sslip.io-release/k8s/Dockerfile-k-v.io-nginx
+        CONTEXT: sslip.io/k8s/
+        DOCKERFILE: sslip.io/k8s/Dockerfile-k-v.io-nginx
         IMAGE_PLATFORM: linux/arm64,linux/amd64
         OUTPUT_OCI: true
       run:
@@ -95,6 +97,7 @@ jobs:
   plan:
   - get: sslip.io-release
     trigger: true
+  - get: sslip.io
   - task: build-task-image
     privileged: true
     config:
@@ -104,12 +107,12 @@ jobs:
         source:
           repository: concourse/oci-build-task
       inputs:
-      - name: sslip.io-release
+      - name: sslip.io
       outputs:
       - name: image
       params:
-        CONTEXT: sslip.io-release/k8s/
-        DOCKERFILE: sslip.io-release/k8s/Dockerfile-sslip.io-nginx
+        CONTEXT: sslip.io/k8s/
+        DOCKERFILE: sslip.io/k8s/Dockerfile-sslip.io-nginx
         IMAGE_PLATFORM: linux/arm64,linux/amd64
         OUTPUT_OCI: true
       run:
