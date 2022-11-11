@@ -45,6 +45,8 @@ func main() {
 	switch {
 	case err == nil:
 		log.Printf("Successfully bound to all IPs, port %d.\n", *bindPort)
+		wg.Add(1)
+		go readFrom(conn, &wg, x)
 	case isErrorPermissionsError(err):
 		log.Printf("Try invoking me with `sudo` because I don't have permission to bind to port %d.\n", *bindPort)
 		log.Fatal(err.Error())
@@ -82,8 +84,6 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	log.Printf("Ready to answer queries")
-	wg.Add(1)
-	readFrom(conn, &wg, x)
 	wg.Wait()
 }
 
