@@ -28,7 +28,7 @@ dig @localhost 192.168.0.1.sslip.io +short
  # should return "192.168.0.1"
 ```
 
-## Quick Start Tests
+### Quick Start Tests
 
 ```bash
 go install github.com/onsi/ginkgo/v2/ginkgo@latest
@@ -36,24 +36,26 @@ go get github.com/onsi/gomega/...
 ~/go/bin/ginkgo -r -p .
 ```
 
-## Customizing Your Own Nameservers
+## Running Your Own Nameservers
 
-You can customize your nameserver and address records (NS, A, and AAAA), which
+We can customize our nameserver and address records (NS, A, and AAAA), which
 can be particularly useful in an internetless (air-gapped) environment. This can
 be done with a combination of the `-nameservers` flag and the `-addresses` flag.
 
-For example, let's say you're the DNS admin for pivotal.io, and you'd like to
+For example, let's say we're the DNS admin for pivotal.io, and we'd like to
 have a subdomain, "xip.pivotal.io", that does sslip.io-style lookups (e.g.
-"127.0.0.1.xip.pivotal.io" would resolve to "127.0.0.1"). Let's say you have two
-servers that you've set aside for this purpose:
+"127.0.0.1.xip.pivotal.io" would resolve to "127.0.0.1"). Let's say we have two
+servers that we've set aside for this purpose:
 
 - ns-sslip-0.pivotal.io, 10.8.8.8 (IPv4)
 - ns-sslip-1.pivotal.io, fc88:: (IPv6)
 
-First, you'd delegate the subdomain "xip.pivotal.io" to those nameservers, and
-then you'd run the following command run on each of the two servers:
+First, we delegate the subdomain "xip.pivotal.io" to our two nameservers, and
+then we run the following command run on each of the two servers:
 
 ```bash
+# after we've cloned our repo
+cd src/sslip.io-dns-server
 go run main.go \
   -nameservers=ns-sslip-0.pivotal.io,ns-sslip-1.pivotal.io \
   -addresses ns-sslip-0.pivotal.io=10.8.8.8,ns-sslip-1.pivotal.io=fc88::
@@ -63,9 +65,99 @@ go run main.go \
 they won't look up google.com. They are not recursive.** Don't ever configure a
 machine to point to these nameservers.
 
+### Running with Docker
+
+Probably the easiest way to run the nameserver is with the official Docker
+image,
+[cunnie/sslip.io-dns-server](https://hub.docker.com/r/cunnie/sslip.io-dns-server):
+
+```bash
+docker run \
+  -it \
+  --rm \
+  -p 53:53/udp \
+  cunnie/sslip.io-dns-server
+```
+
+If we see the error, "`Error starting userland proxy: listen udp4 0.0.0.0:53:
+bind: address already in use.`", then we turn off the systemd resolver: `sudo
+systemctl stop systemd-resolved`
+
+Let's try a more complicated setup: we're on our workstation, jammy.nono.io,
+whose IP addresses are 10.9.9.114 and 2601:646:100:69f0:0:ff:fe00:72. We'd like
+our workstation to be the DNS server _and_ be the NS record:
+
+```bash
+docker run \
+  -it \
+  --rm \
+  -p 53:53/udp \
+  cunnie/sslip.io-dns-server \
+  /usr/sbin/sslip.io-dns-server \
+    -nameservers jammy.nono.io \
+    -addresses jammy.nono.io=10.9.9.114,jammy.nono.io=2601:646:100:69f0:0:ff:fe00:72
+```
+
+From another machine, we run our DNS lookup to check the NS record, and we see
+the expected reply:
+
+```bash
+dig ns 127.0.0.1.io @jammy.nono.io +short
+...
+  ;; ANSWER SECTION:
+  127.0.0.1.tx.		604800	IN	NS	jammy.nono.io.
+
+  ;; ADDITIONAL SECTION:
+  jammy.nono.io.		604800	IN	A	10.9.9.114
+  jammy.nono.io.		604800	IN	AAAA	2601:646:100:69f0:0:ff:fe00:72
+```
+
+The Docker image is multi-platform supporting both x86_64 architecture as well
+as ARM64 (AWS Graviton, Apple M1/M2).
+
+## Command-line Flags
+
+- `-port` overrides the default port, 53, which the server binds to. This can
+  be especially useful when running as a non-privileged user, unable to bind to
+  privileged ports (<1024) ("`listen udp :53: bind: permission denied`"). For
+  example, to run the server on port 9553: `go run main.go -port 9553`. To
+  query, `dig @localhost 127.0.0.1.sslip.io -p 9553`
+- `-nameservers` overrides the default NS records `ns-aws.sslip.io`,
+  `ns-azure.sslip.io`, and `ns-gce.sslip.io`; flag, e.g. `go run main.go
+  -nameservers ns1.example.com,ns2.example.com`). If you're running your own
+  nameservers, you probably want to set this. Don't forget to set address
+  records for the new name servers with the `-addresses` flag (see below).
+  Exception: `_acme-challenge` records are handled differently to accommodate
+  the procurement of Let's Encrypt wildcard certificates; you can read more
+  about that procedure [here](docs/wildcard.md)
+- `-addresses` overrides the default A/AAAA (IPv4/IPv6) address records. For
+  example, here's how we set the IPv4 record & IPv6 record for our nameserver
+  (in the `-nameservers` example above), ns1.example.com: `-addresses
+  ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note how we can set
+  multiple addresses for the same host using the default values—`ns.sslip.io`
+  has four IP addresses! `-nameservers
+  sslip.io=78.46.204.247,sslip.io=2a01:4f8:c17:b8f::2,k-v.io=104.155.144.4,ns.sslip.io=52.0.56.137,ns.sslip.io=52.187.42.158,ns.sslip.io=104.155.144.4,ns.sslip.io=2600:1f18:aaf:6900::a,ns-aws.sslip.io=52.0.56.137,ns-aws.sslip.io=2600:1f18:aaf:6900::a,ns-azure.sslip.io=52.187.42.158,ns-gce.sslip.io=104.155.144.4`
+- `blocklistURL` overrides the default block list,
+  (<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
+  It's not necessary to override this if you're in an internetless environment:
+  if the DNS server can't download the blocklist, it prints out a message and
+  continues to serve DNS queries.
+
+## DNS Server Miscellany
+
+- it only binds to UDP (no TCP, sorry)
+- The SOA record is hard-coded except the _MNAME_ (primary master name server)
+  record, which is set to the queried hostname (e.g. `dig big.apple.com
+  @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
+  `big.apple.com.`
+- The MX records are hard-coded to the queried hostname with a preference of 0,
+  except `sslip.io` itself, which has custom MX records to enable email
+  delivery to ProtonMail
+- There are no SRV records
+
 ## Directory Structure
 
-- `src/` contains the source code to the DNS server
+- `src/sslip.io-dns-server/` contains the source code to the DNS server
 - `ci/` contains the [Concourse](https://concourse.ci/) continuous integration
   (CI) pipeline and task
 - `spec/` contains the tests for the production nameservers.  To run
@@ -76,39 +168,6 @@ machine to point to these nameservers.
 - `k8s/document_root_sslip.io/` contains the HTML content of the sslip.io website. Please
   run `tidy -im -w 120 k8s/document_root_sslip.io/index.html` before submitting pull
   requests
-- `bosh-release/` _[deprecated]_ contains the [BOSH](https://bosh.io/docs/)
-  release. BOSH is the mechanism we previously used to deploy the servers, and
-  the sslip.io BOSH release is a packaging of the DNS server (analogous to a
-  `.msi`, `.pkg`, `.deb` or `.rpm`)
-
-## DNS Server
-
-The DNS server is written in Golang and can be configured via flags passed to
-the command line.
-
-- it binds to port 53, but can be overridden on the command line with the
-  `-port`, e.g. `go run main.go -port 9553`
-- it only binds to UDP (no TCP, sorry)
-- The NS records default to `ns-aws.sslip.io`, `ns-azure.sslip.io`,
-  `ns-gce.sslip.io`; however, they can be overridden via the `-nameservers`
-  flag, e.g. `go run main.go -nameservers ns1.example.com,ns2.example.com`). If
-  you override the name servers, don't forget to set address records for the
-  new name servers with the `-addresses` flag. Exception: `_acme-challenge`
-  records are handled differently to accommodate the procurement of Let's
-  Encrypt wildcard certificates; you can read more about that procedure
-  [here](docs/wildcard.md)
-- You can add custom records via the `-addresses` flag; here's a typical
-  example where we set an IPv4 record & IPv6 record for a single host:
-  `-addresses
-  ns-aws.sslip.io.=52.0.56.137,ns-aws.sslip.io.=2600:1f18:aaf:6900::a`
-- The SOA record is hard-coded except the _MNAME_ (primary master name server)
-  record, which is set to the queried hostname (e.g. `dig big.apple.com
-  @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
-  `big.apple.com.`
-- The MX records are hard-coded to the queried hostname with a preference of 0,
-  except `sslip.io` itself, which has custom MX records to enable email
-  delivery to ProtonMail
-- There are no SRV records
 
 ### Acknowledgements
 
