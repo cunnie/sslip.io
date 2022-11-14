@@ -80,11 +80,11 @@ docker run \
 ```
 
 If we see the error, "`Error starting userland proxy: listen udp4 0.0.0.0:53:
-bind: address already in use.`", then we turn off the systemd resolver: `sudo
+bind: address already in use.`", we turn off the systemd resolver: `sudo
 systemctl stop systemd-resolved`
 
 Let's try a more complicated setup: we're on our workstation, jammy.nono.io,
-whose IP addresses are 10.9.9.114 and 2601:646:100:69f0:0:ff:fe00:72. We'd like
+whose IP addresses are 10.9.9.114 and 2601:646:0100:69f0:0:ff:fe00:72. We'd like
 our workstation to be the DNS server _and_ be the NS record:
 
 ```bash
@@ -98,14 +98,14 @@ docker run \
     -addresses jammy.nono.io=10.9.9.114,jammy.nono.io=2601:646:100:69f0:0:ff:fe00:72
 ```
 
-From another machine, we run our DNS lookup to check the NS record, and we see
-the expected reply:
+From another machine, we look up the DNS NS record for "127.0.0.1.com", and we
+see the expected reply:
 
 ```bash
-dig ns 127.0.0.1.io @jammy.nono.io +short
+dig ns 127.0.0.1.com @jammy.nono.io +short
 ...
   ;; ANSWER SECTION:
-  127.0.0.1.tx.		604800	IN	NS	jammy.nono.io.
+  127.0.0.1.com.		604800	IN	NS	jammy.nono.io.
 
   ;; ADDITIONAL SECTION:
   jammy.nono.io.		604800	IN	A	10.9.9.114
@@ -141,7 +141,7 @@ as ARM64 (AWS Graviton, Apple M1/M2).
   (<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
   It's not necessary to override this if you're in an internetless environment:
   if the DNS server can't download the blocklist, it prints out a message and
-  continues to serve DNS queries.
+  continues to serve DNS queries
 
 ## DNS Server Miscellany
 
