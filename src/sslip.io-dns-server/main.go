@@ -31,9 +31,10 @@ func main() {
 			"ns-azure.sslip.io=52.187.42.158,"+
 			"ns-gce.sslip.io=104.155.144.4", "comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If unsure, add to the list rather than replace")
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
+	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response")
 	flag.Parse()
-	log.Printf("etcd endpoint: %s, blocklist URL: %s, name servers: %s, bind port: %d",
-		*etcdEndpoint, *blocklistURL, *nameservers, *bindPort)
+	log.Printf("etcd endpoint: %s, blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
+		*etcdEndpoint, *blocklistURL, *nameservers, *bindPort, *quiet)
 
 	x, logmessages := xip.NewXip(*etcdEndpoint, *blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","))
 	for _, logmessage := range logmessages {
@@ -46,7 +47,7 @@ func main() {
 	case err == nil:
 		log.Printf("Successfully bound to all IPs, port %d.\n", *bindPort)
 		wg.Add(1)
-		go readFrom(conn, &wg, x)
+		go readFrom(conn, &wg, x, *quiet)
 	case isErrorPermissionsError(err):
 		log.Printf("Try invoking me with `sudo` because I don't have permission to bind to port %d.\n", *bindPort)
 		log.Fatal(err.Error())
@@ -70,7 +71,7 @@ func main() {
 			} else {
 				wg.Add(1)
 				boundIPsPorts = append(boundIPsPorts, conn.LocalAddr().String())
-				go readFrom(conn, &wg, x)
+				go readFrom(conn, &wg, x, *quiet)
 			}
 		}
 		if len(boundIPsPorts) == 0 {
@@ -87,7 +88,7 @@ func main() {
 	wg.Wait()
 }
 
-func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x *xip.Xip) {
+func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x *xip.Xip, quiet bool) {
 	defer wg.Done()
 	for {
 		query := make([]byte, 512)
@@ -103,7 +104,9 @@ func readFrom(conn *net.UDPConn, wg *sync.WaitGroup, x *xip.Xip) {
 				return
 			}
 			_, err = conn.WriteToUDP(response, addr)
-			log.Printf("%v.%d %s", addr.IP, addr.Port, logMessage)
+			if !quiet {
+				log.Printf("%v.%d %s", addr.IP, addr.Port, logMessage)
+			}
 		}()
 	}
 }

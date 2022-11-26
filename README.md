@@ -85,7 +85,7 @@ systemctl stop systemd-resolved`
 
 Let's try a more complicated setup: we're on our workstation, jammy.nono.io,
 whose IP addresses are 10.9.9.114 and 2601:646:0100:69f0:0:ff:fe00:72. We'd like
-our workstation to be the DNS server _and_ be the NS record:
+our workstation to be the DNS server:
 
 ```bash
 docker run \
@@ -112,7 +112,7 @@ dig ns 127.0.0.1.com @jammy.nono.io +short
   jammy.nono.io.		604800	IN	AAAA	2601:646:100:69f0:0:ff:fe00:72
 ```
 
-The Docker image is multi-platform supporting both x86_64 architecture as well
+The Docker image is multi-platform, supporting both x86_64 architecture as well
 as ARM64 (AWS Graviton, Apple M1/M2).
 
 ## Command-line Flags
@@ -133,11 +133,10 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 - `-addresses` overrides the default A/AAAA (IPv4/IPv6) address records. For
   example, here's how we set the IPv4 record & IPv6 record for our nameserver
   (in the `-nameservers` example above), ns1.example.com: `-addresses
-  ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note how we can set
-  multiple addresses for the same host using the default values—`ns.sslip.io`
-  has four IP addresses! `-nameservers
-  sslip.io=78.46.204.247,sslip.io=2a01:4f8:c17:b8f::2,k-v.io=104.155.144.4,ns.sslip.io=52.0.56.137,ns.sslip.io=52.187.42.158,ns.sslip.io=104.155.144.4,ns.sslip.io=2600:1f18:aaf:6900::a,ns-aws.sslip.io=52.0.56.137,ns-aws.sslip.io=2600:1f18:aaf:6900::a,ns-azure.sslip.io=52.187.42.158,ns-gce.sslip.io=104.155.144.4`
-- `blocklistURL` overrides the default block list,
+  ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note that you can set
+  many addresses for a single host, e.g.
+  `ns1.example.com=1.1.1.1,ns1.example.com=8.8.8.8,ns1.example.com=9.9.9.9`
+- `-blocklistURL` overrides the default block list,
   (<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
   It's not necessary to override this if you're in an internetless environment:
   if the DNS server can't download the blocklist, it prints out a message and
@@ -165,9 +164,9 @@ as ARM64 (AWS Graviton, Apple M1/M2).
   ```bash
   DOMAIN=sslip.io rspec --format documentation --color spec/
   ```
-- `k8s/document_root_sslip.io/` contains the HTML content of the sslip.io website. Please
-  run `tidy -im -w 120 k8s/document_root_sslip.io/index.html` before submitting pull
-  requests
+- `k8s/document_root_sslip.io/` contains the HTML content of the sslip.io
+  website. Please run `tidy -im -w 120 k8s/document_root_sslip.io/index.html`
+  before submitting pull requests
 
 ### Acknowledgements
 
