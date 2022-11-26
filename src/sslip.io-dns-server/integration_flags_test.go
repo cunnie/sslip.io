@@ -110,4 +110,17 @@ var _ = Describe("flags", func() {
 			})
 		})
 	})
+	When("-quiet is set", func() {
+		BeforeEach(func() {
+			flags = []string{"-quiet"}
+		})
+		It("doesn't print out log messages so that GCP doesn't charge $17/mo for storing them", func() {
+			digArgs := "@localhost 169.254.169.254 -p " + strconv.Itoa(port)
+			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(serverSession.Err.Contents())).Should(Not(MatchRegexp(`169\.254\.169\.254`)))
+		})
+	})
 })
