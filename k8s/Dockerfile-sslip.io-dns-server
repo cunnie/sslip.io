@@ -30,7 +30,7 @@ RUN curl -L https://github.com/cunnie/sslip.io/releases/download/2.6.1/sslip.io-
     -o /usr/sbin/sslip.io-dns-server; \
   chmod 755 /usr/sbin/sslip.io-dns-server
 
-CMD ["/usr/sbin/sslip.io-dns-server"]
+ENTRYPOINT ["/usr/sbin/sslip.io-dns-server"]
 
 # DNS listens on port 53 UDP
 # The `EXPOSE` directive doesn't do much in our case. We use it for documentation.

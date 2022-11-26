@@ -93,7 +93,6 @@ docker run \
   --rm \
   -p 53:53/udp \
   cunnie/sslip.io-dns-server \
-  /usr/sbin/sslip.io-dns-server \
     -nameservers jammy.nono.io \
     -addresses jammy.nono.io=10.9.9.114,jammy.nono.io=2601:646:100:69f0:0:ff:fe00:72
 ```
