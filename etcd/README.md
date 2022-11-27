@@ -143,6 +143,19 @@ etcdctl member list
 sudo du -sH /var/lib/etcd/default/member
 ```
 
+### Updating the GKE PEM
+
+This needs to be done every darn time the nodes are upgraded (there _must_ be a better way)
+
+```bash
+kubectl delete secret etcd-peer-tls
+kubectl create secret generic etcd-peer-tls \
+  --from-file=ca.pem=<(curl -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem) \
+  --from-file=etcd.pem=<(curl -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem) \
+  --from-file=etcd-key.pem=<(lpass show --note etcd-key.pem)
+kubectl rollout restart deployment/k-v.io
+```
+
 ### Troubleshooting
 
 If `sudo journalctl -xefu etcd` errors with `member xxx has already been
