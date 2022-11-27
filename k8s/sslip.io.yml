@@ -19,7 +19,7 @@ spec:
       - name: sslip-container
         image: cunnie/sslip.io-dns-server:latest
         imagePullPolicy: Always
-        command:
+        args:
         - -etcdHost
         - k-v-io-etcd-cluster.default.svc.cluster.local:2379
         - quiet
