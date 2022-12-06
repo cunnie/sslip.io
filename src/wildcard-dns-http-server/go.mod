@@ -1,4 +1,4 @@
-module github.com/cunnie/sslip.io/bosh-release/src/wildcard-dns-http-server
+module github.com/cunnie/sslip.io/src/wildcard-dns-http-server
 
 go 1.15
 
