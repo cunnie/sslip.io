@@ -55,7 +55,7 @@ need to run your own DNS server (e.g.
 [acme-dns](https://github.com/joohoi/acme-dns), the venerable
 [BIND](https://en.wikipedia.org/wiki/BIND), the opinionated
 [djbdns](https://cr.yp.to/djbdns.html), or my personal
-[wildcard-dns-http-server](https://github.com/cunnie/sslip.io/tree/main/bosh-release/src/wildcard-dns-http-server),
+[wildcard-dns-http-server](https://github.com/cunnie/sslip.io/tree/main/src/wildcard-dns-http-server),
 etc.).  You can use any ACME client
 ([acme.sh](https://github.com/acmesh-official/acme.sh),
 [Certbot](https://certbot.eff.org/), etc.), but you must configure it to request
