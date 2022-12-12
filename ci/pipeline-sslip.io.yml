@@ -121,18 +121,6 @@ jobs:
     params:
       image: image/image
 
-# Delete this once there's a [Concourse
-# release](https://github.com/concourse/concourse/releases) (v7.9 ?) which has
-# a new version (> 1.5.1) of the registry-image resource that has the
-# multi-platform (ARM & AMD) code.
-
-# Also, :%s/cunnie-registry-image/registry-image/
-resource_types:
-- name: cunnie-registry-image
-  type: registry-image
-  source:
-    repository: cunnie/registry-image
-
 resources:
 - name: every-six-hours
   type: time
@@ -157,7 +145,7 @@ resources:
 
 # Where we will push the k-v.io nginx Docker image with HTML assets
 - name: k-v.io-nginx
-  type: cunnie-registry-image
+  type: registry-image
   icon: docker
   source:
     repository: cunnie/k-v.io-nginx
@@ -167,7 +155,7 @@ resources:
 
 # Where we will push the sslip.io nginx Docker image with HTML assets
 - name: sslip.io-nginx
-  type: cunnie-registry-image
+  type: registry-image
   icon: docker
   source:
     repository: cunnie/sslip.io-nginx
@@ -177,7 +165,7 @@ resources:
 
 # Where we will push the Docker image with the DNS server
 - name: sslip.io-dns-server
-  type: cunnie-registry-image
+  type: registry-image
   icon: docker
   source:
     repository: cunnie/sslip.io-dns-server
