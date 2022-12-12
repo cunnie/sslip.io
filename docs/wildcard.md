@@ -1,4 +1,22 @@
-### Procuring a Wildcard Certificate
+## Procuring a Wildcard Certificate
+
+### Using a White Label Domain
+
+Let's say you have a domain that is hosted on Amazon Route53, lets call it
+`example.com`. You have a few DNS entries set up like `foo.example.com`, and then
+you have `xip.example.com` which is an NS record to `ns-aws.sslip.io`. So you
+are able to use both regular DNS records that are hardcoded, and then when you
+need to use sslip you simply use your xip subdomain.
+
+To get a wildcard certificate for `*.xip.example.com`, simply go through the regular
+Let's Encrypt DNS-01 challenge process.
+
+Let's Encrypt will query your name servers for the TXT record
+`_acme-challenge.xip.example.com`, then your DNS server will respond with the
+TXT record _that should have been created on Route53 as part of the challenge_,
+otherwise it'll return the delegated nameservers (ns-aws.sslip.io and so on).
+
+### Using the sslip.io domain
 
 You can procure a [wildcard](https://en.wikipedia.org/wiki/Wildcard_certificate)
 certificate (e.g. `*.52-0-56-137.sslip.io`) from a certificate authority (e.g.
