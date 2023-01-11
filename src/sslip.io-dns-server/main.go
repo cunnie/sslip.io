@@ -33,6 +33,7 @@ func main() {
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response")
 	flag.Parse()
+	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	log.Printf("etcd endpoint: %s, blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
 		*etcdEndpoint, *blocklistURL, *nameservers, *bindPort, *quiet)
 

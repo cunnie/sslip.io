@@ -29,6 +29,7 @@ var _ = BeforeSuite(func() {
 	// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)
 	// takes 1.312s to start up on macOS Big Sur 2.0GHz quad-core 10th-generation Intel Core i5 processor (2020 13" MacBook Pro)
 	// 10 seconds should be long enough for slow container-on-a-VM-with-shared-core
+	Eventually(serverSession.Err, 10).Should(Say(` version \d+\.\d+\.\d+ starting`))
 	Eventually(serverSession.Err, 10).Should(Say("Ready to answer queries"))
 })
 
