@@ -148,12 +148,33 @@ sudo du -sH /var/lib/etcd/default/member
 This needs to be done every darn time the nodes are upgraded (there _must_ be a better way)
 
 ```bash
+lpass show --note etcd-ca-key.pem > etcd-ca-key.pem
+lpass show --note etcd-key.pem > etcd-key.pem
+GKE_NODE_PUBLIC_IPv4=$(gcloud compute instances list --format=json |
+  jq -r '[.[].networkInterfaces[0].accessConfigs[0].natIP] | join(",")')
+PUBLIC_HOSTNAMES=ns-aws.sslip.io,ns-azure.sslip.io,ns-gce.sslip.io
+HOSTNAMES=ns-aws,ns-azure,ns-gce
+IPv4=127.0.0.1,52.0.56.137,52.187.42.158,104.155.144.4,$GKE_NODE_PUBLIC_IPv4
+IPv6=::1,2600:1f18:aaf:6900::a
+
+cfssl gencsr \
+  -key=etcd-key.pem \
+  -hostname=${PUBLIC_HOSTNAMES},${HOSTNAMES},${IPv4},${IPv6} \
+  -cert=etcd.pem | cfssljson -bare etcd
+cfssl sign \
+  -ca=ca.pem \
+  -ca-key=etcd-ca-key.pem \
+  -config=ca-config.json \
+  -profile=etcd \
+  etcd.csr | cfssljson -bare etcd
+
 kubectl delete secret etcd-peer-tls
 kubectl create secret generic etcd-peer-tls \
   --from-file=ca.pem=<(curl -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem) \
   --from-file=etcd.pem=<(curl -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem) \
   --from-file=etcd-key.pem=<(lpass show --note etcd-key.pem)
 kubectl rollout restart deployment/k-v.io
+sleep 60 && kubectl rollout restart deployment/sslip.io # give time for etcd to come up
 ```
 
 ### Troubleshooting
