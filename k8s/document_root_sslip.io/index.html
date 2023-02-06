@@ -152,8 +152,8 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
       <p>If you want to run your own DNS server, it's simple: you can compile from <a href=
-      "https://github.com/cunnie/sslip.io/tree/main/src/sslip.io-dns-server">source</a> or you can use one
-      of our <a href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we
+      "https://github.com/cunnie/sslip.io/tree/main/src/sslip.io-dns-server">source</a> or you can use one of our
+      <a href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we
       install & run our server within a docker container:</p>
       <pre>
 docker run -it --rm fedora
@@ -364,22 +364,14 @@ Placed at the end of the document so the pages load faster -->
   <script src=
   "https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script> 
   <!-- Google Analytics -->
-   
+   <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M32C798MGY"></script> 
   <script>
-    (function(i, s, o, g, r, a, m) {
-      i['GoogleAnalyticsObject'] = r;
-      i[r] = i[r] || function() {
-        (i[r].q = i[r].q || []).push(arguments)
-      }, i[r].l = 1 * new Date();
-      a = s.createElement(o), m = s.getElementsByTagName(
-        o)[0];
-      a.async = 1;
-      a.src = g;
-      m.parentNode.insertBefore(a, m)
-    })(window, document, 'script',
-      '//www.google-analytics.com/analytics.js', 'ga');
-    ga('create', 'UA-43107212-2', 'auto');
-    ga('send', 'pageview');
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-M32C798MGY');
   </script>
 </body>
 </html>
