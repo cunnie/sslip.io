@@ -90,7 +90,7 @@ dig @ns-azure.sslip.io version.status.sslip.io txt +short # confirm new version
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
 - Click "Publish release"
 ```bash
-fly -t nono trigger-job -j dockerfiles/build-and-push-sslip.io-dns-server
+fly -t nono trigger-job -j sslip.io/build-and-push-sslip.io-dns-server
 ```
 Update the webservers with the HTML with new versions:
 ```bash
