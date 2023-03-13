@@ -21,14 +21,6 @@
         "TXTSslipIoSPF"
       ]
     },
-    "k-v.io.": {
-      "A": [
-        "104.155.144.4"
-      ]
-    },
-    "_acme-challenge.k-v.io.": {
-      "TXT": []
-    },
     "ns.sslip.io.": {
       "A": [
         "52.0.56.137",

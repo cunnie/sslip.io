@@ -60,18 +60,7 @@ dig @$DNS_SERVER_IP txt ip.sslip.io +short | tr -d '"'
 echo 127.0.0.1
 dig @$DNS_SERVER_IP txt version.status.sslip.io +short | grep $VERSION
 echo "\"$VERSION\""
-dig @$DNS_SERVER_IP my-key.k-v.io txt +short # returns nothing
 echo " ===" # separator because the results are too similar
-dig @$DNS_SERVER_IP put.MyValue.my-key.k-v.io txt +short
-echo "\"MyValue\""
-echo " ===" # separator because the results are too similar
-dig @$DNS_SERVER_IP MY-KEY.k-v.io txt +short
-echo "\"MyValue\""
-echo " ===" # separator because the results are too similar
-dig @$DNS_SERVER_IP delete.my-key.k-v.io txt +short
-echo
-echo " ===" # separator because the results are too similar
-dig @$DNS_SERVER_IP my-key.k-v.io txt +short # returns nothing
 dig @$DNS_SERVER_IP 1.0.0.127.in-addr.arpa ptr +short
 echo "127-0-0-1.sslip.io."
 dig @$DNS_SERVER_IP metrics.status.sslip.io txt +short | grep '"Queries: '

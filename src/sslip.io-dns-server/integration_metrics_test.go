@@ -123,30 +123,6 @@ var _ = Describe("IntegrationMetrics", func() {
 			actualMetrics = digAndGetMetrics("@localhost version.status.sslip.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
-			// TXT put.value.key.k-v.io updates .Queries, .AnsweredQueries, .AnsweredTXTPutKvQueries
-			expectedMetrics.Queries++
-			expectedMetrics.AnsweredQueries++
-			expectedMetrics.AnsweredTXTPutKvQueries++
-			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost put.value.key.k-v.io txt +short -p "+strconv.Itoa(port), port)
-			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
-
-			// TXT key.k-v.io updates .Queries, .AnsweredQueries, .AnsweredTXTGetKvQueries
-			expectedMetrics.Queries++
-			expectedMetrics.AnsweredQueries++
-			expectedMetrics.AnsweredTXTGetKvQueries++
-			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost key.k-v.io txt +short -p "+strconv.Itoa(port), port)
-			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
-
-			// TXT delete.key.k-v.io updates .Queries, .AnsweredTXTDelKvQueries
-			// It doesn't count as an "answered" query because it returns no record
-			expectedMetrics.Queries++
-			expectedMetrics.AnsweredTXTDelKvQueries++
-			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost delete.key.k-v.io txt +short -p "+strconv.Itoa(port), port)
-			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
-
 			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv4
 			expectedMetrics.Queries++
 			expectedMetrics.AnsweredQueries++
@@ -203,7 +179,6 @@ func getMetrics(port int) (m xip.Metrics) {
 	var junk string
 	_, err = fmt.Sscanf(string(stdout),
 		"\"Uptime: %d\"\n"+
-			"\"KV Store: %s\n"+ // %s "swallows" the double-quote at the end
 			"\"Blocklist: %s %s %s\n"+
 			"\"Queries: %d (%s\n"+ // %s "swallows" the `/s"` at the end
 			"\"Answered Queries: %d (%s\n"+ // %s "swallows" the `/s"` at the end
@@ -211,12 +186,10 @@ func getMetrics(port int) (m xip.Metrics) {
 			"\"AAAA: %d\"\n"+
 			"\"TXT Source: %d\"\n"+
 			"\"TXT Version: %d\"\n"+
-			"\"TXT KV GET/PUT/DEL: %d/%d/%d\"\n"+
 			"\"PTR IPv4/IPv6: %d/%d\"\n"+
 			"\"NS DNS-01: %d\"\n"+
 			"\"Blocked: %d\"\n",
 		&uptime,
-		&junk,
 		&junk, &junk, &junk,
 		&m.Queries, &junk,
 		&m.AnsweredQueries, &junk,
@@ -224,7 +197,6 @@ func getMetrics(port int) (m xip.Metrics) {
 		&m.AnsweredAAAAQueries,
 		&m.AnsweredTXTSrcIPQueries,
 		&m.AnsweredTXTVersionQueries,
-		&m.AnsweredTXTGetKvQueries, &m.AnsweredTXTPutKvQueries, &m.AnsweredTXTDelKvQueries,
 		&m.AnsweredPTRQueriesIPv4, &m.AnsweredPTRQueriesIPv6,
 		&m.AnsweredNSDNS01ChallengeQueries,
 		&m.AnsweredBlockedQueries,

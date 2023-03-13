@@ -5,7 +5,6 @@ package xip
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -14,29 +13,18 @@ import (
 	"net/http"
 	"net/netip"
 	"os"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/dns/dnsmessage"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
-//counterfeiter:generate . V3client
-type V3client interface {
-	Get(context.Context, string, ...clientv3.OpOption) (*clientv3.GetResponse, error)
-	Put(context.Context, string, string, ...clientv3.OpOption) (*clientv3.PutResponse, error)
-	Delete(context.Context, string, ...clientv3.OpOption) (*clientv3.DeleteResponse, error)
-	Close() error
-}
-
 // Xip is meant to be a singleton that holds global state for the DNS server
 type Xip struct {
-	Etcd                        V3client                // etcd client for `k-v.io`
 	DnsAmplificationAttackDelay chan struct{}           // for throttling metrics.status.sslip.io
 	Metrics                     Metrics                 // DNS server metrics
 	BlocklistStrings            []string                // list of blacklisted strings that shouldn't appear in public hostnames
@@ -54,9 +42,6 @@ type Metrics struct {
 	AnsweredAAAAQueries             int
 	AnsweredTXTSrcIPQueries         int
 	AnsweredTXTVersionQueries       int
-	AnsweredTXTGetKvQueries         int
-	AnsweredTXTPutKvQueries         int
-	AnsweredTXTDelKvQueries         int
 	AnsweredNSDNS01ChallengeQueries int
 	AnsweredBlockedQueries          int
 	AnsweredPTRQueriesIPv4          int
@@ -88,12 +73,6 @@ type DomainCustomization struct {
 // DNS hostnames are technically case-insensitive
 type DomainCustomizations map[string]DomainCustomization
 
-// KvCustomizations is a lookup table for custom TXT records
-// e.g. KvCustomizations["my-key"] = []dnsmessage.TXTResource{ TXT: { "my-value" } }
-// The key should NOT include ".k-v.io."
-// It's used when there's no etcd server running
-type KvCustomizations map[string][]dnsmessage.TXTResource
-
 // There's nothing like global variables to make my heart pound with joy.
 // Some of these are global because they are, in essence, constants which
 // I don't want to waste time recreating with every function call.
@@ -105,7 +84,6 @@ var (
 	ipv4ReverseRE    = regexp.MustCompile(`^(.*)\.in-addr\.arpa\.$`)
 	ipv6ReverseRE    = regexp.MustCompile(`^(([[:xdigit:]]\.){32})ip6\.arpa\.`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
-	kvRE             = regexp.MustCompile(`\.k-v\.io\.$`)
 
 	mbox, _  = dnsmessage.NewName("briancunnie.gmail.com.")
 	mx1, _   = dnsmessage.NewName("mail.protonmail.ch.")
@@ -120,16 +98,7 @@ var (
 
 	MetricsBufferSize = 200 // big enough to run our tests, and small enough to prevent DNS amplification attacks
 
-	// etcdContextTimeout — the duration (context) that we wait for etcd to get back to us
-	// - etcd queries on the nameserver take as long as 482 milliseconds on the "slow" server, 247 on the "fast"
-	// - round-trip time from my house in San Francisco to ns-azure in Singapore is 190 milliseconds
-	// - time between queries with `dig` on my macOS Monterey is 5000 milliseconds, three queries before giving up
-	// - quadruple the headroom for queries 4 x 482 = 1928, should still leave enough room to get answer back
-	//   within the 5000 milliseconds
-	etcdContextTimeout = 1928 * time.Millisecond
-
-	TxtKvCustomizations = KvCustomizations{}
-	Customizations      = DomainCustomizations{
+	Customizations = DomainCustomizations{
 		"sslip.io.": {
 			MX: []dnsmessage.MXResource{
 				{
@@ -142,12 +111,6 @@ var (
 				},
 			},
 			TXT: TXTSslipIoSPF,
-		},
-		// don't let people procure *.k-v.io TLS certs via ACME DNS-01 challenge
-		"_acme-challenge.k-v.io.": {
-			TXT: func(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
-				return []dnsmessage.TXTResource{{TXT: []string{"Please don't try to procure a k-v.io cert via DNS-01 challenge"}}}, nil
-			},
 		},
 		// nameserver addresses; we get queries for those every once in a while
 		// CNAMEs for sslip.io for DKIM signing
@@ -201,19 +164,8 @@ type Response struct {
 }
 
 // NewXip follows convention for constructors: https://go.dev/doc/effective_go#allocation_new
-func NewXip(etcdEndpoint, blocklistURL string, nameservers []string, addresses []string) (x *Xip, logmessages []string) {
-	var err error
+func NewXip(blocklistURL string, nameservers []string, addresses []string) (x *Xip, logmessages []string) {
 	x = &Xip{Metrics: Metrics{Start: time.Now()}}
-	// connect to `etcd`; if there's an error, set etcdCli to `nil` and that to
-	// determine whether to use a local key-value store instead
-	x.Etcd, err = clientv3New(etcdEndpoint)
-	if err != nil {
-		logmessages = append(logmessages, fmt.Sprintf("failed to connect to etcd at %s, using local key-value store instead: %s", etcdEndpoint, err.Error()))
-	} else {
-		logmessages = append(logmessages, fmt.Sprintf("Successfully connected to etcd at %s", etcdEndpoint))
-	}
-	// don't `defer etcdCli.Close()`: "The Client has internal state (watchers and leases), so
-	// Clients should be reused instead of created as needed"
 
 	// Download the blocklist
 	logmessages = append(logmessages, x.downloadBlockList(blocklistURL))
@@ -819,7 +771,7 @@ func (x *Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 	return x.NameServers
 }
 
-// TXTResources returns TXT records from Customizations or KvCustomizations
+// TXTResources returns TXT records from Customizations
 func (x *Xip) TXTResources(fqdn string, ip net.IP) ([]dnsmessage.TXTResource, error) {
 	if domain, ok := Customizations[strings.ToLower(fqdn)]; ok {
 		// Customizations[strings.ToLower(fqdn)] returns a _function_,
@@ -827,9 +779,6 @@ func (x *Xip) TXTResources(fqdn string, ip net.IP) ([]dnsmessage.TXTResource, er
 		if domain.TXT != nil {
 			return domain.TXT(x, ip)
 		}
-	}
-	if kvRE.MatchString(fqdn) {
-		return x.kvTXTResources(fqdn)
 	}
 	return nil, nil
 }
@@ -938,11 +887,6 @@ func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err er
 	var metrics []string
 	uptime := time.Since(x.Metrics.Start)
 	metrics = append(metrics, fmt.Sprintf("Uptime: %.0f", uptime.Seconds()))
-	keyValueStore := "etcd"
-	if x.isEtcdNil() {
-		keyValueStore = "builtin"
-	}
-	metrics = append(metrics, "KV Store: "+keyValueStore)
 	metrics = append(metrics, fmt.Sprintf("Blocklist: %s %d,%d",
 		x.BlocklistUpdated.Format("2006-01-02 15:04:05-07"),
 		len(x.BlocklistStrings),
@@ -953,7 +897,6 @@ func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err er
 	metrics = append(metrics, fmt.Sprintf("AAAA: %d", x.Metrics.AnsweredAAAAQueries))
 	metrics = append(metrics, fmt.Sprintf("TXT Source: %d", x.Metrics.AnsweredTXTSrcIPQueries))
 	metrics = append(metrics, fmt.Sprintf("TXT Version: %d", x.Metrics.AnsweredTXTVersionQueries))
-	metrics = append(metrics, fmt.Sprintf("TXT KV GET/PUT/DEL: %d/%d/%d", x.Metrics.AnsweredTXTGetKvQueries, x.Metrics.AnsweredTXTPutKvQueries, x.Metrics.AnsweredTXTDelKvQueries))
 	metrics = append(metrics, fmt.Sprintf("PTR IPv4/IPv6: %d/%d", x.Metrics.AnsweredPTRQueriesIPv4, x.Metrics.AnsweredPTRQueriesIPv6))
 	metrics = append(metrics, fmt.Sprintf("NS DNS-01: %d", x.Metrics.AnsweredNSDNS01ChallengeQueries))
 	metrics = append(metrics, fmt.Sprintf("Blocked: %d", x.Metrics.AnsweredBlockedQueries))
@@ -961,106 +904,6 @@ func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err er
 		txtResources = append(txtResources, dnsmessage.TXTResource{TXT: []string{metric}})
 	}
 	return txtResources, nil
-}
-
-// when TXT for "k-v.io" is queried, return the key-value pair
-func (x *Xip) kvTXTResources(fqdn string) ([]dnsmessage.TXTResource, error) {
-	// "labels" => official RFC 1035 term
-	// k-v.io. => ["k-v", "io"] are labels
-	var (
-		verb  string // i.e. "get", "put", "delete"
-		key   string // e.g. "my-key" as in "my-key.k-v.io"
-		value string // e.g. "my-value" as in "put.my-value.my-key.k-v.io"
-	)
-	labels := strings.Split(fqdn, ".")
-	labels = labels[:len(labels)-3] // strip ".k-v.io"
-	// key is always present, always first subdomain of "k-v.io"
-	key = strings.ToLower(labels[len(labels)-1])
-	switch {
-	case len(labels) == 1:
-		verb = "get" // default action if only key, not verb, is not present
-	case len(labels) == 2:
-		verb = strings.ToLower(labels[0]) // verb, if present, is leftmost, "put.value.key.k-v.io"
-	case len(labels) > 2:
-		verb = strings.ToLower(labels[0])
-		// concatenate multiple labels to create value, especially useful for version numbers
-		value = strings.Join(labels[1:len(labels)-1], ".") // e.g. "put.94.0.2.firefox-version.k-v.io"
-	}
-	// prepare to query etcd:
-	switch verb {
-	case "get":
-		return x.getKv(key)
-	case "put":
-		if len(labels) == 2 {
-			return []dnsmessage.TXTResource{{[]string{"422: missing a value: put.value.key.k-v.io"}}}, nil
-		}
-		return x.putKv(key, value)
-	case "delete":
-		return x.deleteKv(key)
-	}
-	return []dnsmessage.TXTResource{{[]string{"422: valid verbs are get, put, delete"}}}, nil
-}
-
-func (x *Xip) getKv(key string) ([]dnsmessage.TXTResource, error) {
-	if x.isEtcdNil() {
-		if txtRecord, ok := TxtKvCustomizations[key]; ok {
-			x.Metrics.AnsweredTXTGetKvQueries++
-			return txtRecord, nil
-		}
-		return nil, nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
-	defer cancel()
-	resp, err := x.Etcd.Get(ctx, key)
-	if err != nil {
-		return nil, fmt.Errorf(`couldn't GET "%s": %w`, key, err)
-	}
-	if len(resp.Kvs) > 0 {
-		x.Metrics.AnsweredTXTGetKvQueries++
-		return []dnsmessage.TXTResource{{[]string{string(resp.Kvs[0].Value)}}}, nil
-	}
-	return []dnsmessage.TXTResource{}, nil
-}
-
-func (x *Xip) putKv(key, value string) ([]dnsmessage.TXTResource, error) {
-	if len(value) > 63 { // too-long TXT records can be used in DNS amplification attacks; Truncate!
-		value = value[:63]
-	}
-	if x.isEtcdNil() {
-		TxtKvCustomizations[key] = []dnsmessage.TXTResource{
-			{
-				[]string{value},
-			},
-		}
-		x.Metrics.AnsweredTXTPutKvQueries++
-		return TxtKvCustomizations[key], nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
-	defer cancel()
-	_, err := x.Etcd.Put(ctx, key, value)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't PUT (%s: %s): %w", key, value, err)
-	}
-	x.Metrics.AnsweredTXTPutKvQueries++
-	return []dnsmessage.TXTResource{{[]string{value}}}, nil
-}
-
-func (x *Xip) deleteKv(key string) ([]dnsmessage.TXTResource, error) {
-	if x.isEtcdNil() {
-		if _, ok := TxtKvCustomizations[key]; ok {
-			x.Metrics.AnsweredTXTDelKvQueries++
-			delete(TxtKvCustomizations, key)
-		}
-		return nil, nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
-	defer cancel()
-	_, err := x.Etcd.Delete(ctx, key)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't DELETE (key %s): %w", key, err)
-	}
-	x.Metrics.AnsweredTXTDelKvQueries++
-	return nil, nil
 }
 
 // soaLogMessage returns an easy-to-read string for logging SOA Answers/Authorities
@@ -1082,9 +925,6 @@ func (a Metrics) MostlyEquals(b Metrics) bool {
 		a.AnsweredAAAAQueries == b.AnsweredAAAAQueries &&
 		a.AnsweredTXTSrcIPQueries == b.AnsweredTXTSrcIPQueries &&
 		a.AnsweredTXTVersionQueries == b.AnsweredTXTVersionQueries &&
-		a.AnsweredTXTGetKvQueries == b.AnsweredTXTGetKvQueries &&
-		a.AnsweredTXTPutKvQueries == b.AnsweredTXTPutKvQueries &&
-		a.AnsweredTXTDelKvQueries == b.AnsweredTXTDelKvQueries &&
 		a.AnsweredPTRQueriesIPv4 == b.AnsweredPTRQueriesIPv4 &&
 		a.AnsweredPTRQueriesIPv6 == b.AnsweredPTRQueriesIPv6 &&
 		a.AnsweredNSDNS01ChallengeQueries == b.AnsweredNSDNS01ChallengeQueries &&
@@ -1159,15 +999,6 @@ func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklis
 		return []string{}, []net.IPNet{}, err
 	}
 	return stringBlocklists, cidrBlocklists, nil
-}
-
-func (x *Xip) isEtcdNil() bool {
-	// comparing interfaces to nil are tricky: interfaces contain both a type
-	// and a value, and although the value is nil the type isn't, so we need the following
-	if x.Etcd == nil || reflect.ValueOf(x.Etcd).IsNil() {
-		return true
-	}
-	return false
 }
 
 func (x *Xip) blocklist(hostname string) bool {
@@ -1321,26 +1152,4 @@ func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, 
 		logMessages = append(logMessages, ip.String())
 	}
 	return response, logMessage + strings.Join(logMessages, ", "), nil
-}
-
-// clientv3New attempts to connect to local etcd and retrieve a key to make
-// sure the connection works. If for any reason it fails it returns nil +
-// error
-func clientv3New(etcdEndpoint string) (*clientv3.Client, error) {
-	etcdEndpoints := []string{etcdEndpoint}
-	etcdCli, err := clientv3.New(clientv3.Config{
-		Endpoints:   etcdEndpoints,
-		DialTimeout: 250 * time.Millisecond,
-	})
-	if err != nil {
-		return nil, err
-	}
-	// Let's do a query to determine if etcd is really, truly there
-	ctx, cancel := context.WithTimeout(context.Background(), etcdContextTimeout)
-	defer cancel()
-	_, err = etcdCli.Get(ctx, "some-silly-key, doesn't matter if it exists")
-	if err != nil {
-		return nil, err
-	}
-	return etcdCli, nil
 }

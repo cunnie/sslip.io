@@ -58,10 +58,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(digResults))
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(serverLogMessage))
 			},
-			Entry("A (customized) for k-v.io",
-				"@localhost k-v.io +short",
-				`\A104.155.144.4\n\z`,
-				`TypeA k-v.io. \? 104.155.144.4\n`),
 			Entry("A (customized) for sslip.io",
 				"@localhost sslip.io +short",
 				`\A78.46.204.247\n\z`,
@@ -131,26 +127,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 example.com txt +short",
 				`\A\z`,
 				`TypeTXT example.com. \? nil, SOA example.com. briancunnie.gmail.com. 2022112600 900 900 1800 180\n`),
-			Entry(`getting a non-existent value: TXT for non-existent.k-v.io"`,
-				"@127.0.0.1 non-existent.k-v.io txt +short",
-				`\A\z`,
-				`TypeTXT non-existent.k-v.io. \? nil, SOA non-existent.k-v.io. briancunnie.gmail.com. 2022112600 900 900 1800 180\n`),
-			Entry(`putting a value: TXT for put.MyValue.MY-KEY.k-v.io"`,
-				"@127.0.0.1 put.MyValue.MY-KEY.k-v.io txt +short",
-				`"MyValue"`,
-				`TypeTXT put.MyValue.MY-KEY.k-v.io. \? \["MyValue"\]`),
-			Entry(`deleting a value: TXT for delete.my-key.k-v.io"`,
-				"@127.0.0.1 delete.my-key.k-v.io txt +short",
-				`\A\z`,
-				`TypeTXT delete.my-key.k-v.io. \? nil, SOA delete.my-key.k-v.io. briancunnie.gmail.com. 2022112600 900 900 1800 180\n`),
-			Entry(`setting a TXT for _acme-challenge.k-v.io appears to work (spoiler: it doesn't)'"`,
-				"@127.0.0.1 put.sneaky-boy._acme-challenge.k-v.io txt +short",
-				`sneaky-boy`,
-				`TypeTXT put.sneaky-boy._acme-challenge.k-v.io. \? \["sneaky-boy"\]`),
-			Entry(`get a TXT for _acme-challenge.k-v.io is blocked to foil Let's Encrypt ACME DNS-01 challenge"`,
-				"@127.0.0.1 _acme-challenge.k-v.io txt +short",
-				`Please don't try to procure a k-v.io cert via DNS-01 challenge`,
-				`TypeTXT _acme-challenge.k-v.io. \? \["Please don't try to procure a k-v.io cert via DNS-01 challenge"\]`),
 			Entry(`get a PTR for 1.0.168.192.in-addr.arpa returns 192-168-0-1.sslip.io`,
 				"@127.0.0.1 1.0.168.192.in-addr.arpa ptr +short",
 				`\A192-168-0-1.sslip.io.\n\z`,
@@ -265,79 +241,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession).Should(Say(`"v=spf1 include:_spf.protonmail.ch mx ~all"`))
 				Eventually(digSession, 1).Should(Exit(0))
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n`))
-			})
-		})
-		When(`a TXT record for a host under the "k-v.io" domain is queried`, func() {
-			It(`the PUT has a three-minute TTL`, func() {
-				digArgs = "@localhost put.a.a.k-v.io txt -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`put.a.a.k-v.io.		180	IN	TXT	"a"`))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT put.a.a.k-v.io. \? \["a"\]`))
-			})
-			It(`the GET has a three-minute TTL`, func() {
-				// create (PUT) the key
-				digArgs = "@localhost put.a.b.k-v.io txt -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				// retrieve (GET) the key
-				digArgs = "@localhost b.k-v.io txt -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(digSession.Out.Contents()), 3).Should(MatchRegexp(`b.k-v.io.		180	IN	TXT	"a"`))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT b.k-v.io. \? \["a"\]`))
-			})
-			It(`the DELETE returns no records so that value cached in downstream DNS servers expires more quickly`, func() {
-				// create (PUT) the key
-				digArgs = "@localhost put.a.c.k-v.io txt -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				// DELETE the key
-				digArgs = "@localhost delete.c.k-v.io txt -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.c.k-v.io. \? nil, SOA delete.c.k-v.io. briancunnie.gmail.com. 2022112600 900 900 1800 180`))
-			})
-			It(`the DELETE on a non-existent key behaves the same as the DELETE on an existing key`, func() {
-				// DELETE the key (make sure it's gone)
-				digArgs = "@localhost delete.d.k-v.io txt -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				// DELETE again to test the non-existent behavior
-				digArgs = "@localhost delete.d.k-v.io txt -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT delete.d.k-v.io. \? nil, SOA delete.d.k-v.io. briancunnie.gmail.com. 2022112600 900 900 1800 180`))
-			})
-			It(`setting a TXT for _acme-challenge.subdomain-key.k-v.io doesn't expose DNS-01 vulnerability`, func() {
-				// set (PUT) the key
-				digArgs = "@localhost put.baffled-boy._acme-challenge.subdomain-key.k-v.io txt +short -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				// GET the key
-				digArgs = "@localhost get.subdomain-key.k-v.io txt +short -p " + strconv.Itoa(port)
-				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(digSession.Out.Contents()), 3).Should(MatchRegexp(`"baffled-boy._acme-challenge"`))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT get.subdomain-key.k-v.io. \? \["baffled-boy._acme-challenge"\]`))
 			})
 		})
 		When(`a record for an "_acme-challenge" domain is queried`, func() {
