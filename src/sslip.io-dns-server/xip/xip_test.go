@@ -5,12 +5,10 @@ import (
 	"math/rand"
 	"net"
 	"strings"
-	"time"
 	"xip/xip"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"golang.org/x/net/dns/dnsmessage"
 )
 
@@ -81,7 +79,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("NSResources()", func() {
 		When("we use the default nameservers", func() {
-			var x, _ = xip.NewXip("localhost:2379", "file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{})
 			It("returns the name servers", func() {
 				randomDomain := random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -113,7 +111,7 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		When("we override the default nameservers", func() {
-			var x, _ = xip.NewXip("localhost:2379", "file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{})
 			It("returns the configured servers", func() {
 				randomDomain := random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -177,69 +175,6 @@ var _ = Describe("Xip", func() {
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(0))
 			})
-		})
-		When(`the domain "k-v.io is queried"`, Ordered, func() {
-			txtTests := func() {
-				DescribeTable(`the domain "k-v.io" is queried for TXT records`,
-					func(fqdn string, txts []string) {
-						txtResources, err := x.TXTResources(fqdn, nil)
-						Expect(err).ToNot(HaveOccurred())
-						Expect(len(txtResources)).To(Equal(len(txts)))
-						for i, txtResource := range txtResources {
-							Expect(len(txtResource.TXT)).To(Equal(1)) // each TXT record has 1 & only 1 string
-							Expect(txtResource.TXT[0]).To(Equal(txts[i]))
-						}
-					},
-					// simple tests: get, put, delete with single label value
-					Entry("no arguments → empty array", "k-v.io.", []string{}),
-					Entry("putting a value → that value", "PUT.MyValue.my-key.k-v.io.", []string{"MyValue"}),
-					Entry("getting that value → that value", "my-key.k-v.io.", []string{"MyValue"}),
-					Entry("getting that value with an UPPERCASE key → that value", "MY-KEY.k-v.io.", []string{"MyValue"}),
-					Entry("explicitly getting that value → that value", "GeT.my-key.k-v.io.", []string{"MyValue"}),
-					Entry("deleting that value → empty array", "DelETe.my-key.k-v.io.", []string{}),
-					Entry("getting that deleted value → empty array", "my-key.k-v.io.", []string{}),
-					// errors
-					Entry("getting a non-existent key → empty array", "nonexistent.k-v.io.", []string{}),
-					Entry("putting but skipping the value → error txt", "put.my-key.k-v.io.", []string{"422: missing a value: put.value.key.k-v.io"}),
-					Entry("deleting a non-existent key → silently succeeds", "delete.non-existent.k-v.io.", []string{}),
-					Entry("using a garbage verb → error txt", "post.my-key.k-v.io.", []string{"422: valid verbs are get, put, delete"}),
-					// others
-					Entry("putting a multi-label value", "put.96.0.4664.55.chrome-version.k-v.io.", []string{"96.0.4664.55"}),
-					Entry("putting a super-long multi-label value to use in a DNS amplification attack gets truncated to 63 characters",
-						"put"+
-							".IReturnedAndSawUnderTheSunThatTheRaceIsNotToTheSwiftNotThe"+
-							".BattleToTheStrongNeitherYetBreadToTheWiseNorYetRichesToMenOf"+
-							".amplify.k-v.io.",
-						[]string{"IReturnedAndSawUnderTheSunThatTheRaceIsNotToTheSwiftNotThe.Batt"},
-					),
-				)
-
-			}
-			When("there's no etcd, just local, in-memory key-value", func() {
-				txtTests()
-			})
-			etcdURI := "localhost:2379"
-			// make sure there's an etcd listening before we run our tests
-			conn, err := net.DialTimeout("tcp", etcdURI, 250*time.Millisecond)
-			if err == nil {
-				err = conn.Close()
-				Expect(err).ToNot(HaveOccurred())
-				When(`etcd is backing the kv store`, func() {
-					BeforeEach(func() {
-						etcdCli, err := clientv3.New(clientv3.Config{
-							Endpoints:   []string{etcdURI},
-							DialTimeout: 250 * time.Millisecond,
-						})
-						Expect(err).ToNot(HaveOccurred())
-						x.Etcd = etcdCli
-					})
-					AfterEach(func() {
-						err = x.Etcd.Close()
-						Expect(err).ToNot(HaveOccurred())
-					})
-					txtTests()
-				})
-			}
 		})
 	})
 
