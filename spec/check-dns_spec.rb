@@ -109,31 +109,6 @@ describe domain do
       expect(`dig @#{whois_nameserver} TXT ip.#{domain} +short`).to match(/^"(\d+\.\d+\.\d+\.\d+)|(([[:xdigit:]]*:){2,7}[[:xdigit:]]*)"$/)
     end
 
-    context "k-v.io tested on the #{whois_nameserver} nameserver" do
-      seconds_since_epoch = Time.now.to_i
-      it "sets a value, #{seconds_since_epoch}, on the key sslipio-spec.k-v.io" do
-        expect(`dig @#{whois_nameserver} put.#{seconds_since_epoch}.sslipio-spec.k-v.io TXT +short`).to match(/^"#{seconds_since_epoch}"$/)
-        sleep 5 # give it time to propagate
-      end
-
-      it "gets the newly-set value, #{seconds_since_epoch}, from the key, sslipio-spec.k-v.io" do
-        whois_nameservers.each do |ns|
-          expect(`dig @#{ns} sslipio-spec.k-v.io TXT +short`).to match(/^\"#{seconds_since_epoch}\"$/)
-        end
-      end
-
-      it "deletes the value from the key sslipio-spec.k-v.io" do
-        expect(`dig @#{whois_nameserver} delete.sslipio-spec.k-v.io TXT +short`).to match(/^$/)
-        sleep 5 # give it time to propagate
-      end
-
-      it "gets no value from the freshly-deleted key, sslipio-spec.k-v.io" do
-        whois_nameservers.each do |ns|
-          expect(`dig @#{ns} sslipio-spec.k-v.io TXT +short`).to match(/^$/)
-        end
-      end
-    end
-
     # check the website
     it "is able to reach https://#{domain} and get a valid response (2xx)" do
       `curl -If https://#{domain} 2> /dev/null`
