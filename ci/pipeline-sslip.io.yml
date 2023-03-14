@@ -28,7 +28,7 @@ jobs:
   public: true
   plan:
   - get: sslip.io
-    resource: sslip.io-release
+    resource: sslip.io
     trigger: true
   - get: every-six-hours
     trigger: true
