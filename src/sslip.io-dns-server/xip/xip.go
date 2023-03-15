@@ -798,7 +798,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 	return dnsmessage.SOAResource{
 		NS:     name,
 		MBox:   mbox,
-		Serial: 2022112600,
+		Serial: 2023031500,
 		// cribbed the Refresh/Retry/Expire from google.com.
 		// MinTTL was 300, but I dropped to 180 for faster
 		// key-value propagation
