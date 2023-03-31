@@ -20,3 +20,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 43.134.66.67/24 # Netflix
 2601:646:100:69f7:cafe:bebe:cafe:bebe/112 # personal (Comcast) IPv6 range for testing blocklist
 139.198.158.74/32 # @yongzhi-weee: not obtain/acquiring a ICP license
+20.55.32.72 # hxxps://bofa-tablas-v2.20-55-32-72[.]sslip[.]io/#/user
