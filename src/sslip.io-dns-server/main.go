@@ -17,6 +17,7 @@ func main() {
 	var wg sync.WaitGroup
 	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `URL containing a list of "forbidden" names/CIDRs`)
 	var nameservers = flag.String("nameservers", "ns-aws.sslip.io.,ns-azure.sslip.io.,ns-gce.sslip.io.", "comma-separated list of nameservers")
+	var delegated = flag.String("delegate", "", "delegate specific FQDN's to comma-separated list of nameservers, seperate multiple mappings with ';'")
 	var addresses = flag.String("addresses",
 		"sslip.io=78.46.204.247,"+
 			"sslip.io=2a01:4f8:c17:b8f::2,"+
@@ -35,7 +36,23 @@ func main() {
 	log.Printf("blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
 		*blocklistURL, *nameservers, *bindPort, *quiet)
 
-	x, logmessages := xip.NewXip(*blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","))
+	var delegatedMap = map[string][]string{}
+	if *delegated != "" {
+		for _, item := range strings.Split(*delegated, ";") {
+			var mapping = strings.SplitN(item, "=", 2)
+
+			if len(mapping) < 2 {
+				log.Fatalf("Invalid delegate mapping \"%s\", expecting format \"<fqdn>=<nameservers>\"", item)
+				return
+			}
+
+			var fqdn = mapping[0]
+			var nameservers = strings.Split(mapping[1], ",")
+			delegatedMap[fqdn] = nameservers
+		}
+	}
+
+	x, logmessages := xip.NewXip(*blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","), delegatedMap)
 	for _, logmessage := range logmessages {
 		log.Println(logmessage)
 	}

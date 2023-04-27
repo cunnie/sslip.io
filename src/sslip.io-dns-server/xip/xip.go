@@ -25,12 +25,13 @@ import (
 
 // Xip is meant to be a singleton that holds global state for the DNS server
 type Xip struct {
-	DnsAmplificationAttackDelay chan struct{}           // for throttling metrics.status.sslip.io
-	Metrics                     Metrics                 // DNS server metrics
-	BlocklistStrings            []string                // list of blacklisted strings that shouldn't appear in public hostnames
-	BlocklistCDIRs              []net.IPNet             // list of blacklisted strings that shouldn't appear in public hostnames
-	BlocklistUpdated            time.Time               // The most recent time the Blocklist was updated
-	NameServers                 []dnsmessage.NSResource // The list of authoritative name servers (NS)
+	DnsAmplificationAttackDelay chan struct{}                      // for throttling metrics.status.sslip.io
+	Metrics                     Metrics                            // DNS server metrics
+	BlocklistStrings            []string                           // list of blacklisted strings that shouldn't appear in public hostnames
+	BlocklistCDIRs              []net.IPNet                        // list of blacklisted strings that shouldn't appear in public hostnames
+	BlocklistUpdated            time.Time                          // The most recent time the Blocklist was updated
+	NameServers                 []dnsmessage.NSResource            // The list of authoritative name servers (NS)
+	DelegatedFqdns              map[string][]dnsmessage.NSResource // Map of FQDN's to delegate to mapped name servers
 }
 
 // Metrics contains the counters of the important/interesting queries
@@ -164,7 +165,7 @@ type Response struct {
 }
 
 // NewXip follows convention for constructors: https://go.dev/doc/effective_go#allocation_new
-func NewXip(blocklistURL string, nameservers []string, addresses []string) (x *Xip, logmessages []string) {
+func NewXip(blocklistURL string, nameservers []string, addresses []string, delegatedMap map[string][]string) (x *Xip, logmessages []string) {
 	x = &Xip{Metrics: Metrics{Start: time.Now()}}
 
 	// Download the blocklist
@@ -243,6 +244,31 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string) (x *X
 		}
 		// print out the added records in a manner similar to the way they're set on the cmdline
 		logmessages = append(logmessages, fmt.Sprintf(`Adding record "%s=%s"`, host, ip))
+	}
+
+	// parse and set out delegated FQDN's
+	x.DelegatedFqdns = map[string][]dnsmessage.NSResource{}
+	for fqdn, nameservers := range delegatedMap {
+		// ensure FQDN is absolute
+		if fqdn[len(fqdn)-1] != '.' {
+			fqdn += "."
+		}
+		var nsResources = []dnsmessage.NSResource{}
+		for _, ns := range nameservers {
+			// all nameservers must be absolute (end in ".")
+			if ns[len(ns)-1] != '.' {
+				ns += "."
+			}
+			// nameservers must be DNS-compliant
+			nsName, err := dnsmessage.NewName(ns)
+			if err != nil {
+				logmessages = append(logmessages, fmt.Sprintf(`-delegated: ignoring invalid nameserver "%s"`, ns))
+				continue
+			}
+			nsResources = append(nsResources, dnsmessage.NSResource{NS: nsName})
+			logmessages = append(logmessages, fmt.Sprintf(`Adding nameserver "%s" to delegated FQDN "%s"`, ns, fqdn))
+		}
+		x.DelegatedFqdns[fqdn] = nsResources
 	}
 
 	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
@@ -357,6 +383,33 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 			RCode:              dnsmessage.RCodeSuccess, // assume success, may be replaced later
 		},
 	}
+	// Check if domain is delegated to specified nameservers
+	delegatedNameservers, delegated := x.DelegatedFqdns[q.Name.String()]
+	if delegated {
+		var logMessages []string
+		logMessages = append(logMessages, fmt.Sprintf("domain \"%s\" is delegated to ", q.Name.String()))
+		response.Header.Authoritative = false
+		for _, nameServer := range delegatedNameservers {
+			response.Authorities = append(response.Authorities,
+				// 1 or more A records; A records > 1 only available via Customizations
+				func(b *dnsmessage.Builder) error {
+					err = b.NSResource(dnsmessage.ResourceHeader{
+						Name:   q.Name,
+						Type:   dnsmessage.TypeNS,
+						Class:  dnsmessage.ClassINET,
+						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						Length: 0,
+					}, nameServer)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+			logMessages = append(logMessages, nameServer.NS.String())
+		}
+		return response, logMessage + "nil, " + strings.Join(logMessages, ", "), nil
+	}
+
 	if IsAcmeChallenge(q.Name.String()) && !x.blocklist(q.Name.String()) {
 		// thanks, @NormanR
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.

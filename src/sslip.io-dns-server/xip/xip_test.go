@@ -79,7 +79,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("NSResources()", func() {
 		When("we use the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{}, map[string][]string{})
 			It("returns the name servers", func() {
 				randomDomain := random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -111,7 +111,7 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		When("we override the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{}, map[string][]string{})
 			It("returns the configured servers", func() {
 				randomDomain := random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
