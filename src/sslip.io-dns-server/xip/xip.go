@@ -384,7 +384,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 		},
 	}
 	// Check if domain is delegated to specified nameservers
-	delegatedNameservers, delegated := x.DelegatedFqdns[q.Name.String()]
+	delegatedNameservers, delegated := x.DelegatedFqdns[strings.ToLower(q.Name.String())]
 	if delegated {
 		var logMessages []string
 		logMessages = append(logMessages, fmt.Sprintf("domain \"%s\" is delegated to ", q.Name.String()))
