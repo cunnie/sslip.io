@@ -390,8 +390,8 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 		logMessages = append(logMessages, fmt.Sprintf("domain \"%s\" is delegated to ", q.Name.String()))
 		response.Header.Authoritative = false
 		for _, nameServer := range delegatedNameservers {
+			nameServer := nameServer
 			response.Authorities = append(response.Authorities,
-				// 1 or more A records; A records > 1 only available via Customizations
 				func(b *dnsmessage.Builder) error {
 					err = b.NSResource(dnsmessage.ResourceHeader{
 						Name:   q.Name,
