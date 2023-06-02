@@ -148,6 +148,7 @@ sudo du -sH /var/lib/etcd/default/member
 This needs to be done every darn time the nodes are upgraded (there _must_ be a better way)
 
 ```bash
+cd etcd/
 lpass show --note etcd-ca-key.pem > etcd-ca-key.pem
 lpass show --note etcd-key.pem > etcd-key.pem
 GKE_NODE_PUBLIC_IPv4=$(gcloud compute instances list --format=json |
@@ -171,10 +172,18 @@ cfssl sign \
 kubectl delete secret etcd-peer-tls
 kubectl create secret generic etcd-peer-tls \
   --from-file=ca.pem=<(curl -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/ca.pem) \
-  --from-file=etcd.pem=<(curl -L https://raw.githubusercontent.com/cunnie/sslip.io/main/etcd/etcd.pem) \
+  --from-file=etcd.pem=etcd.pem \
   --from-file=etcd-key.pem=<(lpass show --note etcd-key.pem)
+kubectl get secret etcd-peer-tls -o json | \
+  jq -r '.data."etcd.pem"' | \
+  base64 -d | \
+  openssl x509 -noout -text
 kubectl rollout restart deployment/k-v.io
 sleep 60 && kubectl rollout restart deployment/sslip.io # give time for etcd to come up
+git status
+git add -p
+git ci -m"Update GKE node public IP addrs (etcd.pem)"
+git push
 ```
 
 ### Troubleshooting
