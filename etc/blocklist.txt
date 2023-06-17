@@ -22,3 +22,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 139.198.158.74/32 # @yongzhi-weee: not obtain/acquiring a ICP license
 20.55.32.72 # hxxps://bofa-tablas-v2.20-55-32-72[.]sslip[.]io/#/user
 91.107.178.82/32 # Linkedin Phishing
+45.82.251.70/32 # ??
