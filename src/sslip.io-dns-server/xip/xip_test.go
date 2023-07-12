@@ -1,10 +1,10 @@
 package xip_test
 
 import (
-	"encoding/binary"
 	"math/rand"
 	"net"
 	"strings"
+	"xip/testhelper"
 	"xip/xip"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -20,7 +20,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("CNAMEResources()", func() {
 		It("returns nil by default", func() {
-			randomDomain := random8ByteString() + ".com."
+			randomDomain := testhelper.Random8ByteString() + ".com."
 			cname := xip.CNAMEResource(randomDomain)
 			Expect(cname).To(BeNil())
 		})
@@ -32,7 +32,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("a domain has been customized but has no CNAMEs", func() {
 			It("returns nil", func() {
-				customizedDomain := random8ByteString() + ".com."
+				customizedDomain := testhelper.Random8ByteString() + ".com."
 				xip.Customizations[customizedDomain] = xip.DomainCustomization{}
 				cname := xip.CNAMEResource(customizedDomain)
 				Expect(cname).To(BeNil())
@@ -41,7 +41,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("a domain has been customized with CNAMES", func() {
 			It("returns CNAME resources", func() {
-				customizedDomain := random8ByteString() + ".com."
+				customizedDomain := testhelper.Random8ByteString() + ".com."
 				xip.Customizations[strings.ToLower(customizedDomain)] = xip.DomainCustomization{
 					CNAME: dnsmessage.CNAMEResource{
 						CNAME: dnsmessage.Name{
@@ -62,7 +62,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("MXResources()", func() {
 		It("returns the MX resource", func() {
-			randomDomain := random8ByteString() + ".com."
+			randomDomain := testhelper.Random8ByteString() + ".com."
 			mx := xip.MXResources(randomDomain)
 			mxHostName := dnsmessage.MustNewName(randomDomain)
 			Expect(len(mx)).To(Equal(1))
@@ -81,7 +81,7 @@ var _ = Describe("Xip", func() {
 		When("we use the default nameservers", func() {
 			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{})
 			It("returns the name servers", func() {
-				randomDomain := random8ByteString() + ".com."
+				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
 				Expect(len(ns)).To(Equal(3))
 				Expect(ns[0].NS.String()).To(Equal("ns-aws.sslip.io."))
@@ -91,7 +91,7 @@ var _ = Describe("Xip", func() {
 			When(`the domain name contains "_acme-challenge."`, func() {
 				When("the domain name has an embedded IP", func() {
 					It(`returns an array of one NS record pointing to the domain name _sans_ "acme-challenge."`, func() {
-						randomDomain := "192.168.0.1." + random8ByteString() + ".com."
+						randomDomain := "192.168.0.1." + testhelper.Random8ByteString() + ".com."
 						ns := x.NSResources("_acme-challenge." + randomDomain)
 						Expect(len(ns)).To(Equal(1))
 						Expect(ns[0].NS.String()).To(Equal(randomDomain))
@@ -103,7 +103,7 @@ var _ = Describe("Xip", func() {
 				})
 				When("the domain name does not have an embedded IP", func() {
 					It("returns the default trinity of nameservers", func() {
-						randomDomain := "_acme-challenge." + random8ByteString() + ".com."
+						randomDomain := "_acme-challenge." + testhelper.Random8ByteString() + ".com."
 						ns := x.NSResources(randomDomain)
 						Expect(len(ns)).To(Equal(3))
 					})
@@ -113,7 +113,7 @@ var _ = Describe("Xip", func() {
 		When("we override the default nameservers", func() {
 			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{})
 			It("returns the configured servers", func() {
-				randomDomain := random8ByteString() + ".com."
+				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
 				Expect(len(ns)).To(Equal(3))
 				Expect(ns[0].NS.String()).To(Equal("mickey."))
@@ -126,7 +126,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("SOAResource()", func() {
 		It("returns the SOA resource for the domain in question", func() {
-			randomDomain := random8ByteString() + ".com."
+			randomDomain := testhelper.Random8ByteString() + ".com."
 			randomDomainName := dnsmessage.MustNewName(randomDomain)
 			soa := xip.SOAResource(randomDomainName)
 			Expect(soa.NS.Data).To(Equal(randomDomainName.Data))
@@ -136,7 +136,7 @@ var _ = Describe("Xip", func() {
 	Describe("TXTResources()", func() {
 		var x xip.Xip
 		It("returns an empty array for a random domain", func() {
-			randomDomain := random8ByteString() + ".com."
+			randomDomain := testhelper.Random8ByteString() + ".com."
 			txts, err := x.TXTResources(randomDomain, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(len(txts)).To(Equal(0))
@@ -152,7 +152,7 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		When("a random domain has been customized w/out any TXT defaults", func() { // Unnecessary, but confirms Golang's behavior for me, a doubting Thomas
-			customizedDomain := random8ByteString() + ".com."
+			customizedDomain := testhelper.Random8ByteString() + ".com."
 			xip.Customizations[customizedDomain] = xip.DomainCustomization{}
 			It("returns no TXT resources", func() {
 				txts, err := x.TXTResources(customizedDomain, nil)
@@ -218,7 +218,7 @@ var _ = Describe("Xip", func() {
 		)
 		When("There is more than one A record", func() {
 			It("returns them all", func() {
-				fqdn := random8ByteString()
+				fqdn := testhelper.Random8ByteString()
 				xip.Customizations[strings.ToLower(fqdn)] = xip.DomainCustomization{
 					A: []dnsmessage.AResource{
 						{A: [4]byte{1}},
@@ -254,33 +254,33 @@ var _ = Describe("Xip", func() {
 	Describe("IsAcmeChallenge()", func() {
 		When("the domain doesn't have '_acme-challenge.' in it", func() {
 			It("returns false", func() {
-				randomDomain := random8ByteString() + ".com."
+				randomDomain := testhelper.Random8ByteString() + ".com."
 				Expect(xip.IsAcmeChallenge(randomDomain)).To(BeFalse())
 			})
 			It("returns false even when there are embedded IPs", func() {
-				randomDomain := "127.0.0.1." + random8ByteString() + ".com."
+				randomDomain := "127.0.0.1." + testhelper.Random8ByteString() + ".com."
 				Expect(xip.IsAcmeChallenge(randomDomain)).To(BeFalse())
 			})
 		})
 		When("it has '_acme-challenge.' in it", func() {
 			When("it does NOT have any embedded IPs", func() {
 				It("returns false", func() {
-					randomDomain := "_acme-challenge." + random8ByteString() + ".com."
+					randomDomain := "_acme-challenge." + testhelper.Random8ByteString() + ".com."
 					Expect(xip.IsAcmeChallenge(randomDomain)).To(BeFalse())
 				})
 			})
 			When("it has embedded IPs", func() {
 				It("returns true", func() {
-					randomDomain := "_acme-challenge.127.0.0.1." + random8ByteString() + ".com."
+					randomDomain := "_acme-challenge.127.0.0.1." + testhelper.Random8ByteString() + ".com."
 					Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
-					randomDomain = "_acme-challenge.fe80--1." + random8ByteString() + ".com."
+					randomDomain = "_acme-challenge.fe80--1." + testhelper.Random8ByteString() + ".com."
 					Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
 				})
 				When("it has random capitalization", func() {
 					It("returns true", func() {
-						randomDomain := "_AcMe-ChAlLeNgE.127.0.0.1." + random8ByteString() + ".com."
+						randomDomain := "_AcMe-ChAlLeNgE.127.0.0.1." + testhelper.Random8ByteString() + ".com."
 						Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
-						randomDomain = "_aCMe-cHAllENge.fe80--1." + random8ByteString() + ".com."
+						randomDomain = "_aCMe-cHAllENge.fe80--1." + testhelper.Random8ByteString() + ".com."
 						Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
 					})
 				})
@@ -319,7 +319,7 @@ var _ = Describe("Xip", func() {
 		When("using randomly generated IPv6 addresses (fuzz testing)", func() {
 			It("should succeed every time", func() {
 				for i := 0; i < 10000; i++ {
-					addr := randomIPv6Address()
+					addr := testhelper.RandomIPv6Address()
 					ipv6Answers := xip.NameToAAAA(strings.ReplaceAll(addr.String(), ":", "-"))
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ipv6Answers[0].AAAA[:]).To(Equal([]uint8(addr)))
@@ -328,7 +328,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("There is more than one AAAA record", func() {
 			It("returns them all", func() {
-				fqdn := random8ByteString()
+				fqdn := testhelper.Random8ByteString()
 				xip.Customizations[strings.ToLower(fqdn)] = xip.DomainCustomization{
 					AAAA: []dnsmessage.AAAAResource{
 						{AAAA: [16]byte{1}},
@@ -391,33 +391,3 @@ var _ = Describe("Xip", func() {
 		})
 	})
 })
-
-func randomIPv6Address() net.IP {
-	upperHalf := make([]byte, 8)
-	lowerHalf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(upperHalf, rand.Uint64())
-	binary.LittleEndian.PutUint64(lowerHalf, rand.Uint64())
-	ipv6 := net.IP(append(upperHalf, lowerHalf...))
-	// IPv6 addrs have a lot of all-zero two-byte sections
-	// So we zero-out ~50% of the sections
-	for i := 0; i < 8; i++ {
-		if rand.Int()%2 == 0 {
-			for j := 0; j < 2; j++ {
-				ipv6[i*2+j] = 0
-			}
-		}
-	}
-	// avoid pathological case: an IPv4 address []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, ?, ?, ?, ?})
-	ipv6[10] &= 0xfe
-	return ipv6
-}
-
-// random8ByteString() returns an 8-char mixed-case string consisting solely of the letters a-z.
-func random8ByteString() string {
-	var randomString []byte
-	for i := 0; i < 8; i++ {
-		// 65 == ascii 'A', +32 (96) == ascii 'a', there are 26 letters in the alphabet. Mix upper case, too.
-		randomString = append(randomString, byte(65+32*rand.Intn(2)+rand.Intn(26)))
-	}
-	return string(randomString)
-}
