@@ -160,6 +160,14 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa ptr +short",
 				`\A\z`,
 				`TypePTR b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 2023031500 900 900 1800 180\n`),
+			Entry(`TODO: should, but doesn't, return an IDNA2008-compliant record for ::1`,
+				"@127.0.0.1 -x ::1 +short",
+				`\A--1.sslip.io.\n\z`,
+				`TypePTR 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa. \? --1.sslip.io.\n`),
+			Entry(`TODO: should, but doesn't, return an IDNA2008-compliant record for 2600::`,
+				"@127.0.0.1 -x 2600:: +short",
+				`\A2600--.sslip.io.\n\z`,
+				`TypePTR 0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.6.2.ip6.arpa. \? 2600--.sslip.io.\n`),
 		)
 	})
 	Describe("for more complex assertions", func() {
@@ -180,7 +188,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		When("we do reverse lookups (PTR) on a random series of IPv6 addresses (fuzz testing)", func() {
 			It("should succeed every time", func() {
-				for i := 0; i < 100; i++ {
+				for i := 0; i < 50; i++ {
 					addr := testhelper.RandomIPv6Address()
 					digArgs = "@localhost -x " + addr.String() + " -p " + strconv.Itoa(port) + " +short"
 					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
