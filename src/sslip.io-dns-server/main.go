@@ -40,18 +40,18 @@ func main() {
 		log.Println(logmessage)
 	}
 
-	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: *bindPort})
+	connUdp, err := net.ListenUDP("udp", &net.UDPAddr{Port: *bindPort})
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
 	switch {
 	case err == nil:
-		log.Printf("Successfully bound to all IPs, port %d.\n", *bindPort)
+		log.Printf("Successfully bound via UDP to all IPs, port %d.\n", *bindPort)
 		wg.Add(1)
-		go readFrom(conn, &wg, x, *quiet)
+		go readFrom(connUdp, &wg, x, *quiet)
 	case isErrorPermissionsError(err):
 		log.Printf("Try invoking me with `sudo` because I don't have permission to bind to port %d.\n", *bindPort)
 		log.Fatal(err.Error())
 	case isErrorAddressAlreadyInUse(err):
-		log.Printf("I couldn't bind to \"0.0.0.0:%d\" (INADDR_ANY, all interfaces), so I'll try to bind to each address individually.\n", *bindPort)
+		log.Printf("I couldn't bind via UDP to \"0.0.0.0:%d\" (INADDR_ANY, all interfaces), so I'll try to bind to each address individually.\n", *bindPort)
 		ipCIDRs := listLocalIPCIDRs()
 		var boundIPsPorts, unboundIPs []string
 		for _, ipCIDR := range ipCIDRs {
@@ -60,7 +60,7 @@ func main() {
 				log.Printf(`I couldn't parse the local interface "%s".`, ipCIDR)
 				continue
 			}
-			conn, err = net.ListenUDP("udp", &net.UDPAddr{
+			connUdp, err = net.ListenUDP("udp", &net.UDPAddr{
 				IP:   ip,
 				Port: *bindPort,
 				Zone: "",
@@ -69,16 +69,16 @@ func main() {
 				unboundIPs = append(unboundIPs, ip.String())
 			} else {
 				wg.Add(1)
-				boundIPsPorts = append(boundIPsPorts, conn.LocalAddr().String())
-				go readFrom(conn, &wg, x, *quiet)
+				boundIPsPorts = append(boundIPsPorts, connUdp.LocalAddr().String())
+				go readFrom(connUdp, &wg, x, *quiet)
 			}
 		}
 		if len(boundIPsPorts) == 0 {
-			log.Fatalf("I couldn't bind to any IPs on port %d, so I'm exiting", *bindPort)
+			log.Fatalf("I couldn't bind via UDP to any IPs on port %d, so I'm exiting", *bindPort)
 		}
-		log.Printf(`I bound to the following IPs: "%s"`, strings.Join(boundIPsPorts, `", "`))
+		log.Printf(`I bound via UDP to the following IPs: "%s"`, strings.Join(boundIPsPorts, `", "`))
 		if len(unboundIPs) > 0 {
-			log.Printf(`I couldn't bind to the following IPs: "%s"`, strings.Join(unboundIPs, `", "`))
+			log.Printf(`I couldn't bind via UDP to the following IPs: "%s"`, strings.Join(unboundIPs, `", "`))
 		}
 	default:
 		log.Fatal(err.Error())
