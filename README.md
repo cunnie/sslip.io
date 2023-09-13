@@ -18,6 +18,7 @@ developers; the website targets users.
 ```bash
 git clone https://github.com/cunnie/sslip.io.git
 cd sslip.io/src/sslip.io-dns-server/
+go mod tidy
 sudo go run main.go
  # sudo is required on Linux, but not on macOS, to bind to privileged port 53
 ```
@@ -31,9 +32,9 @@ dig @localhost 192.168.0.1.sslip.io +short
 ### Quick Start Tests
 
 ```bash
-go install github.com/onsi/ginkgo/v2/ginkgo@latest
-go get github.com/onsi/gomega/...
-~/go/bin/ginkgo -r -p .
+go mod tidy
+go generate
+ginkgo -r -p .
 ```
 
 ## Running Your Own Nameservers
