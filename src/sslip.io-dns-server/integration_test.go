@@ -384,6 +384,16 @@ var _ = Describe("sslip.io-dns-server", func() {
 				`TypeAAAA 2601-646-100-69f7-cafe-bebe-cafe-baba.sslip.io. \? 2600:1f18:aaf:6900::a\n$`),
 		)
 	})
+	Describe("When it can't bind to a port", func() {
+		It("prints an error message and exits", func() {
+			Expect(err).ToNot(HaveOccurred())
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://../../etc/blocklist.txt")
+			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(secondServerSession.Err, 10).Should(Say("I couldn't bind via UDP to any IPs"))
+			Expect(secondServerSession.ExitCode()).To(Equal(1))
+		})
+	})
 })
 
 var listenPort = 1023 // lowest unprivileged port - 1 (immediately incremented)
