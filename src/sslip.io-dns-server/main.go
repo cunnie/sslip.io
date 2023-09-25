@@ -8,13 +8,11 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"syscall"
 	"xip/xip"
 )
 
 func main() {
-	var wg sync.WaitGroup
 	var blocklistURL = flag.String("blocklistURL", "https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt", `URL containing a list of "forbidden" names/CIDRs`)
 	var nameservers = flag.String("nameservers", "ns-aws.sslip.io.,ns-azure.sslip.io.,ns-gce.sslip.io.", "comma-separated list of nameservers")
 	var addresses = flag.String("addresses",
@@ -43,36 +41,37 @@ func main() {
 	var udpConns []*net.UDPConn
 	var unboundIPs []string
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{Port: *bindPort})
-	if err == nil {
+	switch {
+	case err == nil: // success! We've bound to all interfaces
 		udpConns = append(udpConns, udpConn)
-	}
-	if isErrorPermissionsError(err) {
+	case isErrorPermissionsError(err):
 		log.Printf("Try invoking me with `sudo` because I don't have permission to bind to UDP port %d.\n", *bindPort)
 		log.Fatal(err.Error())
-	}
-	if isErrorAddressAlreadyInUse(err) {
-		// do some stuff
+	case isErrorAddressAlreadyInUse(err):
 		log.Printf("I couldn't bind via UDP to \"[::]:%d\" (INADDR_ANY, all interfaces), so I'll try to bind to each address individually.\n", *bindPort)
 		udpConns, unboundIPs = bindUDPAddressesIndividually(*bindPort)
 		if len(unboundIPs) > 0 {
 			log.Printf(`I couldn't bind via UDP to the following IPs: "%s"`, strings.Join(unboundIPs, `", "`))
 		}
-		if len(udpConns) == 0 {
-			log.Fatalf("I couldn't bind via UDP to any IPs on port %d, so I'm exiting", *bindPort)
-		}
-	}
-	if err != nil {
+	default:
 		log.Fatal(err.Error())
 	}
+	if len(udpConns) == 0 {
+		log.Fatalf("I couldn't bind via UDP to any IPs on port %d, so I'm exiting", *bindPort)
+	}
+	// Log the list of IPs that we've bound to because it helps troubleshooting
 	var boundIPs []string
 	for _, udpConn := range udpConns {
 		boundIPs = append(boundIPs, udpConn.LocalAddr().String())
-		go readFrom(udpConn, x, *quiet)
-		wg.Add(1)
 	}
 	log.Printf(`I bound via UDP to the following IPs: "%s"`, strings.Join(boundIPs, `", "`))
+
+	// Read from the UDP connections
+	for _, udpConn := range udpConns[1:] { // use goroutines to read from all the UDP connections EXCEPT the first
+		go readFrom(udpConn, x, *quiet)
+	}
 	log.Printf("Ready to answer queries")
-	wg.Wait()
+	readFrom(udpConns[0], x, *quiet) // refrain from exiting; There should always be a udpConns[0], and readFrom() _never_ returns
 }
 
 func readFrom(conn *net.UDPConn, x *xip.Xip, quiet bool) {
