@@ -394,6 +394,33 @@ var _ = Describe("sslip.io-dns-server", func() {
 			Expect(secondServerSession.ExitCode()).To(Equal(1))
 		})
 	})
+	Describe("When it can't bind to a port on loopback", func() {
+		var udpConnSquatter *net.UDPConn
+		BeforeEach(func() {
+			port = getFreePort()
+			// the following won't work on an IPv6-only machine; change to "::1" in that case
+			udpAddr := net.UDPAddr{
+				IP:   net.ParseIP("::1"),
+				Port: port,
+			}
+			udpConnSquatter, err = net.ListenUDP("udp", &udpAddr)
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("prints an informative message and continues", func() {
+			Expect(err).ToNot(HaveOccurred())
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://../../etc/blocklist.txt")
+			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(secondServerSession.Err, 10).Should(Say(` version \d+\.\d+\.\d+ starting`))
+			Eventually(secondServerSession.Err, 10).Should(Say(`I couldn't bind via UDP to "\[::\]:\d+" \(INADDR_ANY, all interfaces\), so I'll try to bind to each address individually.`))
+			Eventually(secondServerSession.Err, 10).Should(Say(`I couldn't bind via UDP to the following IPs:.* "::1"`))
+			err = udpConnSquatter.Close()
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(secondServerSession.Err, 10).Should(Say("Ready to answer queries"))
+			secondServerSession.Terminate()
+			Eventually(secondServerSession).Should(Exit())
+		})
+	})
 })
 
 var listenPort = 1023 // lowest unprivileged port - 1 (immediately incremented)
