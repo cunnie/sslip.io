@@ -168,6 +168,10 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 -x 2600:: +short",
 				`\A2600--.sslip.io.\n\z`,
 				`TypePTR 0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.6.2.ip6.arpa. \? 2600--.sslip.io.\n`),
+			Entry(`over TCP, A (customized) for sslip.io`,
+				"@localhost sslip.io +short +vc",
+				`\A78.46.204.247\n\z`,
+				`TypeA sslip.io. \? 78.46.204.247\n`),
 		)
 	})
 	Describe("for more complex assertions", func() {
