@@ -1,9 +1,7 @@
 package main_test
 
 import (
-	"fmt"
 	"net"
-	"os"
 	"os/exec"
 	"strconv"
 	"time"
@@ -40,6 +38,7 @@ var _ = Describe("speed", func() {
 		var conn *net.UDPConn
 		var msg dnsmessage.Message
 		const numQueries = 5000
+		const minThroughput = 1000
 
 		BeforeEach(func() {
 			loopbackAddr, err = net.ResolveUDPAddr("udp", "localhost:"+strconv.Itoa(port))
@@ -47,7 +46,7 @@ var _ = Describe("speed", func() {
 			conn, err = net.DialUDP("udp", nil, loopbackAddr)
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("runs "+strconv.Itoa(numQueries)+" queries and returns the throughput", func() {
+		It("runs "+strconv.Itoa(numQueries)+" queries and the throughput is > "+strconv.Itoa(minThroughput)+" queries/sec", func() {
 			msg = dnsmessage.Message{
 				Questions: []dnsmessage.Question{
 					{
@@ -79,7 +78,8 @@ var _ = Describe("speed", func() {
 			}
 			elapsedSeconds := time.Now().Sub(startTime).Seconds()
 			Eventually(serverSession.Err).Should(Say(`TypeA 127-0-0-1\.sslip\.io\. \? 127\.0\.0\.1`))
-			fmt.Fprintf(os.Stderr, "Queries/second: %.2f\n", float64(numQueries)/elapsedSeconds)
+			//fmt.Fprintf(os.Stderr, "Queries/second: %.2f\n", float64(numQueries)/elapsedSeconds)
+			Expect(float64(numQueries) / elapsedSeconds).Should(BeNumerically(">", minThroughput))
 		})
 	})
 })
