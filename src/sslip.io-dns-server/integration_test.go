@@ -4,6 +4,8 @@ import (
 	"log"
 	"net"
 	"os/exec"
+	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -388,7 +390,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 				`TypeAAAA 2601-646-100-69f7-cafe-bebe-cafe-baba.sslip.io. \? 2600:1f18:aaf:6900::a\n$`),
 		)
 	})
-	Describe("When it can't bind to a port", func() {
+	When("it can't bind to any UDP port", func() {
 		It("prints an error message and exits", func() {
 			Expect(err).ToNot(HaveOccurred())
 			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://../../etc/blocklist.txt")
@@ -398,17 +400,42 @@ var _ = Describe("sslip.io-dns-server", func() {
 			Expect(secondServerSession.ExitCode()).To(Equal(1))
 		})
 	})
-	Describe("When it can't bind to a port on loopback", func() {
+	When("it can't bind to any TCP port", func() {
+		var squatters []net.Listener
+		var newPort = getFreePort() // I need a new free port to bind on because a server is running on the old port
+		BeforeEach(func() {
+			squatters, err = squatOnTcp(newPort)
+			Expect(err).ToNot(HaveOccurred())
+		})
+		AfterEach(func() {
+			for _, squatter := range squatters {
+				err = squatter.Close()
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
+		It("prints an error message and continues running", func() {
+			Expect(err).ToNot(HaveOccurred())
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://../../etc/blocklist.txt")
+			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(secondServerSession.Err, 10).Should(Say(` version \d+\.\d+\.\d+ starting`))
+			Eventually(secondServerSession.Err, 10).Should(Say(`I couldn't bind via TCP to "\[::\]:\d+" \(INADDR_ANY, all interfaces\), so I'll try to bind to each address individually.`))
+			Eventually(secondServerSession.Err, 10).Should(Say("I couldn't bind via TCP to any IPs"))
+			Eventually(secondServerSession.Err, 10).Should(Say("Ready to answer queries"))
+			secondServerSession.Terminate()
+			Eventually(secondServerSession).Should(Exit())
+		})
+	})
+	When("it can't bind via UDP to the loopback address", func() {
+		var newPort = getFreePort() // I need a new free port to bind on because the server has already bound to the old port
 		var squatter *net.UDPConn
 		BeforeEach(func() {
-			port = getFreePort()
-			squatter, err = squatOnUdpLoopbackPort(port)
+			squatter, err = squatOnUdpLoopbackPort(newPort)
 			Expect(err).ToNot(HaveOccurred())
-
 		})
 		It("prints an informative message and binds to the addresses it can", func() {
 			Expect(err).ToNot(HaveOccurred())
-			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://../../etc/blocklist.txt")
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://../../etc/blocklist.txt")
 			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(secondServerSession.Err, 10).Should(Say(` version \d+\.\d+\.\d+ starting`))
@@ -421,9 +448,32 @@ var _ = Describe("sslip.io-dns-server", func() {
 			Eventually(secondServerSession).Should(Exit())
 		})
 	})
+	When("it can't bind via TCP to the loopback address", func() {
+		var newPort = getFreePort() // I need a new free port to bind on because the server has already bound to the old port
+		var squatters []net.Listener
+		BeforeEach(func() {
+			squatters = squatOnTcpLoopback(newPort)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("prints an informative message and binds to the addresses it can", func() {
+			Expect(err).ToNot(HaveOccurred())
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://../../etc/blocklist.txt")
+			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(secondServerSession.Err, 10).Should(Say(` version \d+\.\d+\.\d+ starting`))
+			Eventually(secondServerSession.Err, 10).Should(Say(`I couldn't bind via TCP to "\[::\]:\d+" \(INADDR_ANY, all interfaces\), so I'll try to bind to each address individually.`))
+			Eventually(secondServerSession.Err, 10).Should(Say(`I couldn't bind via TCP to the following IPs:.* "(::1|127\.0\.0\.1)"`))
+			for _, squatter := range squatters {
+				err = squatter.Close()
+				Expect(err).ToNot(HaveOccurred())
+			}
+			Eventually(secondServerSession.Err, 10).Should(Say("Ready to answer queries"))
+			secondServerSession.Terminate()
+			Eventually(secondServerSession).Should(Exit())
+		})
+	})
 })
-
-var listenPort = 1023 // lowest unprivileged port - 1 (immediately incremented)
 
 func squatOnUdpLoopbackPort(port int) (squatter *net.UDPConn, err error) {
 	// try IPv6's loopback
@@ -443,17 +493,87 @@ func squatOnUdpLoopbackPort(port int) (squatter *net.UDPConn, err error) {
 	return squatter, err
 }
 
+func squatOnTcpLoopback(port int) (squatters []net.Listener) {
+	var addrsToBind = []string{"[::1]", "127.0.0.1"}
+	// Get the GOOS environment variable to determine the operating system.
+	goos := strings.ToLower(runtime.GOOS)
+	if goos == "darwin" {
+		// macOS needs to bind to _all_ interfaces as well; don't know why
+		addrsToBind = append([]string{"[::]"}, addrsToBind...)
+	}
+	// try to bind to both IPv4 and IPv6's loopback
+	for _, addr := range addrsToBind {
+		addrPort := addr + ":" + strconv.Itoa(port)
+		squatter, err := net.Listen("tcp", addrPort)
+		if err != nil {
+			continue // probably
+		}
+		squatters = append(squatters, squatter)
+	}
+	return squatters
+}
+
+// squatOnTcp(port) makes any subsequent attempt to bind to that port to fail, for testing purposes
+func squatOnTcp(port int) (squatters []net.Listener, err error) {
+	/*
+		on macOS, not only do I need to listen on ALL addresses, but I also
+		need to listen to addresses individually. This isn't the case with Linux.
+		On a typical macOS dual-stack machine, I'll be able to create ~7 Listeners
+		(INADDR_ANY, 2 loopback, 1 IPv4, 3 IPv6)
+	*/
+	var squatter net.Listener
+	squatter, err = net.Listen("tcp", ":"+strconv.Itoa(port))
+	if err != nil {
+		//log.Println(err.Error())
+	} else {
+		squatters = append(squatters, squatter)
+	}
+	addrCIDRs, err := net.InterfaceAddrs() // typical addrCIDR "10.9.9.161/24"
+	for _, addrCIDR := range addrCIDRs {
+		ip, _, err := net.ParseCIDR(addrCIDR.String())
+		if err != nil {
+			return squatters, err
+		}
+		ipv6, err := regexp.MatchString(`:`, addrCIDR.String())
+		if err != nil {
+			return squatters, err
+		}
+		// accommodate IPv6's requirements for brackets: "[::1]:1024" vs "127.0.0.1:1024"
+		if ipv6 {
+			squatter, err = net.Listen("tcp", "["+ip.String()+"]"+":"+strconv.Itoa(port))
+			//log.Println("[" + ip.String() + "]" + ":" + strconv.Itoa(port))
+			if err != nil {
+				//log.Println(err.Error())
+				// ignore errors on IPv6 bind attempts; it's probably a link-local, which needs a scope
+				// https://stackoverflow.com/questions/2455762/why-cant-i-bind-ipv6-socket-to-a-linklocal-address
+				continue
+			}
+		} else {
+			squatter, err = net.Listen("tcp", ip.String()+":"+strconv.Itoa(port))
+			//log.Println(ip.String() + ":" + strconv.Itoa(port))
+			if err != nil {
+				//log.Println(err.Error())
+				continue
+			}
+		}
+		squatters = append(squatters, squatter)
+	}
+	//log.Println(len(squatters))
+	return squatters, err
+}
+
 // getFreePort should always succeed unless something awful has happened, e.g. port exhaustion
 func getFreePort() int {
 	// we randomize the start based on the millisecond to avoid collisions in our test
 	// we also bind for a millisecond (in `isPortFree()` to make sure we don't collide
 	// with another test running in parallel
-	listenPort = (time.Now().Nanosecond() / 1000000) + 1024
+	listenPort := (time.Now().Nanosecond() / 1000000) + 1024
 	for {
 		listenPort += 1
 		switch {
 		case listenPort > 65535:
 			listenPort = 1023 // we've reached the highest port, start over
+			// 1024 (lowest unprivileged port) - 1 (immediately incremented)
 		case isPortFree(listenPort):
 			return listenPort
 		}
