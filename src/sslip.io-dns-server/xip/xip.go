@@ -37,6 +37,8 @@ type Xip struct {
 type Metrics struct {
 	Start                           time.Time
 	Queries                         int
+	TCPQueries                      int
+	UDPQueries                      int
 	AnsweredQueries                 int
 	AnsweredAQueries                int
 	AnsweredAAAAQueries             int
@@ -892,6 +894,7 @@ func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err er
 		len(x.BlocklistStrings),
 		len(x.BlocklistCDIRs)))
 	metrics = append(metrics, fmt.Sprintf("Queries: %d (%.1f/s)", x.Metrics.Queries, float64(x.Metrics.Queries)/uptime.Seconds()))
+	metrics = append(metrics, fmt.Sprintf("TCP/UDP: %d/%d", x.Metrics.TCPQueries, x.Metrics.UDPQueries))
 	metrics = append(metrics, fmt.Sprintf("Answered Queries: %d (%.1f/s)", x.Metrics.AnsweredQueries, float64(x.Metrics.AnsweredQueries)/uptime.Seconds()))
 	metrics = append(metrics, fmt.Sprintf("A: %d", x.Metrics.AnsweredAQueries))
 	metrics = append(metrics, fmt.Sprintf("AAAA: %d", x.Metrics.AnsweredAAAAQueries))
@@ -920,6 +923,8 @@ func soaLogMessage(soaResource dnsmessage.SOAResource) string {
 // MostlyEquals compares all fields except `Start` (timestamp)
 func (a Metrics) MostlyEquals(b Metrics) bool {
 	if a.Queries == b.Queries &&
+		a.TCPQueries == b.TCPQueries &&
+		a.UDPQueries == b.UDPQueries &&
 		a.AnsweredQueries == b.AnsweredQueries &&
 		a.AnsweredAQueries == b.AnsweredAQueries &&
 		a.AnsweredAAAAQueries == b.AnsweredAAAAQueries &&

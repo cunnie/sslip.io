@@ -130,6 +130,7 @@ func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool) {
 			if !quiet {
 				log.Printf("%v.%d %s", addr.IP, addr.Port, logMessage)
 			}
+			x.Metrics.UDPQueries += 1
 		}()
 	}
 }
@@ -167,6 +168,7 @@ func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
 			if !quiet {
 				log.Printf("%s.%s %s", addr, port, logMessage)
 			}
+			x.Metrics.TCPQueries += 1
 		}()
 	}
 }
