@@ -20,22 +20,35 @@ var _ = Describe("IntegrationMetrics", func() {
 			var actualMetrics xip.Metrics
 			expectedMetrics := getMetrics(port)
 
-			// A updates .Queries, .AnsweredQueries, .AnsweredAQueries
+			// A updates .Queries, UDPQueries .AnsweredQueries, .AnsweredAQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredAQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost 127.0.0.1.sslip.io +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
+			// A updates .Queries, TCPQueries .AnsweredQueries, .AnsweredAQueries
+			expectedMetrics.Queries++
+			expectedMetrics.TCPQueries++
+			expectedMetrics.AnsweredQueries++
+			expectedMetrics.AnsweredAQueries++
+			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
+			// "+vc" runs the lookup over TCP, not UDP
+			actualMetrics = digAndGetMetrics("@localhost 127.0.0.1.sslip.io +short +vc -p "+strconv.Itoa(port), port)
+			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
+
 			// A (non-existent) record updates .Queries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// A blocked updates .Queries, .AnsweredQueries, .AnsweredBlockedQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredBlockedQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
@@ -45,6 +58,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// AAAA updates .Queries, .AnsweredQueries, .AnsweredAAAAQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredAAAAQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
@@ -53,12 +67,14 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// AAAA (non-existent) updates .Queries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io aaaa +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// MX (customized) updates .Queries, .AnsweredQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost sslip.io mx +short -p "+strconv.Itoa(port), port)
@@ -66,6 +82,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// MX updates .Queries, AnsweredQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io mx +short -p "+strconv.Itoa(port), port)
@@ -73,6 +90,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// NS updates .Queries, AnsweredQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io ns +short -p "+strconv.Itoa(port), port)
@@ -80,6 +98,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// NS DNS-01 challenge record updates .Queries, .AnsweredNSDNS01ChallengeQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			// DNS-01 challenges don't count as successful because we're not authoritative; we're delegating
 			expectedMetrics.AnsweredNSDNS01ChallengeQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
@@ -88,6 +107,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// Always successful: SOA
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			dig("@localhost non-existent.sslip.io soa +short -p " + strconv.Itoa(port))
@@ -96,6 +116,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// TXT sslip.io (customized) updates .Queries, .AnsweredQueries,
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost sslip.io txt +short -p "+strconv.Itoa(port), port)
@@ -103,12 +124,14 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// TXT sslip.io (non-existent) updates .Queries, .AnsweredQueries,
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost non-existent.sslip.io txt +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT ip.sslip.io updates .Queries, .AnsweredQueries, .AnsweredTXTSrcIPQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredTXTSrcIPQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
@@ -117,6 +140,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// TXT version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredTXTVersionQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredTXTVersionQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
@@ -125,6 +149,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv4
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredPTRQueriesIPv4++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
@@ -133,6 +158,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// PTR version.sslip.io updates .Queries, .AnsweredQueries, .AnsweredPTRQueriesIPv6
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredPTRQueriesIPv6++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
@@ -141,6 +167,7 @@ var _ = Describe("IntegrationMetrics", func() {
 
 			// TXT DNS-01 challenge record updates .Queries, .AnsweredNSDNS01ChallengeQueries
 			expectedMetrics.Queries++
+			expectedMetrics.UDPQueries++
 			expectedMetrics.AnsweredNSDNS01ChallengeQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
 			actualMetrics = digAndGetMetrics("@localhost _acme-challenge.fe80--.sslip.io txt +short -p "+strconv.Itoa(port), port)
@@ -154,6 +181,7 @@ var _ = Describe("IntegrationMetrics", func() {
 // the Heisenberg uncertainty principle (observing changes the values)
 func bumpExpectedToAccountForMetricsQuery(metrics xip.Metrics) xip.Metrics {
 	metrics.Queries++
+	metrics.UDPQueries++
 	metrics.AnsweredQueries++
 	return metrics
 }
@@ -181,6 +209,7 @@ func getMetrics(port int) (m xip.Metrics) {
 		"\"Uptime: %d\"\n"+
 			"\"Blocklist: %s %s %s\n"+
 			"\"Queries: %d (%s\n"+ // %s "swallows" the `/s"` at the end
+			"\"TCP/UDP: %d/%d\"\n"+
 			"\"Answered Queries: %d (%s\n"+ // %s "swallows" the `/s"` at the end
 			"\"A: %d\"\n"+
 			"\"AAAA: %d\"\n"+
@@ -192,6 +221,7 @@ func getMetrics(port int) (m xip.Metrics) {
 		&uptime,
 		&junk, &junk, &junk,
 		&m.Queries, &junk,
+		&m.TCPQueries, &m.UDPQueries,
 		&m.AnsweredQueries, &junk,
 		&m.AnsweredAQueries,
 		&m.AnsweredAAAAQueries,
