@@ -397,7 +397,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(secondServerSession.Err, 10).Should(Say("I couldn't bind via UDP to any IPs"))
-			Expect(secondServerSession.ExitCode()).To(Equal(1))
+			Eventually(secondServerSession).Should(Exit(1))
 		})
 	})
 	When("it can't bind to any TCP port", func() {
