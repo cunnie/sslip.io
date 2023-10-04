@@ -144,7 +144,7 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 
 ## DNS Server Miscellany
 
-- it only binds to UDP (no TCP, sorry)
+- it binds to both UDP and TCP.
 - The SOA record is hard-coded except the _MNAME_ (primary master name server)
   record, which is set to the queried hostname (e.g. `dig big.apple.com
   @ns-aws.nono.io` would return an SOA with an _MNAME_ record of

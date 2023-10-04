@@ -233,7 +233,7 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
       <pre>
 dig @ns-gce.nono.io version.status.sslip.io txt +short
   "2.7.0"
-  "2023/03/13-18:51:49-0400"
+  "2023/10/04-18:51:49-0700"
   "8f7f2df"
 </pre>
       <p>The first number, ("2.6.1"), is the version of the sslip.io DNS software, and is most relevant. The other two
@@ -244,8 +244,9 @@ dig @ns-gce.nono.io version.status.sslip.io txt +short
       <pre>
 dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
   "Uptime: 165655"
-  "Blocklist: 2023-03-15 13:54:06-07 2,3"
+  "Blocklist: 2023-10-04 07:37:50-07 3,6"
   "Queries: 14295231 (86.3/s)"
+  "TCP/UDP: 5231/14290000"
   "Answered Queries: 4872793 (29.4/s)"
   "A: 4025711"
   "AAAA: 247215"
@@ -261,7 +262,7 @@ dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
         <dd>The time since the DNS server has been started, in seconds</dd>
         <dt>Blocklist</dt>
         <dd>
-          The first value ("2022-02-26 10:54:21-08") is the date the blocklist was last downloaded. The following two
+          The first value ("2023-10-04 07:37:50-07") is the date the blocklist was last downloaded. The following two
           numbers are the number of string matches that are blocked (e.g. "raiffeisen" is a string that is blocked if
           it appears in the queried hostname) and the number of CIDR matches that are blocked (e.g. "43.134.66.67/24"
           is blocked). The blocklist can be found <a href=
@@ -270,6 +271,9 @@ dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
         <dt>Queries</dt>
         <dd>This consists of two numbers: The first is the raw number of DNS queries that the server has responded to
         since starting operation, and the second is the first number divided by the uptime (i.e. queries/second)</dd>
+        <dt>TCP/UDP</dt>
+        <dd>This is the number of queries received on the TCP protocol versus the UDP protocol. The sum should equal
+        the number of queries. DNS typically uses the UDP protocol</dd>
         <dt>Answered Queries</dt>
         <dd>This consists of two numbers: the first is the number of queries we responded to with at least one record
         in the answer section, and the second is the first number divided by the uptime (i.e. queries/second). Note
