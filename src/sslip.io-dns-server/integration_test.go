@@ -177,6 +177,26 @@ var _ = Describe("sslip.io-dns-server", func() {
 		)
 	})
 	Describe("for more complex assertions", func() {
+		When("we want to make sure our TTL is an hour if we need to block ", func() {
+			It("returns a TTL of 3600, at least for the non-RFC 1918 non-localhost IPv4 adresses", func() {
+				digArgs = "@localhost 52.0.56.138.sslip.io -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`52\.0\.56\.138\.sslip\.io\.\s+3600\s+IN\s+A\s+52\.0\.56\.138\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA 52\.0\.56\.138\.sslip\.io\. \? 52\.0\.56\.138\n`))
+			})
+			It("returns a TTL of 3600, at least for the non-RFC 4193 non-localhost IPv6 addresses", func() {
+				digArgs = "@localhost aaaa 2600-1f18-aaf-6900--b.sslip.io -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`2600-1f18-aaf-6900--b.sslip.io.\s+3600\s+IN\s+AAAA\s+2600:1f18:aaf:6900::b`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeAAAA 2600-1f18-aaf-6900--b\.sslip\.io\. \? 2600:1f18:aaf:6900::b\n`))
+			})
+		})
 		When("our test is run on a machine which has IPv6", func() {
 			cmd := exec.Command("ping6", "-c", "1", "::1")
 			err := cmd.Run() // if the command succeeds, we have IPv6

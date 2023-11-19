@@ -1080,7 +1080,7 @@ func (x *Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, log
 					Name:   q.Name,
 					Type:   dnsmessage.TypeA,
 					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					TTL:    3600, // 60 * 60 == 1 hour; short TTL in case we need to block them
 					Length: 0,
 				}, nameToA)
 				if err != nil {
@@ -1142,7 +1142,7 @@ func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, 
 					Name:   q.Name,
 					Type:   dnsmessage.TypeAAAA,
 					Class:  dnsmessage.ClassINET,
-					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					TTL:    3600, // 60 * 60 == 1 hour; short TTL in case we need to block them
 					Length: 0,
 				}, nameToAAAA)
 				if err != nil {
