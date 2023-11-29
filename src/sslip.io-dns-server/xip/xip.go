@@ -28,7 +28,7 @@ type Xip struct {
 	DnsAmplificationAttackDelay chan struct{}           // for throttling metrics.status.sslip.io
 	Metrics                     Metrics                 // DNS server metrics
 	BlocklistStrings            []string                // list of blacklisted strings that shouldn't appear in public hostnames
-	BlocklistCDIRs              []net.IPNet             // list of blacklisted strings that shouldn't appear in public hostnames
+	BlocklistCIDRs              []net.IPNet             // list of blacklisted CIDRs; no A/AAAA records should resolve to IPs in these CIDRs
 	BlocklistUpdated            time.Time               // The most recent time the Blocklist was updated
 	NameServers                 []dnsmessage.NSResource // The list of authoritative name servers (NS)
 }
@@ -892,7 +892,7 @@ func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err er
 	metrics = append(metrics, fmt.Sprintf("Blocklist: %s %d,%d",
 		x.BlocklistUpdated.Format("2006-01-02 15:04:05-07"),
 		len(x.BlocklistStrings),
-		len(x.BlocklistCDIRs)))
+		len(x.BlocklistCIDRs)))
 	metrics = append(metrics, fmt.Sprintf("Queries: %d (%.1f/s)", x.Metrics.Queries, float64(x.Metrics.Queries)/uptime.Seconds()))
 	metrics = append(metrics, fmt.Sprintf("TCP/UDP: %d/%d", x.Metrics.TCPQueries, x.Metrics.UDPQueries))
 	metrics = append(metrics, fmt.Sprintf("Answered Queries: %d (%.1f/s)", x.Metrics.AnsweredQueries, float64(x.Metrics.AnsweredQueries)/uptime.Seconds()))
@@ -970,9 +970,9 @@ func (x *Xip) downloadBlockList(blocklistURL string) string {
 		return fmt.Sprintf(`failed to parse blocklist "%s": %s`, blocklistURL, err.Error())
 	}
 	x.BlocklistStrings = blocklistStrings
-	x.BlocklistCDIRs = blocklistCIDRs
+	x.BlocklistCIDRs = blocklistCIDRs
 	x.BlocklistUpdated = time.Now()
-	return fmt.Sprintf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, x.BlocklistStrings, x.BlocklistCDIRs)
+	return fmt.Sprintf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, x.BlocklistStrings, x.BlocklistCIDRs)
 }
 
 // ReadBlocklist "sanitizes" the block list, removing comments, invalid characters
@@ -1027,8 +1027,8 @@ func (x *Xip) blocklist(hostname string) bool {
 			return true
 		}
 	}
-	for _, blockCDIR := range x.BlocklistCDIRs {
-		if blockCDIR.Contains(ip) {
+	for _, blockCIDR := range x.BlocklistCIDRs {
+		if blockCIDR.Contains(ip) {
 			return true
 		}
 	}
