@@ -584,10 +584,10 @@ func squatOnTcp(port int) (squatters []net.Listener, err error) {
 
 // getFreePort should always succeed unless something awful has happened, e.g. port exhaustion
 func getFreePort() int {
-	// we randomize the start based on the millisecond to avoid collisions in our test
+	// we use a time-based seed to generate a random port to avoid collisions in our test
 	// we also bind for a millisecond (in `isPortFree()` to make sure we don't collide
 	// with another test running in parallel
-	listenPort := (time.Now().Nanosecond() / 1000000) + 1024
+	listenPort := (time.Now().Nanosecond() % (65536 - 1024)) + 1023
 	for {
 		listenPort += 1
 		switch {
@@ -608,7 +608,7 @@ func isPortFree(port int) bool {
 	// we must Sleep() in order to avoid a race condition when tests
 	// are run in parallel (`ginkgo -p`) and the `ListenUDP()` and `Close()`
 	// we sleep for a millisecond because the port is randomized based on the millisecond.
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
 	err = conn.Close()
 	if err != nil {
 		log.Printf("I couldn't close port %d", port)
