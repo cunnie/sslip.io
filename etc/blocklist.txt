@@ -28,3 +28,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 185.229.65.160/32 # ¿"benarponpombahk"?
 185.248.144.24/32 # CommBank
 5.206.224.115/32 # ABNAMRO.nl
+37.28.157.12/32 # Belfius Bank
