@@ -98,10 +98,8 @@ ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.github
 ssh ns-aws.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 ssh ns-azure.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 ```
-Update GCP/GKE with the new executable:
+Check that the versions of the sslip.io DNS servers are the same:
 ```bash
-kubectl rollout restart deployment/sslip.io
-kubectl rollout restart deployment/sslip.io-nginx
 for IAAS in aws azure gce; do printf "\n$IAAS:\n"; dig @ns-$IAAS.sslip.io version.status.sslip.io txt +short; done
 fly -t nono trigger-job -j sslip.io/dns-servers
 ```
