@@ -30,3 +30,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 5.206.224.115/32 # ABNAMRO.nl
 37.28.157.12/32 # Belfius Bank, also Argenta.be
 5.182.36.181/32 # Protonmail
+34.125.139.171/32 # Linkedin
