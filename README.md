@@ -174,5 +174,5 @@ as ARM64 (AWS Graviton, Apple M1/M2).
   developers out there
 - The contributors (@normanr, @jpambrun come to mind) who improved sslip.io
 - Jenessa Petersen of Let's Encrypt who bumped the rate limits
-- Lena Morozova of JetBrains who provided a free license for [open source
+- JetBrains who provided a free license for [open source
   development](https://www.jetbrains.com/community/opensource/#support)
