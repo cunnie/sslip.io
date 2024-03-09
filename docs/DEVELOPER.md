@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=2.7.0
-export VERSION=3.0.0
+export OLD_VERSION=3.0.0
+export VERSION=3.1.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -21,7 +21,7 @@ Optional: Update the version for the ns-aws, ns-azure install scripts
 ```bash
 pushd ~/bin
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
-  ~/bin/install_ns-a*.sh
+  ~/bin/install_ns-{aws,azure,gce}.sh
 git add -p
 git ci -m"Update sslip.io DNS server $OLD_VERSION → $VERSION"
 git push
@@ -36,7 +36,7 @@ bin/sslip.io-dns-server-darwin-arm64
 Test from another window:
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=3.0.0
+export VERSION=3.1.0
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
@@ -71,7 +71,7 @@ original window. Commit our changes:
 ```bash
 git add -p
 # and commit (but DON'T push)
-git ci -vm"$VERSION: enable TCP binding in addition to UDP"
+git ci -vm"$VERSION: Shorten TTL for publicly-accessible A & AAAA records"
 git tag $VERSION
 git push
 git push --tags
