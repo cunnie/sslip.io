@@ -26,10 +26,12 @@ func main() {
 			"ns.sslip.io=52.187.42.158,"+
 			"ns.sslip.io=104.155.144.4,"+
 			"ns.sslip.io=2600:1f18:aaf:6900::a,"+
+			"ns.sslip.io=2600:1900:4000:4d12::,"+
 			"ns-aws.sslip.io=52.0.56.137,"+
 			"ns-aws.sslip.io=2600:1f18:aaf:6900::a,"+
 			"ns-azure.sslip.io=52.187.42.158,"+
-			"ns-gce.sslip.io=104.155.144.4",
+			"ns-gce.sslip.io=104.155.144.4,"+
+			"ns-gce.sslip.io=2600:1900:4000:4d12::",
 		"comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If you're running your own sslip.io nameservers, add their hostnames and addresses here. If unsure, add to the list rather than replace")
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response. Use this to avoid Google Cloud charging you $30/month to retain the logs of your GKE-based sslip.io server")
