@@ -32,3 +32,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 5.182.36.181/32 # Protonmail
 34.125.139.171/32 # Linkedin
 194.99.79.28/32  # LinkedIn
+107.189.5.14/32 # amazon.co.jp
