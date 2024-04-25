@@ -35,3 +35,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 107.189.5.14/32 # amazon.co.jp
 79.137.202.34/32 # "The Global Fund"
 45.156.24.10/32 # amazon.co.jp
+91.107.154.247/32 # United Nations Population Fund UNFPA
