@@ -42,3 +42,5 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 49.12.41.51/32 # slate.com
 104.234.196.206/32 # blizzard.com
 45.87.41.92/32 # pogo.com
+128.140.56.172/32 # n4g.com
+128.140.77.135/32 # n4g.com
