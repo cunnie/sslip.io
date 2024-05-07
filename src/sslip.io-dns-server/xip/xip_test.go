@@ -95,7 +95,7 @@ var _ = Describe("Xip", func() {
 						ns := x.NSResources("_acme-challenge." + randomDomain)
 						Expect(len(ns)).To(Equal(1))
 						Expect(ns[0].NS.String()).To(Equal(randomDomain))
-						aResources := xip.NameToA(randomDomain)
+						aResources := xip.NameToA(randomDomain, true)
 						Expect(len(aResources)).To(Equal(1))
 						Expect(err).ToNot(HaveOccurred())
 						Expect(aResources[0].A).To(Equal([4]byte{192, 168, 0, 1}))
@@ -184,7 +184,7 @@ var _ = Describe("Xip", func() {
 		}}
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedA dnsmessage.AResource) {
-				ipv4Answers := xip.NameToA(fqdn)
+				ipv4Answers := xip.NameToA(fqdn, true)
 				Expect(len(ipv4Answers)).To(Equal(1))
 				Expect(ipv4Answers[0]).To(Equal(expectedA))
 			},
@@ -203,7 +203,7 @@ var _ = Describe("Xip", func() {
 		)
 		DescribeTable("when it does NOT match an IP address",
 			func(fqdn string) {
-				ipv4Answers := xip.NameToA(fqdn)
+				ipv4Answers := xip.NameToA(fqdn, true)
 				Expect(len(ipv4Answers)).To(Equal(0))
 			},
 			Entry("empty string", ""),
@@ -225,7 +225,7 @@ var _ = Describe("Xip", func() {
 						{A: [4]byte{2}},
 					},
 				}
-				ipv4Answers := xip.NameToA(fqdn)
+				ipv4Answers := xip.NameToA(fqdn, true)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(ipv4Answers)).To(Equal(2))
 				Expect(ipv4Answers[0].A).To(Equal([4]byte{1}))
@@ -235,7 +235,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("There are multiple matches", func() {
 			It("returns the leftmost one", func() {
-				ipv4Answers := xip.NameToA("nono.io.127.0.0.1.192.168.0.1.sslip.io")
+				ipv4Answers := xip.NameToA("nono.io.127.0.0.1.192.168.0.1.sslip.io", true)
 				Expect(len(ipv4Answers)).To(Equal(1))
 				Expect(ipv4Answers[0]).
 					To(Equal(dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}}))
@@ -243,7 +243,7 @@ var _ = Describe("Xip", func() {
 		})
 		When("There are matches with dashes and dots", func() {
 			It("returns the one with dashes", func() {
-				ipv4Answers := xip.NameToA("nono.io.127.0.0.1.192-168-0-1.sslip.io")
+				ipv4Answers := xip.NameToA("nono.io.127.0.0.1.192-168-0-1.sslip.io", true)
 				Expect(len(ipv4Answers)).To(Equal(1))
 				Expect(ipv4Answers[0]).
 					To(Equal(dnsmessage.AResource{A: [4]byte{192, 168, 0, 1}}))
@@ -291,7 +291,7 @@ var _ = Describe("Xip", func() {
 	Describe("NameToAAAA()", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedAAAA dnsmessage.AAAAResource) {
-				ipv6Answers := xip.NameToAAAA(fqdn)
+				ipv6Answers := xip.NameToAAAA(fqdn, true)
 				Expect(len(ipv6Answers)).To(Equal(1))
 				Expect(ipv6Answers[0]).To(Equal(expectedAAAA))
 			},
@@ -306,7 +306,7 @@ var _ = Describe("Xip", func() {
 		)
 		DescribeTable("when it does not match an IP address",
 			func(fqdn string) {
-				ipv6Answers := xip.NameToAAAA(fqdn)
+				ipv6Answers := xip.NameToAAAA(fqdn, true)
 				Expect(len(ipv6Answers)).To(Equal(0))
 			},
 			Entry("empty string", ""),
@@ -320,7 +320,7 @@ var _ = Describe("Xip", func() {
 			It("should succeed every time", func() {
 				for i := 0; i < 10000; i++ {
 					addr := testhelper.RandomIPv6Address()
-					ipv6Answers := xip.NameToAAAA(strings.ReplaceAll(addr.String(), ":", "-"))
+					ipv6Answers := xip.NameToAAAA(strings.ReplaceAll(addr.String(), ":", "-"), true)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ipv6Answers[0].AAAA[:]).To(Equal([]uint8(addr)))
 				}
@@ -335,7 +335,7 @@ var _ = Describe("Xip", func() {
 						{AAAA: [16]byte{2}},
 					},
 				}
-				ipv6Addrs := xip.NameToAAAA(fqdn)
+				ipv6Addrs := xip.NameToAAAA(fqdn, true)
 				Expect(len(ipv6Addrs)).To(Equal(2))
 				Expect(ipv6Addrs[0].AAAA).To(Equal([16]byte{1}))
 				Expect(ipv6Addrs[1].AAAA).To(Equal([16]byte{2}))
@@ -389,5 +389,35 @@ var _ = Describe("Xip", func() {
 				{IP: net.IP{38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 					Mask: net.IPMask{255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0}}}))
 		})
+	})
+
+	Describe("IsPublic()", func() {
+		DescribeTable("when determining whether an IP is public or private",
+			func(ip net.IP, expectedPublic bool) {
+				Expect(xip.IsPublic(ip)).To(Equal(expectedPublic))
+			},
+			Entry("Google Nameserver IPv4", net.ParseIP("8.8.8.8"), true),
+			Entry("Google Nameserver IPv6", net.ParseIP("2001:4860:4860::8888"), true),
+			Entry("Apple Studio morgoth.nono.io", net.ParseIP("2601:646:100:69f0:7d:9069:ea74:e3a"), true),
+			Entry("External interface home.nono.io", net.ParseIP("2001:558:6045:109:892f:2df3:15e3:3184"), true),
+			Entry("RFC 1918 Section 3 10/8", net.ParseIP("10.9.9.30"), false),
+			Entry("RFC 1918 Section 3 172.16/12", net.ParseIP("172.31.255.255"), false),
+			Entry("RFC 1918 Section 3 192.168/16", net.ParseIP("192.168.0.1"), false),
+			Entry("RFC 4193 Section 8 fc00::/7", net.ParseIP("fdff::"), false),
+			Entry("CG-NAT 100.64/10", net.ParseIP("100.127.255.255"), false),
+			Entry("CG-NAT 100.64/10", net.ParseIP("100.128.0.0"), true),
+			Entry("link-local IPv4", net.ParseIP("169.254.169.254"), false),
+			Entry("not link-local IPv4", net.ParseIP("169.255.255.255"), true),
+			Entry("link-local IPv6", net.ParseIP("fe80::"), false),
+			Entry("loopback IPv4 127/8", net.ParseIP("127.127.127.127"), false),
+			Entry("loopback IPv6 ::1/128", net.ParseIP("::1"), false),
+			Entry("IPv4/IPv6 Translation internet", net.ParseIP("64:ff9b::"), true),
+			Entry("IPv4/IPv6 Translation private internet", net.ParseIP("64:ff9b:1::"), false),
+			Entry("IPv4/IPv6 Translation internet", net.ParseIP("64:ff9b::"), true),
+			Entry("Teredo Tunneling", net.ParseIP("2001::"), true),
+			Entry("ORCHIDv2 (?)", net.ParseIP("2001:20::"), false),
+			Entry("Documentation", net.ParseIP("2001:db8::"), false),
+			Entry("Private internets", net.ParseIP("fc00::"), false),
+		)
 	})
 })
