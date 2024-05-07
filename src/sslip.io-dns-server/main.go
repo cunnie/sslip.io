@@ -35,12 +35,14 @@ func main() {
 		"comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If you're running your own sslip.io nameservers, add their hostnames and addresses here. If unsure, add to the list rather than replace")
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response. Use this to avoid Google Cloud charging you $30/month to retain the logs of your GKE-based sslip.io server")
+	var public = flag.Bool("public", true, "allows resolution of public IP addresses. If false, only resolves private IPs including localhost (127/8, ::1), link-local (169.254/16, fe80::/10), CG-NAT (100.64/12), private (10/8, 172.16/12, 192.168/16, fc/7). Set to false if you don't want miscreants impersonating you via public IPs. If unsure, set to false")
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	log.Printf("blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
 		*blocklistURL, *nameservers, *bindPort, *quiet)
 
 	x, logmessages := xip.NewXip(*blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","))
+	x.Public = *public
 	for _, logmessage := range logmessages {
 		log.Println(logmessage)
 	}

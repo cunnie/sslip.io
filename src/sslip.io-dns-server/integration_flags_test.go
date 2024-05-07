@@ -123,4 +123,41 @@ var _ = Describe("flags", func() {
 			Eventually(string(serverSession.Err.Contents())).Should(Not(MatchRegexp(`169\.254\.169\.254`)))
 		})
 	})
+	When("-public is set to false", func() {
+		BeforeEach(func() {
+			flags = []string{"-public=false"}
+		})
+		It("doesn't resolve public IPv4 addresses", func() {
+			digArgs := "@localhost 8-8-8-8.sslip.io -p " + strconv.Itoa(port)
+			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA 8-8-8-8\.sslip\.io\. briancunnie\.gmail\.com\.`))
+		})
+		It("doesn't resolve public IPv6 addresses", func() {
+			digArgs := "@localhost aaaa 2600--.sslip.io -p " + strconv.Itoa(port)
+			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA 2600--\.sslip\.io\. briancunnie\.gmail\.com\.`))
+		})
+		It("resolves private IPv4 addresses", func() {
+			digArgs := "@localhost 192-168-0-1.sslip.io -p " + strconv.Itoa(port)
+			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`192-168-0-1\.sslip\.io\. \? 192\.168\.0\.1`))
+		})
+		It("resolves private IPv6 addresses", func() {
+			digArgs := "@localhost aaaa fc00--.sslip.io -p " + strconv.Itoa(port)
+			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`fc00--\.sslip\.io\. \? fc00::`))
+		})
+	})
 })
