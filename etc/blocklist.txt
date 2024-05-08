@@ -73,3 +73,13 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 95.164.16.5/32 # sbs.com.au
 192.248.159.51/32 # ynet.co.il
 45.61.134.40/32 # download.cnet.com
+103.75.199.87/32 # arachemishop.com
+5.75.205.208/32 # my-diary.org
+91.107.181.88/32 # bat.com
+88.99.108.110/32 # download.cnet.com
+84.32.190.7/32 # slate.com
+194.116.190.25/32 # wechat.com
+154.16.16.103/32 # doctorswithoutborders.org
+185.198.57.133/32 # pogo.com
+5.75.233.237/32 # fhi360.org
+91.107.224.123/32 # foreignpolicy.com
