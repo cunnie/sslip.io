@@ -19,11 +19,11 @@ jobs:
       inputs:
       - name: sslip.io
       run:
-        dir: sslip.io/src/sslip.io-dns-server
-        path: zsh
+        path: ginkgo
         args:
-        - -c
-        - etcd > /dev/null 2>&1 & ginkgo -r -p .
+        - -r
+        - -p
+        - .
 - name: dns-servers
   public: true
   plan:

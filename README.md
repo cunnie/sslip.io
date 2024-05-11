@@ -17,7 +17,7 @@ developers; the website targets users.
 
 ```bash
 git clone https://github.com/cunnie/sslip.io.git
-cd sslip.io/src/sslip.io-dns-server/
+cd sslip.io
 go mod tidy
 sudo go run main.go
  # sudo is required on Linux, but not on macOS, to bind to privileged port 53
@@ -55,8 +55,7 @@ First, we delegate the subdomain "xip.pivotal.io" to our two nameservers, and
 then we run the following command run on each of the two servers:
 
 ```bash
-# after we've cloned our repo
-cd src/sslip.io-dns-server
+# after we've cloned our repo & cd'ed into it
 go run main.go \
   -nameservers=ns-sslip-0.pivotal.io,ns-sslip-1.pivotal.io \
   -addresses ns-sslip-0.pivotal.io=10.8.8.8,ns-sslip-1.pivotal.io=fc88::
@@ -156,7 +155,6 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 
 ## Directory Structure
 
-- `src/sslip.io-dns-server/` contains the source code to the DNS server
 - `ci/` contains the [Concourse](https://concourse.ci/) continuous integration
   (CI) pipeline and task
 - `spec/` contains the tests for the production nameservers.  To run
