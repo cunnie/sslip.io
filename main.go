@@ -16,7 +16,7 @@ import (
 func main() {
 	var blocklistURL = flag.String("blocklistURL",
 		"https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt",
-		`URL containing a list of non-resolvable IPs/names/CIDRs, usually phishing or scamming sites. Example "file://../../etc/blocklist.txt"`)
+		`URL containing a list of non-resolvable IPs/names/CIDRs, usually phishing or scamming sites. Example "file://etc/blocklist.txt"`)
 	var nameservers = flag.String("nameservers", "ns-aws.sslip.io.,ns-azure.sslip.io.,ns-gce.sslip.io.",
 		"comma-separated list of FQDNs of nameservers. If you're running your own sslip.io nameservers, set them here")
 	var addresses = flag.String("addresses",
