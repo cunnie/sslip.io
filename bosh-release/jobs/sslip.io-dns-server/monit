@@ -1,5 +1,0 @@
-check process sslip.io-dns-server
-  with pidfile /var/vcap/sys/run/sslip.io-dns-server/pid
-  start program "/var/vcap/jobs/sslip.io-dns-server/bin/ctl start"
-  stop program "/var/vcap/jobs/sslip.io-dns-server/bin/ctl stop"
-  group vcap

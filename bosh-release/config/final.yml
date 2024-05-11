@@ -1,5 +1,0 @@
-name: sslip.io
-blobstore:
-  provider: gcs
-  options:
-    bucket_name: sslip-io-release
