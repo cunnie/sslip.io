@@ -18,7 +18,7 @@ var _ = Describe("flags", func() {
 	var flags []string
 
 	JustBeforeEach(func() {
-		flags = append(flags, "-port", strconv.Itoa(port), "-blocklistURL", "file://../../etc/blocklist.txt")
+		flags = append(flags, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist.txt")
 		serverCmd = exec.Command(serverPath, flags...)
 		serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())
