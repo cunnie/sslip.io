@@ -261,3 +261,15 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 85.159.229.32/32 # pikabu.ru
 167.114.90.232/32 # okala.com
 109.120.188.67/32 # dppo.pro
+46.17.102.186/32 # cadenza.ir
+94.130.76.212/32 # pcgamesn.com
+103.231.75.79/32 # pcgamesn.com
+95.164.22.254/32 # getdrupe.com
+128.140.36.89/32 # elbapit.it
+164.90.211.63/32 # drudgereport.com
+172.188.114.154/32 # jahannews.com
+94.131.123.161/32 # drudgereport.com
+212.64.214.90/32 # ebaumsworld.com
+23.94.174.148/32 # nbcnews.com
+91.107.152.217/32 # crypt.ee
+91.107.139.71/32 # triller.co
