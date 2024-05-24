@@ -330,3 +330,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 77.238.238.216/32 # sci-hub.se
 194.62.251.127/32 # goodreads.com
 157.90.149.110/32 # beyondexgay.com
+80.66.87.109/32 # NBC news
