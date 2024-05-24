@@ -331,3 +331,10 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 194.62.251.127/32 # goodreads.com
 157.90.149.110/32 # beyondexgay.com
 80.66.87.109/32 # NBC news
+176.222.55.49/32 # slate.com
+142.171.230.151/32 # whatsoproudlywehail.org
+104.248.92.238/32 # esebari.it
+5.180.30.211/32 # jadidonline.com
+91.107.245.247/32 # ebaumsworld.com
+154.12.61.243/32 # tvb.com
+89.221.224.170/32 # foreignpolicy.com
