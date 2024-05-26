@@ -338,3 +338,12 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 91.107.245.247/32 # ebaumsworld.com
 154.12.61.243/32 # tvb.com
 89.221.224.170/32 # foreignpolicy.com
+91.107.172.136/32 # arabnews.com
+46.17.101.214/32 # nytimes.com
+92.118.114.109/32 # slate.com
+13.49.239.35/32 # citylife.az
+35.80.21.115/32 # crazygames.com
+157.90.28.252/32 # fruitcraft.co
+144.217.18.111/32 # wickr.com
+79.137.202.87/32 # circumcision.org
+65.20.103.236/32 # aljazeera.net
