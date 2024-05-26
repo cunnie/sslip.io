@@ -338,3 +338,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 91.107.245.247/32 # ebaumsworld.com
 154.12.61.243/32 # tvb.com
 89.221.224.170/32 # foreignpolicy.com
+167.172.150.42/32 # mercari (Japanese)
