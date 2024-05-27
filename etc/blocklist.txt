@@ -347,3 +347,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 144.217.18.111/32 # wickr.com
 79.137.202.87/32 # circumcision.org
 65.20.103.236/32 # aljazeera.net
+167.172.150.42/32 # mercari (Japanese)
