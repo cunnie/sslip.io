@@ -108,6 +108,14 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
           </tr>
         </tbody>
       </table>
+      <div class="alert alert-warning" role="alert">
+        <b>Developers: disable indexing of your staging site to avoid being blocked</b> (we block by disabling
+        resolution of your sslip.io hostname); disable indexing by either including the <code>X-Robots-Tag:
+        noindex</code> in your HTTP headers or include a <code>robots.txt</code> at the root of your website with the
+        following contents:<code><br>
+        User-agent: *<br>
+        Disallow: /</code>
+      </div>
       <h3 id="branding">Branding / White Label / Custom Domains</h3>
       <p>sslip.io can be used to brand your own site (you don’t need to use the sslip.io domain). For example, say you
       own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
@@ -152,9 +160,9 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
       <p>If you want to run your own DNS server, it's simple: you can compile from <a href=
-      "https://github.com/cunnie/sslip.io">source</a> or you can use one of our
-      <a href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we
-      install & run our server within a docker container:</p>
+      "https://github.com/cunnie/sslip.io">source</a> or you can use one of our <a href=
+      "https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we install & run
+      our server within a docker container:</p>
       <pre>
 docker run -it --rm fedora
 curl -L https://github.com/cunnie/sslip.io/releases/download/3.1.0/sslip.io-dns-server-linux-amd64 -o dns-server
