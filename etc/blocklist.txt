@@ -347,3 +347,6 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 79.137.202.87/32 # circumcision.org
 65.20.103.236/32 # aljazeera.net
 167.172.150.42/32 # mercari (Japanese)
+35.85.65.126/32 # foreignpolicy.com
+95.179.163.90/32 # foreignpolicy.com
+91.107.255.196/32 # mastodon.xyz
