@@ -250,7 +250,6 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 139.28.232.233/32 # khabarcanada.ca
 37.27.10.56/32 # techniker-forum.de
 77.221.136.78/32 # worldhealth.net
-193.226.78.102/32 # picturepan2.github.io
 152.42.188.133/32 # nu.or.id
 159.69.122.252/32 # junior-report.media
 146.190.88.137/32 # rama168.co
