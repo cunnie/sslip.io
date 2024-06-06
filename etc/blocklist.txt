@@ -349,3 +349,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 35.85.65.126/32 # foreignpolicy.com
 95.179.163.90/32 # foreignpolicy.com
 91.107.255.196/32 # mastodon.xyz
+81.19.137.196/32 # trezor
