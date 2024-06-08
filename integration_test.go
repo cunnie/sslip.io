@@ -26,7 +26,7 @@ var serverPath, _ = Build("main.go")
 
 var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
-	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist.txt")
+	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist-test.txt")
 	serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 	// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)
@@ -414,7 +414,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 	When("it can't bind to any UDP port", func() {
 		It("prints an error message and exits", func() {
 			Expect(err).ToNot(HaveOccurred())
-			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist.txt")
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist-test.txt")
 			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(secondServerSession.Err, 10).Should(Say("I couldn't bind via UDP to any IPs"))
@@ -436,7 +436,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		It("prints an error message and continues running", func() {
 			Expect(err).ToNot(HaveOccurred())
-			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://etc/blocklist.txt")
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://etc/blocklist-test.txt")
 			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(secondServerSession.Err, 10).Should(Say(` version \d+\.\d+\.\d+ starting`))
@@ -456,7 +456,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		It("prints an informative message and binds to the addresses it can", func() {
 			Expect(err).ToNot(HaveOccurred())
-			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://etc/blocklist.txt")
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://etc/blocklist-test.txt")
 			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(secondServerSession.Err, 10).Should(Say(` version \d+\.\d+\.\d+ starting`))
@@ -479,7 +479,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 		})
 		It("prints an informative message and binds to the addresses it can", func() {
 			Expect(err).ToNot(HaveOccurred())
-			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://etc/blocklist.txt")
+			secondServerCmd := exec.Command(serverPath, "-port", strconv.Itoa(newPort), "-blocklistURL", "file://etc/blocklist-test.txt")
 			secondServerSession, err := Start(secondServerCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(secondServerSession.Err, 10).Should(Say(` version \d+\.\d+\.\d+ starting`))

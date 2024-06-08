@@ -64,6 +64,7 @@ type DomainCustomization struct {
 	AAAA  []dnsmessage.AAAAResource
 	CNAME dnsmessage.CNAMEResource
 	MX    []dnsmessage.MXResource
+	NS    []dnsmessage.NSResource
 	TXT   func(*Xip, net.IP) ([]dnsmessage.TXTResource, error)
 	// Unlike the other record types, TXT is a function in order to enable more complex behavior
 	// e.g. IP address of the query's source
@@ -167,7 +168,7 @@ type Response struct {
 }
 
 // NewXip follows convention for constructors: https://go.dev/doc/effective_go#allocation_new
-func NewXip(blocklistURL string, nameservers []string, addresses []string) (x *Xip, logmessages []string) {
+func NewXip(blocklistURL string, nameservers []string, addresses []string, delegates []string) (x *Xip, logmessages []string) {
 	x = &Xip{Metrics: Metrics{Start: time.Now()}}
 
 	// Download the blocklist
@@ -213,7 +214,7 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string) (x *X
 		if host[len(host)-1] != '.' {
 			host += "."
 		}
-		if ip == nil { // bad IP address
+		if ip == nil { // bad IP delegate
 			logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" is not assigned a valid IP "%s"`, hostAddr, ip.String()))
 			continue
 		}
@@ -246,6 +247,38 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string) (x *X
 		}
 		// print out the added records in a manner similar to the way they're set on the cmdline
 		logmessages = append(logmessages, fmt.Sprintf(`Adding record "%s=%s"`, host, ip))
+	}
+	// Parse and set the nameservers of our delegated domains
+	for _, delegate := range delegates {
+		delegatedDomainAndNameserver := strings.Split(strings.ToLower(delegate), "=")
+		if len(delegatedDomainAndNameserver) != 2 {
+			logmessages = append(logmessages, fmt.Sprintf(`-delegates: arguments should be in the format "delegatedDomain=nameserver", not "%s"`, delegate))
+			continue
+		}
+		delegatedDomain := delegatedDomainAndNameserver[0]
+		nameServer := delegatedDomainAndNameserver[1]
+		// all domains & nameservers must be absolute (end in ".")
+		if delegatedDomain[len(delegatedDomain)-1] != '.' {
+			delegatedDomain += "."
+		}
+		if nameServer[len(nameServer)-1] != '.' {
+			nameServer += "."
+		}
+
+		// nameservers must be DNS-compliant
+		nsName, err := dnsmessage.NewName(nameServer)
+		if err != nil {
+			logmessages = append(logmessages, fmt.Sprintf(`-nameservers: ignoring invalid nameserver "%s"`, nameServer))
+			continue
+		}
+		var domainEntry = DomainCustomization{}
+		if _, ok := Customizations[delegatedDomain]; ok {
+			domainEntry = Customizations[delegatedDomain]
+		}
+		domainEntry.NS = append(domainEntry.NS, dnsmessage.NSResource{NS: nsName})
+		Customizations[delegatedDomain] = domainEntry
+		// print out the added records in a manner similar to the way they're set on the cmdline
+		logmessages = append(logmessages, fmt.Sprintf(`Adding delegated NS record "%s=%s"`, delegatedDomain, nsName.String()))
 	}
 
 	// We want to make sure that our DNS server isn't used in a DNS amplification attack.
@@ -360,11 +393,19 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 			RCode:              dnsmessage.RCodeSuccess, // assume success, may be replaced later
 		},
 	}
+	if IsDelegated(q.Name.String()) {
+		// if xip.pivotal.io has been delegated to ns-437.awsdns-54.com.
+		// and a query comes in for 127-0-0-1.cloudfoundry.xip.pivotal.io
+		// then don't resolve the A record; instead, return the delegated
+		// NS record, ns-437.awsdns-54.com.
+		response.Header.Authoritative = false
+		return x.NSResponse(q.Name, response, logMessage)
+	}
 	if IsAcmeChallenge(q.Name.String()) && !x.blocklist(q.Name.String()) {
 		// thanks, @NormanR
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
 		// dig _acme-challenge.127-0-0-1.sslip.io mx → NS 127-0-0-1.sslip.io
-		response.Header.Authoritative = false // we're delegating, so we're not authoritative
+		response.Header.Authoritative = false
 		return x.NSResponse(q.Name, response, logMessage)
 	}
 	switch q.Type {
@@ -598,8 +639,6 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 }
 
 // NSResponse sets the Answers/Authorities depending upon whether we're delegating or authoritative
-// (whether it's an "_acme-challenge." domain or not). Either way, it supplies the Additionals
-// (IP addresses of the nameservers).
 func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage string) (Response, string, error) {
 	nameServers := x.NSResources(name.String())
 	var logMessages []string
@@ -753,9 +792,10 @@ func MXResources(fqdnString string) []dnsmessage.MXResource {
 }
 
 func IsAcmeChallenge(fqdnString string) bool {
-	if dns01ChallengeRE.MatchString(fqdnString) {
-		ipv4s := NameToA(fqdnString, true)
-		ipv6s := NameToAAAA(fqdnString, true)
+	fqdnStringLowerCased := strings.ToLower(fqdnString)
+	if dns01ChallengeRE.MatchString(fqdnStringLowerCased) {
+		ipv4s := NameToA(fqdnStringLowerCased, true)
+		ipv6s := NameToAAAA(fqdnStringLowerCased, true)
 		if len(ipv4s) > 0 || len(ipv6s) > 0 {
 			return true
 		}
@@ -763,15 +803,40 @@ func IsAcmeChallenge(fqdnString string) bool {
 	return false
 }
 
+func IsDelegated(fqdnString string) bool {
+	fqdnStringLowerCased := strings.ToLower(fqdnString)
+	for domain := range Customizations {
+		if Customizations[domain].NS == nil { // no nameserver? then it can't be delegated
+			continue
+		}
+		// the "." prevents "where.com" from being mistakenly recognized as a subdomain of "here.com"
+		if strings.HasSuffix(fqdnStringLowerCased, "."+domain) || fqdnStringLowerCased == domain {
+			return true
+		}
+	}
+	return false
+}
+
 func (x *Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
-	if x.blocklist(fqdnString) {
+	fqdnStringLowerCased := strings.ToLower(fqdnString)
+	if x.blocklist(fqdnStringLowerCased) {
 		x.Metrics.AnsweredQueries++
 		x.Metrics.AnsweredBlockedQueries++
 		return x.NameServers
 	}
-	if IsAcmeChallenge(fqdnString) {
+	// Is this a delegated domain? Let's return the delegated nameservers
+	for domain := range Customizations {
+		if Customizations[domain].NS == nil { // no nameserver? then it can't be delegated
+			continue
+		}
+		// the "." prevents "where.com" from being mistakenly recognized as a subdomain of "here.com"
+		if strings.HasSuffix(fqdnStringLowerCased, "."+domain) || fqdnStringLowerCased == domain {
+			return Customizations[domain].NS
+		}
+	}
+	if IsAcmeChallenge(fqdnStringLowerCased) {
 		x.Metrics.AnsweredNSDNS01ChallengeQueries++
-		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
+		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnStringLowerCased, "")
 		ns, _ := dnsmessage.NewName(strippedFqdn)
 		return []dnsmessage.NSResource{{NS: ns}}
 	}
