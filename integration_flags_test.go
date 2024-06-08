@@ -18,7 +18,7 @@ var _ = Describe("flags", func() {
 	var flags []string
 
 	JustBeforeEach(func() {
-		flags = append(flags, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist.txt")
+		flags = append(flags, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist-test.txt")
 		serverCmd = exec.Command(serverPath, flags...)
 		serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())
@@ -158,6 +158,79 @@ var _ = Describe("flags", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(digSession, 1).Should(Exit(0))
 			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`fc00--\.sslip\.io\. \? fc00::`))
+		})
+	})
+	When("-delegates is set", func() {
+		BeforeEach(func() {
+			flags = []string{"-delegates=" +
+				"_acme-challenge.127-0-0-1.IP.io=ns.nono.io," +
+				"2600--.IP.IO=ns-1.nono.com," +
+				"_acme-challenge.73-189-219-4.ip.IO=ns-2.nono.com," +
+				"a.b.C=d.E.f"}
+		})
+		When("the arguments are missing", func() {
+			BeforeEach(func() {
+				flags = []string{"-delegates="}
+			})
+			It("should give an informative message", func() {
+				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-delegates: arguments should be in the format "delegatedDomain=nameserver", not ""`))
+			})
+		})
+		When("the arguments are mangled", func() {
+			BeforeEach(func() {
+				flags = []string{"-delegates=blahblah"}
+			})
+			It("should give an informative message", func() {
+				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-delegates: arguments should be in the format "delegatedDomain=nameserver", not "blahblah"`))
+			})
+		})
+		When("only some of the arguments are mangled", func() {
+			BeforeEach(func() {
+				flags = []string{"-delegates=a.b=c.d,blahblah"}
+			})
+			It("adds the correct ones, gives an informative message for the mangled ones", func() {
+				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding delegated NS record "a.b.=c.d."`))
+				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-delegates: arguments should be in the format "delegatedDomain=nameserver", not "blahblah"`))
+			})
+		})
+		When("looking up a delegated domain", func() {
+			It("should return a non-authoritative NS record pointing to the nameserver", func() {
+				digArgs := "@localhost _acme-challenge.127-0-0-1.IP.io -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`;; AUTHORITY SECTION:`))
+				Eventually(digSession).Should(Say(`_acme-challenge.127-0-0-1.IP.io. 604800	IN NS	ns.nono.io.\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`_acme-challenge\.127-0-0-1\.IP\.io\. \? nil, NS ns\.nono\.io\.`))
+			})
+		})
+		When("looking up the subdomain of a delegated domain", func() {
+			It("should return a non-authoritative NS record pointing to the nameserver", func() {
+				digArgs := "@localhost subdomain.2600--.IP.IO -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`;; AUTHORITY SECTION:`))
+				Eventually(digSession).Should(Say(`subdomain.2600--.IP.IO.	604800	IN	NS	ns-1.nono.com.\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`subdomain\.2600--\.IP\.IO\. \? nil, NS ns-1\.nono\.com\.`))
+			})
+		})
+		When("looking up a delegated domain that wouldn't have resolved to an IP address", func() {
+			It("it delegates", func() {
+				digArgs := "@localhost a.b.c -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`;; AUTHORITY SECTION:`))
+				Eventually(digSession).Should(Say(`a.b.c.			604800	IN	NS	d.e.f.`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`a\.b\.c\. \? nil, NS d\.e\.f\.`))
+			})
 		})
 	})
 })

@@ -79,7 +79,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("NSResources()", func() {
 		When("we use the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{}, []string{})
 			It("returns the name servers", func() {
 				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -94,7 +94,7 @@ var _ = Describe("Xip", func() {
 						randomDomain := "192.168.0.1." + testhelper.Random8ByteString() + ".com."
 						ns := x.NSResources("_acme-challenge." + randomDomain)
 						Expect(len(ns)).To(Equal(1))
-						Expect(ns[0].NS.String()).To(Equal(randomDomain))
+						Expect(ns[0].NS.String()).To(Equal(strings.ToLower(randomDomain)))
 						aResources := xip.NameToA(randomDomain, true)
 						Expect(len(aResources)).To(Equal(1))
 						Expect(err).ToNot(HaveOccurred())
@@ -109,9 +109,25 @@ var _ = Describe("Xip", func() {
 					})
 				})
 			})
+			When("we delegate domains to other nameservers", func() {
+				When(`we don't use the "=" in the arguments`, func() {
+					It("returns an informative log message", func() {
+						var _, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{}, []string{"noEquals"})
+						Expect(strings.Join(logs, "")).To(MatchRegexp(`"-delegates: arguments should be in the format "delegatedDomain=nameserver", not "noEquals"`))
+					})
+				})
+				When(`there's no "." at the end of the delegated domain or nameserver`, func() {
+					It(`helpfully adds the "."`, func() {
+						var x, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io."}, []string{}, []string{"a=b"})
+						Expect(strings.Join(logs, "")).To(MatchRegexp(`Adding delegated NS record "a\.=b\."`))
+						ns := x.NSResources("a.")
+						Expect(len(ns)).To(Equal(1))
+					})
+				})
+			})
 		})
 		When("we override the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{}, []string{})
 			It("returns the configured servers", func() {
 				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -284,6 +300,36 @@ var _ = Describe("Xip", func() {
 						Expect(xip.IsAcmeChallenge(randomDomain)).To(BeTrue())
 					})
 				})
+			})
+		})
+	})
+	Describe("IsDelegated()", func() {
+		var nsName dnsmessage.Name
+		nsName, err = dnsmessage.NewName("1.com")
+		Expect(err).ToNot(HaveOccurred())
+		xip.Customizations["a.com"] = xip.DomainCustomization{NS: []dnsmessage.NSResource{dnsmessage.NSResource{NS: nsName}}}
+		xip.Customizations["b.com"] = xip.DomainCustomization{}
+
+		When("the domain is delegated", func() {
+			When("the fqdn exactly matches the domain", func() {
+				It("returns true", func() {
+					Expect(xip.IsDelegated("A.com")).To(BeTrue())
+				})
+			})
+			When("the fqdn is a subdomain of the domain", func() {
+				It("returns true", func() {
+					Expect(xip.IsDelegated("b.a.COM")).To(BeTrue())
+				})
+			})
+			When("the fqdn doesn't match the domain", func() {
+				It("returns false", func() {
+					Expect(xip.IsDelegated("Aa.com")).To(BeFalse())
+				})
+			})
+		})
+		When("the domain is customized but not delegated", func() {
+			It("returns false", func() {
+				Expect(xip.IsDelegated("b.COM")).To(BeFalse())
 			})
 		})
 	})
