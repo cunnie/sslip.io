@@ -165,7 +165,9 @@ func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
 		addr, port, err := net.SplitHostPort(remoteAddrPort)
 
 		go func() {
-			defer tcpConn.Close()
+			defer func(tcpConn *net.TCPConn) {
+				_ = tcpConn.Close()
+			}(tcpConn)
 			response, logMessage, err := x.QueryResponse(query, net.ParseIP(addr))
 			if err != nil {
 				log.Println(err.Error())
@@ -256,7 +258,7 @@ func isErrorAddressAlreadyInUse(err error) bool {
 	if !errors.As(eOsSyscall, &errErrno) {
 		return false
 	}
-	if errErrno == syscall.EADDRINUSE {
+	if errors.Is(errErrno, syscall.EADDRINUSE) {
 		return true
 	}
 	const WSAEADDRINUSE = 10048
