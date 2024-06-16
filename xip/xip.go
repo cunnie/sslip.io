@@ -215,7 +215,7 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 			host += "."
 		}
 		if ip == nil { // bad IP delegate
-			logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" is not assigned a valid IP "%s"`, hostAddr, ip.String()))
+			logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" is not assigned a valid IP`, hostAddr))
 			continue
 		}
 		if ip.To4() != nil { // we have an IPv4
@@ -708,9 +708,10 @@ func buildNSRecords(b *dnsmessage.Builder, name dnsmessage.Name, nameServers []d
 	return nil
 }
 
-// NameToA returns an []AResource that matched the hostname; it returns an
-// array of zero-or-one records
-func NameToA(fqdnString string, public bool) []dnsmessage.AResource {
+// NameToA returns an []AResource that matched the hostname; it returns an array of zero-or-one records
+// possibly more if it's a customized record (e.g. the addresses of "ns.sslip.io.")
+// if "allowPublicIPs" is false, and the IP address is public, it'll return an empty array
+func NameToA(fqdnString string, allowPublicIPs bool) []dnsmessage.AResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
 	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.A) > 0 {
@@ -727,7 +728,7 @@ func NameToA(fqdnString string, public bool) []dnsmessage.AResource {
 				log.Printf("----> Should be valid A but isn't: %s\n", fqdn) // TODO: delete this
 				return []dnsmessage.AResource{}
 			}
-			if (!public) && IsPublic(ipv4address) {
+			if (!allowPublicIPs) && IsPublic(ipv4address) {
 				return []dnsmessage.AResource{}
 			}
 			return []dnsmessage.AResource{
@@ -738,8 +739,10 @@ func NameToA(fqdnString string, public bool) []dnsmessage.AResource {
 	return []dnsmessage.AResource{}
 }
 
-// NameToAAAA returns an []AAAAResource that matched the hostname
-func NameToAAAA(fqdnString string, public bool) []dnsmessage.AAAAResource {
+// NameToAAAA returns an []AAAAResource that matched the hostname; it returns an array of zero-or-one records
+// possibly more if it's a customized record (e.g. the addresses of "ns.sslip.io.")
+// if "allowPublicIPs" is false, and the IP address is public, it'll return an empty array
+func NameToAAAA(fqdnString string, allowPublicIPs bool) []dnsmessage.AAAAResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized AAAA record? If so, return early
 	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.AAAA) > 0 {
@@ -758,7 +761,7 @@ func NameToAAAA(fqdnString string, public bool) []dnsmessage.AAAAResource {
 		log.Printf("----> Should be valid AAAA but isn't: %s\n", fqdn) // TODO: delete this
 		return []dnsmessage.AAAAResource{}
 	}
-	if (!public) && IsPublic(ipv16address) {
+	if (!allowPublicIPs) && IsPublic(ipv16address) {
 		return []dnsmessage.AAAAResource{}
 	}
 	AAAAR := dnsmessage.AAAAResource{}
@@ -1080,6 +1083,9 @@ func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklis
 func (x *Xip) blocklist(hostname string) bool {
 	aResources := NameToA(hostname, true)
 	aaaaResources := NameToAAAA(hostname, true)
+	if len(aResources) == 0 && len(aaaaResources) == 0 {
+		return false
+	}
 	var ip net.IP
 	if len(aResources) == 1 {
 		ip = aResources[0].A[:]
@@ -1087,7 +1093,7 @@ func (x *Xip) blocklist(hostname string) bool {
 	if len(aaaaResources) == 1 {
 		ip = aaaaResources[0].AAAA[:]
 	}
-	if len(aResources) == 0 && len(aaaaResources) == 0 {
+	if ip == nil { // placate linter who worries ip is nil; it should never be nil
 		return false
 	}
 	if ip.IsPrivate() {
