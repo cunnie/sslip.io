@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="generator" content="HTML Tidy for HTML5 for Apple macOS version 5.8.0">
+  <title>Blocked Site!</title>
+</head>
+<body>
+  <h1>This Site Has Been Blocked!</h1>
+  <p>We have identified the site you tried to visit, <span id="url"></span>, as either a scam site, a phishing site, or
+  unauthorized copy of an existing site.</p>
+  <p>If you own this site and feel that it's been wrongly identified, please do the following:</p>
+  <ul>
+    <li><strong>disable indexing of your site</strong>; disable indexing by either including the <code>X-Robots-Tag:
+    noindex</code> in your HTTP headers or include a <code>robots.txt</code> at the root of your website with the
+    following contents:<code><br>
+    User-agent: *<br>
+    Disallow: /</code></li>
+    <li>Open a <a href="https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> & explain why your site
+    should be unblocked.
+    </li>
+  </ul>
+  <p>We apologize in advance for accidentally blocking a legitimate site; we try our best.</p>
+  <script>
+        function displayURL() {
+            var urlSpan = document.getElementById('url');
+            var fullURL = window.location.href;  // Gets the full URL
+            urlSpan.textContent = fullURL;      // Sets the full URL as text content of the span
+        }
+
+        window.onload = displayURL;  // Calls the function when the page loads
+  </script>
+</body>
+</html>
