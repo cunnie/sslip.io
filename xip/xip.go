@@ -250,6 +250,9 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 	}
 	// Parse and set the nameservers of our delegated domains
 	for _, delegate := range delegates {
+		if delegate == "" { // most common case: no delegates defined
+			continue
+		}
 		delegatedDomainAndNameserver := strings.Split(strings.ToLower(delegate), "=")
 		if len(delegatedDomainAndNameserver) != 2 {
 			logmessages = append(logmessages, fmt.Sprintf(`-delegates: arguments should be in the format "delegatedDomain=nameserver", not "%s"`, delegate))
