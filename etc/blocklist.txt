@@ -375,3 +375,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 45.158.15.184/32 # ebaumsworld.com
 139.59.176.152/32 # thestar.com
 135.181.28.176/32 # marinetraffic.pro
+23.177.136.104/32 # UNFPA
