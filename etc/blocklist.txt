@@ -432,3 +432,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 91.107.253.226/32 # ebaumsworld.com
 91.107.146.169/32 # ebaumsworld.com
 136.244.84.246/32 # ilo.org
+89.251.22.110/32 # Mercantil Servicios Financieros
