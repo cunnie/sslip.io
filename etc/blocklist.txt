@@ -524,3 +524,15 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 35.88.54.82/32 # crazygames.com
 65.109.183.180/32 # superuser.com
 195.219.251.74/32 # utoronto.ca
+5.42.106.119/32 # arabnews.com
+77.221.157.3/32 # indiatimes.com
+45.158.15.135/32 # ebaumsworld.com
+178.128.253.192/32 # aljazeera.net
+176.222.52.130/32 # websplosion.com
+104.248.156.203/32 # boyernews.com
+49.13.196.224/32 # fliesenverlegung-hoertnagl.at
+91.107.149.19/32 # ebaumsworld.com
+137.184.224.51/32 # ford-market.com.ua
+15.204.89.177/32 # boursemrooz.com
+165.227.148.243/32 # foodizone.net
+172.232.146.24/32 # unfpa.org
