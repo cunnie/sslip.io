@@ -536,3 +536,16 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 15.204.89.177/32 # boursemrooz.com
 165.227.148.243/32 # foodizone.net
 172.232.146.24/32 # unfpa.org
+185.244.218.204/32 # csmonitor.com
+23.254.161.20/32 # 2shared.com
+65.109.198.80/32 # ebaumsworld.com
+49.12.227.226/32 # f-secure.com
+188.132.192.168/32 # usatoday.com
+5.161.44.48/32 # nypost.com
+128.140.92.102/32 # chinasentry.com
+45.8.21.98/32 # doostihaa.com
+45.67.86.25/32 # stonewall.org.uk
+172.233.47.114/32 # doctorswithoutborders.org
+139.59.34.114/32 # myawady.net.mm
+212.24.110.231/32 # seclists.org
+3.237.252.127/32 # cesr.org
