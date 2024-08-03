@@ -549,3 +549,15 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 139.59.34.114/32 # myawady.net.mm
 212.24.110.231/32 # seclists.org
 3.237.252.127/32 # cesr.org
+80.240.21.194/32 # bigdev.ir
+135.181.30.103/32 # meduza.io
+78.141.246.36/32 # wccftech.com
+65.109.176.33/32 # eventbrite.com
+154.205.130.176/32 # climaterealityproject.org
+64.226.82.36/32 # liveayurprana.com
+91.107.148.133/32 # ebaumsworld.com
+134.122.66.162/32 # flymizar.com
+104.194.128.126/32 # durva.ir
+104.168.54.193/32 # certbot.eff.org
+38.60.255.84/32 # sputnikglobe.com
+95.217.232.185/32 # mama.tv
