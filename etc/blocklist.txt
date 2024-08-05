@@ -561,3 +561,12 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 104.168.54.193/32 # certbot.eff.org
 38.60.255.84/32 # sputnikglobe.com
 95.217.232.185/32 # mama.tv
+159.69.53.79/32 # zapalean.com
+165.227.133.84/32 # king.com
+81.19.137.126/32 # rcsb.org
+5.75.193.98/32 # muscleandfitness.com
+45.63.117.88/32 # u4.no
+38.54.84.228/32 # climaterealityproject.org
+146.19.75.3/32 # slate.com
+140.82.39.13/32 # ekonomiveyatirim.com
+91.107.242.111/32 # keystone.guru
