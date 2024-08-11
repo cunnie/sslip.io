@@ -603,3 +603,16 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 132.145.89.187/32 # oneworld.net
 135.181.89.225/32 # foodpix.ai
 167.235.18.77/32 # smtb.io
+91.107.152.37/32 # ebaumsworld.com
+154.64.251.131/32 # panties.com
+3.6.171.182/32 # hasura.io
+128.140.85.249/32 # zibastyler.com
+5.75.194.181/32 # childrensdefense.org
+86.38.156.169/32 # sxyprn.com
+5.255.117.196/32 # eln-voces.com
+159.69.202.38/32 # kastanienhof-lemgo.de
+94.131.123.230/32 # columbia.edu
+46.29.239.47/32 # episcopalrelief.org
+70.34.216.244/32 # reliefweb.int
+65.109.232.185/32 # sierraclub.org
+85.239.63.67/32 # tumblr.com
