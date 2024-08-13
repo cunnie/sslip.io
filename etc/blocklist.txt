@@ -616,3 +616,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 70.34.216.244/32 # reliefweb.int
 65.109.232.185/32 # sierraclub.org
 85.239.63.67/32 # tumblr.com
+77.238.228.48/32 # UNFPA
