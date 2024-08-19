@@ -635,3 +635,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 65.109.193.200/32 # tacticaltech.org
 138.68.77.97/32 # laborrights.org
 141.227.128.238/32 # UNFPA
+154.205.148.163/32 # UNFPA
