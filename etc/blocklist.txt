@@ -662,3 +662,14 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 199.247.13.156/32 # rog.asus.com
 91.107.244.181/32 # panda.org
 49.12.0.222/32 # catholicsforchoice.org
+198.181.36.122/32 # actionaid.org
+38.60.196.184/32 # celebon.ir
+109.176.198.98/32 # beparsi.com
+194.36.170.226/32 # sputnikglobe.com
+207.154.216.14/32 # unfpa.org
+176.222.53.110/32 # freepik.com
+184.174.96.189/32 # mozilla.org
+185.222.241.107/32 # pcgamer.com
+65.109.215.176/32 # heritage.org
+138.197.128.25/32 # phoenixagritech.com
+5.161.138.203/32 # starconfig.com.au
