@@ -690,3 +690,17 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 185.198.234.74/32 # u4.no
 134.209.181.141/32 # bluehedgerelocators.com
 170.64.134.93/32 # clarenicholson.com
+95.179.155.148/32 # roozno.com
+15.235.207.99/32 # ghost.org
+5.75.200.95/32 # ebaumsworld.com
+152.53.47.35/32 # theintercept.com
+91.107.136.156/32 # aljazeera.net
+91.107.254.171/32 # ebaumsworld.com
+78.135.80.254/32 # ebaumsworld.com
+185.70.185.70/32 # newsvl.ru
+149.248.15.223/32 # abc13.com
+77.221.151.104/32 # sputnikglobe.com
+91.107.252.71/32 # ebaumsworld.com
+193.24.210.210/32 # uscg.mil
+65.109.184.35/32 # 1800respect.org.au
+195.201.223.122/32 # w3schools.com
