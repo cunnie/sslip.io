@@ -486,7 +486,7 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 3.67.106.44/32 # nabaliaenergia.com
 168.119.94.3/32 # pcgamesn.com
 91.107.247.95/32 # ebaumsworld.com
-23.137.104.229/32 # reviewscaribbean.com
+# 23.137.104.229/32 # reviewscaribbean.com # See https://github.com/cunnie/sslip.io/issues/78
 91.107.156.231/32 # ebaumsworld.com
 37.27.12.156/32 # uptvs.com
 108.165.128.113/32 # concern.net
