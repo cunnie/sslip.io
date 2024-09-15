@@ -65,34 +65,6 @@ jobs:
     params:
       image: image/image
 
-- name: build-and-push-k-v.io-nginx
-  plan:
-  - get: sslip.io-release
-    trigger: true
-  - get: sslip.io
-  - task: build-task-image
-    privileged: true
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: concourse/oci-build-task
-      inputs:
-      - name: sslip.io
-      outputs:
-      - name: image
-      params:
-        CONTEXT: sslip.io/k8s/
-        DOCKERFILE: sslip.io/k8s/Dockerfile-k-v.io-nginx
-        IMAGE_PLATFORM: linux/arm64,linux/amd64
-        OUTPUT_OCI: true
-      run:
-        path: build
-  - put: k-v.io-nginx
-    params:
-      image: image/image
-
 - name: build-and-push-sslip.io-nginx
   plan:
   - get: sslip.io-release
@@ -142,16 +114,6 @@ resources:
   icon: github
   source:
     uri: https://github.com/cunnie/sslip.io.git
-
-# Where we will push the k-v.io nginx Docker image with HTML assets
-- name: k-v.io-nginx
-  type: registry-image
-  icon: docker
-  source:
-    repository: cunnie/k-v.io-nginx
-    username: cunnie
-    password: ((docker_token))
-    tag: latest
 
 # Where we will push the sslip.io nginx Docker image with HTML assets
 - name: sslip.io-nginx
