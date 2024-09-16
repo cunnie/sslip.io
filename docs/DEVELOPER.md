@@ -23,7 +23,7 @@ Optional: Update the version for the ns-aws, ns-azure install scripts
 ```bash
 pushd ~/bin
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
-  ~/bin/install_ns-{aws,azure,gce}.sh
+  ~/bin/install_ns-{aws,azure,gce,ovh}.sh
 git add -p
 git ci -m"Update sslip.io DNS server $OLD_VERSION → $VERSION"
 git push
@@ -47,7 +47,7 @@ export VERSION=3.1.0
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
 dig +short ns example.com @$DNS_SERVER_IP
-printf "ns-aws.sslip.io.\nns-azure.sslip.io.\nns-gce.sslip.io.\n"
+printf "ns-aws.sslip.io.\nns-azure.sslip.io.\nns-gce.sslip.io.\nns-ovh.sslip.io.\n"
 dig +short mx example.com @$DNS_SERVER_IP
 echo "0 example.com."
 dig +short mx sslip.io @$DNS_SERVER_IP
@@ -85,6 +85,7 @@ git push --tags
 scp bin/sslip.io-dns-server-linux-arm64 ns-aws:
 scp bin/sslip.io-dns-server-linux-amd64 ns-azure:
 scp bin/sslip.io-dns-server-linux-amd64 ns-gce:
+scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
 ssh ns-aws sudo install sslip.io-dns-server-linux-arm64 /usr/bin/sslip.io-dns-server
 ssh ns-aws sudo shutdown -r now
  # check version number:
@@ -97,6 +98,10 @@ ssh ns-gce sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-se
 ssh ns-gce sudo shutdown -r now
  # check version number:
 sleep 10; while ! dig txt @ns-gce.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-gce
+ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
+ssh ns-ovh sudo shutdown -r now
+ # check version number:
+sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
 ```
 
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
