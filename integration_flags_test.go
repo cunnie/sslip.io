@@ -42,12 +42,13 @@ var _ = Describe("flags", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0`))
 			Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
-			Eventually(digSession).Should(Say(`mickey.minnie.\n`))
-			Eventually(digSession).Should(Say(`daffy.duck.\n`))
 			Eventually(digSession, 1).Should(Exit(0))
+			Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`mickey.minnie.\n`))
+			Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`daffy.duck.\n`))
 			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding nameserver "mickey\.minnie\."\n`))
 			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding nameserver "daffy\.duck\."\n`))
-			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? mickey\.minnie\., daffy\.duck\.\n`))
+			// we don't know the order in which the nameservers will be returned, so we try both
+			Eventually(string(serverSession.Err.Contents())).Should(Or(MatchRegexp(`TypeNS example.com. \? mickey\.minnie\., daffy\.duck\.\n`), MatchRegexp(`TypeNS example.com. \? daffy\.duck\., mickey\.minnie\.\n`)))
 		})
 		When("a nameserver is an empty string", func() {
 			BeforeEach(func() {
