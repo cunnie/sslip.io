@@ -35,3 +35,14 @@ sort < /tmp/hosts.log | uniq -c | sort -n | tail -50
    sort | \
    uniq -c
 ```
+
+```zsh
+ # Who's querying us the most?
+awk '{print $8}' < /tmp/sslip.io.log | \
+  grep -v "nil, SOA" | \
+  sed 's/\.[0-9]*$//' | \
+  sort | \
+  uniq -c | \
+  sort -n | \
+  tail -50
+```
