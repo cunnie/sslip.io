@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=3.2.0
-export VERSION=3.2.1
+export OLD_VERSION=3.2.1
+export VERSION=3.2.2
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -42,7 +42,7 @@ Test from another window:
 
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=3.2.1
+export VERSION=3.2.2
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
@@ -70,8 +70,10 @@ echo "\"$VERSION\""
 echo " ===" # separator because the results are too similar
 dig @$DNS_SERVER_IP 1.0.0.127.in-addr.arpa ptr +short
 echo "127-0-0-1.sslip.io."
+dig @$DNS_SERVER_IP _psl.sslip.io txt +short
+echo "\"https://github.com/publicsuffix/list/pull/2206\""
 dig @$DNS_SERVER_IP metrics.status.sslip.io txt +short | grep '"Queries: '
-echo '"Queries: 12 (?.?/s)"'
+echo '"Queries: 13 (?.?/s)"'
 ```
 
 Review the output then close the second window. Stop the server in the
