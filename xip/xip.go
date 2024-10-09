@@ -147,6 +147,15 @@ var (
 				}, nil
 			},
 		},
+		"_psl.sslip.io.": { // avoid Let's Encrypt rate limits by joining https://publicsuffix.org
+			TXT: func(x *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+				x.Metrics.AnsweredTXTVersionQueries++
+				return []dnsmessage.TXTResource{
+					{TXT: []string{"https://github.com/publicsuffix/list/pull/2206"}},
+				}, nil
+			},
+		},
+
 		"metrics.status.sslip.io.": {
 			TXT: TXTMetrics,
 		},
