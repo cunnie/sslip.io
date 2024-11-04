@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"math"
 	"net"
 	"os"
 	"runtime"
@@ -42,12 +43,13 @@ func main() {
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response. Use this to avoid Google Cloud charging you $30/month to retain the logs of your GKE-based sslip.io server")
 	var public = flag.Bool("public", true, "allows resolution of public IP addresses. If false, only resolves private IPs including localhost (127/8, ::1), link-local (169.254/16, fe80::/10), CG-NAT (100.64/12), private (10/8, 172.16/12, 192.168/16, fc/7). Set to false if you don't want miscreants impersonating you via public IPs. If unsure, set to false")
+	var maxQueriesPerSec = flag.Int("max_queries_per_sec", math.MaxInt32, "maximum queries per second. This limit, in queries/second, is measured since the server was started. When the limit is reached, the server stops replying until throughput drops below the limit.  Use this if AWS is gouging you for bandwidth. 300 qps is close to 100 GB / month")
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	log.Printf("blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
 		*blocklistURL, *nameservers, *bindPort, *quiet)
 
-	x, logmessages := xip.NewXip(*blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","), strings.Split(*delegates, ","))
+	x, logmessages := xip.NewXip(*blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","), strings.Split(*delegates, ","), *maxQueriesPerSec)
 	x.Public = *public
 	for _, logmessage := range logmessages {
 		log.Println(logmessage)
