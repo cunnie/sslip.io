@@ -1,11 +1,9 @@
 package xip_test
 
 import (
-	"math"
 	"math/rand"
 	"net"
 	"strings"
-	"time"
 	"xip/testhelper"
 	"xip/xip"
 
@@ -81,7 +79,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("NSResources()", func() {
 		When("we use the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{}, math.MaxInt32)
+			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{})
 			It("returns the name servers", func() {
 				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -115,13 +113,13 @@ var _ = Describe("Xip", func() {
 			When("we delegate domains to other nameservers", func() {
 				When(`we don't use the "=" in the arguments`, func() {
 					It("returns an informative log message", func() {
-						var _, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{"noEquals"}, math.MaxInt32)
+						var _, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{"noEquals"})
 						Expect(strings.Join(logs, "")).To(MatchRegexp(`"-delegates: arguments should be in the format "delegatedDomain=nameserver", not "noEquals"`))
 					})
 				})
 				When(`there's no "." at the end of the delegated domain or nameserver`, func() {
 					It(`helpfully adds the "."`, func() {
-						var x, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{"a=b"}, math.MaxInt32)
+						var x, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{"a=b"})
 						Expect(strings.Join(logs, "")).To(MatchRegexp(`Adding delegated NS record "a\.=b\."`))
 						ns := x.NSResources("a.")
 						Expect(len(ns)).To(Equal(1))
@@ -130,7 +128,7 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		When("we override the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{}, []string{}, math.MaxInt32)
+			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{}, []string{})
 			It("returns the configured servers", func() {
 				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -468,41 +466,5 @@ var _ = Describe("Xip", func() {
 			Entry("Documentation", net.ParseIP("2001:db8::"), false),
 			Entry("Private internets", net.ParseIP("fc00::"), false),
 		)
-	})
-
-	Describe("QueryResponse()", func() {
-		// sample query: the AAAA (IPv6) record of localhost (::1)
-		msg := dnsmessage.Message{
-			Header: dnsmessage.Header{
-				ID:               1234, // Choose a random ID
-				RecursionDesired: true,
-			},
-			Questions: []dnsmessage.Question{
-				{
-					Name:  dnsmessage.MustNewName("::1."), // Note the trailing dot
-					Type:  dnsmessage.TypeAAAA,
-					Class: dnsmessage.ClassINET,
-				},
-			},
-		}
-		// Pack the message into a byte slice
-		packedMessage, err := msg.Pack()
-		Expect(err).ToNot(HaveOccurred())
-		loopbackIP := net.ParseIP("127.0.0.1") // the querier's IP is localhost
-
-		When("the response has been throttled (`-max-queries-per-sec` is set)", func() {
-			It("returns an error, not a response", func() {
-				x, _ := xip.NewXip("", []string{}, []string{}, []string{}, 1)
-				Expect(err).ToNot(HaveOccurred())
-				_, _, err = x.QueryResponse(packedMessage, loopbackIP) // first query
-				Expect(err).ToNot(HaveOccurred())
-				time.Sleep(1000 * time.Millisecond)                    // sleep 1 second to stay under the limit
-				_, _, err = x.QueryResponse(packedMessage, loopbackIP) // second query
-				Expect(err).ToNot(HaveOccurred())                      // should succeed
-				_, _, err = x.QueryResponse(packedMessage, loopbackIP) // third query
-				Expect(err).To(HaveOccurred())                         // should fail, over the limit
-				Expect(err.Error()).To(MatchRegexp(`429 Too Many Requests: .* queries per second exceeds 1 queries per second limit`))
-			})
-		})
 	})
 })

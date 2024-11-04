@@ -14,14 +14,8 @@ import (
 var _ = Describe("flags", func() {
 	var serverCmd *exec.Cmd
 	var serverSession *Session
-	var port int
+	var port = getFreePort()
 	var flags []string
-	var serverReadyOrDeadOutput string
-
-	BeforeEach(func() {
-		port = getFreePort()
-		serverReadyOrDeadOutput = "Ready to answer queries"
-	})
 
 	JustBeforeEach(func() {
 		flags = append(flags, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist-test.txt")
@@ -31,7 +25,7 @@ var _ = Describe("flags", func() {
 		// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)
 		// takes 1.312s to start up on macOS Big Sur 2.0GHz quad-core 10th-generation Intel Core i5 processor (2020 13" MacBook Pro)
 		// 10 seconds should be long enough for slow container-on-a-VM-with-shared-core
-		Eventually(serverSession.Err, 10).Should(Say(serverReadyOrDeadOutput))
+		Eventually(serverSession.Err, 10).Should(Say("Ready to answer queries"))
 	})
 	AfterEach(func() {
 		serverSession.Terminate()
@@ -239,51 +233,5 @@ var _ = Describe("flags", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`a\.b\.c\. \? nil, NS d\.e\.f\.`))
 			})
 		})
-	})
-
-	When("-max_queries_per_sec is set", func() {
-		When("the arguments are missing", func() {
-			BeforeEach(func() {
-				flags = []string{"-max_queries_per_sec="}
-				serverReadyOrDeadOutput = "-max_queries_per_sec: parse error"
-			})
-			It("should give an informative message", func() {
-				portFail := getFreePort()
-				flags = append(flags, "-port", strconv.Itoa(portFail), "-blocklistURL", "file://etc/blocklist-test.txt")
-				serverCmd = exec.Command(serverPath, flags...)
-				serverSessionFail, err := Start(serverCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)
-				// takes 1.312s to start up on macOS Big Sur 2.0GHz quad-core 10th-generation Intel Core i5 processor (2020 13" MacBook Pro)
-				// 10 seconds should be long enough for slow container-on-a-VM-with-shared-core
-				Eventually(serverSessionFail.Err, 10).Should(Say(serverReadyOrDeadOutput))
-				Eventually(string(serverSessionFail.Err.Contents())).Should(MatchRegexp(`-max_queries_per_sec`))
-			})
-		})
-		When("the queries exceed the limit", func() {
-			BeforeEach(func() {
-				flags = []string{"-max_queries_per_sec=1"}
-			})
-			It("should answer the first query but not the second", func() {
-				digArgs := "@localhost 169-254-169-254.sslip.io +tries=1 +timeout=1 -p " + strconv.Itoa(port)
-				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
-				Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
-				Eventually(digSession).Should(Say(`169-254-169-254.sslip.io. 3600	IN	A	169.254.169.254\n`))
-				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA 169-254-169-254\.sslip\.io\. \? 169\.254\.169\.254`))
-				// second command, same as the first, but is throttled and doesn't get a DNS reply
-				digCmdThrottled := exec.Command("dig", strings.Split(digArgs, " ")...)
-				digSessionThrottled, err := Start(digCmdThrottled, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSessionThrottled, 2).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`429 Too Many Requests: .* queries per second exceeds 1 queries per second limit`))
-			})
-		})
-	})
-
-	When("-max_queries_per_sec is set", func() {
 	})
 })
