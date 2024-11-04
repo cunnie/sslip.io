@@ -32,7 +32,6 @@ type Xip struct {
 	BlocklistUpdated            time.Time               // The most recent time the Blocklist was updated
 	NameServers                 []dnsmessage.NSResource // The list of authoritative name servers (NS)
 	Public                      bool                    // Whether to resolve public IPs; set to false if security-conscious
-	MaxQueriesPerSecond         int                     // Max Queries / Second
 }
 
 // Metrics contains the counters of the important/interesting queries
@@ -178,8 +177,8 @@ type Response struct {
 }
 
 // NewXip follows convention for constructors: https://go.dev/doc/effective_go#allocation_new
-func NewXip(blocklistURL string, nameservers []string, addresses []string, delegates []string, maxQueriesPerSec int) (x *Xip, logmessages []string) {
-	x = &Xip{Metrics: Metrics{Start: time.Now()}, MaxQueriesPerSecond: maxQueriesPerSec}
+func NewXip(blocklistURL string, nameservers []string, addresses []string, delegates []string) (x *Xip, logmessages []string) {
+	x = &Xip{Metrics: Metrics{Start: time.Now()}}
 
 	// Download the blocklist
 	logmessages = append(logmessages, x.downloadBlockList(blocklistURL))
@@ -337,12 +336,6 @@ func (x *Xip) QueryResponse(queryBytes []byte, srcAddr net.IP) (responseBytes []
 	var p dnsmessage.Parser
 	var response Response
 
-	// Have we exceeded our throttle? Don't reply, but return an error
-	if float64(x.Metrics.Queries)/time.Since(x.Metrics.Start).Seconds() > float64(x.MaxQueriesPerSecond) {
-		return nil, "", fmt.Errorf(
-			"429 Too Many Requests: %0.2f queries per second exceeds %d queries per second limit",
-			float64(x.Metrics.Queries)/time.Since(x.Metrics.Start).Seconds(), x.MaxQueriesPerSecond)
-	}
 	if queryHeader, err = p.Start(queryBytes); err != nil {
 		return nil, "", err
 	}
