@@ -4,7 +4,7 @@
 
 Let's say you have a domain that is hosted on Amazon Route53, lets call it
 `example.com`. You have a few DNS entries set up like `foo.example.com`, and then
-you have `xip.example.com` which is an NS record to `ns-aws.sslip.io`. So you
+you have `xip.example.com` which is an NS record to `ns-ovh.sslip.io`. So you
 are able to use both regular DNS records that are hardcoded, and then when you
 need to use sslip you simply use your xip subdomain.
 
@@ -14,7 +14,7 @@ Let's Encrypt DNS-01 challenge process.
 Let's Encrypt will query your name servers for the TXT record
 `_acme-challenge.xip.example.com`, then your DNS server will respond with the
 TXT record _that should have been created on Route53 as part of the challenge_,
-otherwise it'll return the delegated nameservers (ns-aws.sslip.io and so on).
+otherwise it'll return the delegated nameservers (ns-azure.sslip.io and so on).
 
 ### Using the sslip.io domain
 

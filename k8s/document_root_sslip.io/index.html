@@ -136,12 +136,6 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
           </tr>
         </thead>
         <tbody>
-          <tr class="odd">
-            <td><code>ns-aws.sslip.io.</code></td>
-            <td>52.0.56.137<br>
-            2600:1f18:aaf:6900::a</td>
-            <td>USA</td>
-          </tr>
           <tr class="even">
             <td><code>ns-azure.sslip.io.</code></td>
             <td>52.187.42.158</td>
@@ -238,7 +232,7 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
         </li>
       </ul>
       <p>A big advantage of using DNS queries instead of HTTP queries is bandwidth: querying
-      <code>ns-aws.sslip.io</code> requires a mere 592 bytes spread over 2 packets; Querying <a href=
+      <code>ns-azure.sslip.io</code> requires a mere 594 bytes spread over 2 packets; Querying <a href=
       "https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over 14 times
       as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
       service.</p>
@@ -256,7 +250,7 @@ dig @ns-gce.nono.io version.status.sslip.io txt +short
       <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
       <code>metrics.status.sslip.io</code>
       <pre>
-dig @ns-aws.sslip.io metrics.status.sslip.io txt +short
+dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
   "Uptime: 165655"
   "Blocklist: 2023-10-04 07:37:50-07 3,6"
   "Queries: 14295231 (86.3/s)"

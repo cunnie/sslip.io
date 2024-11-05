@@ -48,7 +48,7 @@ dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
 # NS ordering might be rotated
 dig +short ns example.com @$DNS_SERVER_IP
-printf "ns-aws.sslip.io.\nns-azure.sslip.io.\nns-gce.sslip.io.\nns-ovh.sslip.io.\n"
+printf "ns-azure.sslip.io.\nns-gce.sslip.io.\nns-ovh.sslip.io.\n"
 dig +short mx example.com @$DNS_SERVER_IP
 echo "0 example.com."
 dig +short mx sslip.io @$DNS_SERVER_IP

@@ -1,9 +1,9 @@
 # sslip.io
 
-| Test Type | Status |
-|---|---|
+| Test Type              | Status                                                                                                                                 |
+|------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
 | Production Nameservers | [![ci.nono.io](https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/dns-servers/badge)](https://ci.nono.io/teams/main/pipelines/sslip.io) |
-| DNS Server Unit Tests | [![ci.nono.io](https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/unit/badge)](https://ci.nono.io/teams/main/pipelines/sslip.io) |
+| DNS Server Unit Tests  | [![ci.nono.io](https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/unit/badge)](https://ci.nono.io/teams/main/pipelines/sslip.io)        |
 
 *sslip.io* is a DNS server that maps specially-crafted DNS A records to IP
 addresses (e.g. "127-0-0-1.sslip.io" maps to 127.0.0.1). It is similar to, and
@@ -24,6 +24,7 @@ sudo go run main.go
 ```
 
 In another window:
+
 ```bash
 dig @localhost 192.168.0.1.sslip.io +short
  # should return "192.168.0.1"
@@ -117,36 +118,36 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 ## Command-line Flags
 
 - `-port` overrides the default port, 53, which the server binds to. This can
-  be especially useful when running as a non-privileged user, unable to bind to
-  privileged ports (<1024) ("`listen udp :53: bind: permission denied`"). For
-  example, to run the server on port 9553: `go run main.go -port 9553`. To query,
-  `dig @localhost 127.0.0.1.sslip.io -p 9553`
-- `-nameservers` overrides the default NS records `ns-aws.sslip.io`,
-  `ns-azure.sslip.io`, `ns-gce.sslip.io`, and `ns-ovh.sslip.io`; flag, e.g. `go
-run main.go -nameservers ns1.example.com,ns2.example.com`). If you're running
-  your own nameservers, you probably want to set this. Don't forget to set
-  address records for the new name servers with the `-addresses` flag (see
-  below). Exception: `_acme-challenge` records are handled differently to
-  accommodate the procurement of Let's Encrypt wildcard certificates; you can
-  read more about that procedure [here](docs/wildcard.md)
+be especially useful when running as a non-privileged user, unable to bind to
+privileged ports (<1024) ("`listen udp :53: bind: permission denied`"). For
+example, to run the server on port 9553: `go run main.go -port 9553`. To query,
+`dig @localhost 127.0.0.1.sslip.io -p 9553`
+- `-nameservers` overrides the default NS records `ns-azure.sslip.io`,
+`ns-gce.sslip.io`, and `ns-ovh.sslip.io`; flag, e.g. `go run main.go
+-nameservers ns1.example.com,ns2.example.com`). If you're running your own
+nameservers, you probably want to set this. Don't forget to set address records
+for the new name servers with the `-addresses` flag (see below). Exception:
+`_acme-challenge` records are handled differently to accommodate the
+procurement of Let's Encrypt wildcard certificates; you can read more about
+that procedure [here](docs/wildcard.md)
 - `-addresses` overrides the default A/AAAA (IPv4/IPv6) address records. For
-  example, here's how we set the IPv4 record & IPv6 record for our nameserver (in
-  the `-nameservers` example above), ns1.example.com: `-addresses
+example, here's how we set the IPv4 record & IPv6 record for our nameserver (in
+the `-nameservers` example above), ns1.example.com: `-addresses
 ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note that you can set many
-  addresses for a single host, e.g.
-  `ns1.example.com=1.1.1.1,ns1.example.com=8.8.8.8,ns1.example.com=9.9.9.9`
+addresses for a single host, e.g.
+`ns1.example.com=1.1.1.1,ns1.example.com=8.8.8.8,ns1.example.com=9.9.9.9`
 - `-blocklistURL` overrides the default block list,
-  (<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
-  It's not necessary to override this if you're in an internetless environment:
-  if the DNS server can't download the blocklist, it prints out a message and
-  continues to serve DNS queries
+(<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
+It's not necessary to override this if you're in an internetless environment:
+if the DNS server can't download the blocklist, it prints out a message and
+continues to serve DNS queries
 
 ## DNS Server Miscellany
 
 - it binds to both UDP and TCP.
 - The SOA record is hard-coded except the _MNAME_ (primary master name server)
   record, which is set to the queried hostname (e.g. `dig big.apple.com
-  @ns-aws.nono.io` would return an SOA with an _MNAME_ record of
+  @ns-ovh.nono.io` would return an SOA with an _MNAME_ record of
   `big.apple.com.`
 - The MX records are hard-coded to the queried hostname with a preference of 0,
   except `sslip.io` itself, which has custom MX records to enable email
@@ -157,7 +158,7 @@ ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note that you can set many
 
 - `ci/` contains the [Concourse](https://concourse.ci/) continuous integration
   (CI) pipeline and task
-- `spec/` contains the tests for the production nameservers.  To run
+- `spec/` contains the tests for the production nameservers. To run
   the tests locally:
   ```bash
   DOMAIN=sslip.io rspec --format documentation --color spec/
