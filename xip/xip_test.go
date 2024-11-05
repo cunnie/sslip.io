@@ -79,15 +79,14 @@ var _ = Describe("Xip", func() {
 
 	Describe("NSResources()", func() {
 		When("we use the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{})
 			It("returns the name servers", func() {
 				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
-				Expect(len(ns)).To(Equal(4))
-				Expect(ns[0].NS.String()).To(Equal("ns-aws.sslip.io."))
-				Expect(ns[1].NS.String()).To(Equal("ns-azure.sslip.io."))
-				Expect(ns[2].NS.String()).To(Equal("ns-gce.sslip.io."))
-				Expect(ns[3].NS.String()).To(Equal("ns-ovh.sslip.io."))
+				Expect(len(ns)).To(Equal(3))
+				Expect(ns[0].NS.String()).To(Equal("ns-azure.sslip.io."))
+				Expect(ns[1].NS.String()).To(Equal("ns-gce.sslip.io."))
+				Expect(ns[2].NS.String()).To(Equal("ns-ovh.sslip.io."))
 			})
 			When(`the domain name contains "_acme-challenge."`, func() {
 				When("the domain name has an embedded IP", func() {
@@ -106,20 +105,20 @@ var _ = Describe("Xip", func() {
 					It("returns the default trinity of nameservers", func() {
 						randomDomain := "_acme-challenge." + testhelper.Random8ByteString() + ".com."
 						ns := x.NSResources(randomDomain)
-						Expect(len(ns)).To(Equal(4))
+						Expect(len(ns)).To(Equal(3))
 					})
 				})
 			})
 			When("we delegate domains to other nameservers", func() {
 				When(`we don't use the "=" in the arguments`, func() {
 					It("returns an informative log message", func() {
-						var _, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{"noEquals"})
+						var _, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{"noEquals"})
 						Expect(strings.Join(logs, "")).To(MatchRegexp(`"-delegates: arguments should be in the format "delegatedDomain=nameserver", not "noEquals"`))
 					})
 				})
 				When(`there's no "." at the end of the delegated domain or nameserver`, func() {
 					It(`helpfully adds the "."`, func() {
-						var x, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-aws.sslip.io.", "ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{"a=b"})
+						var x, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-azure.sslip.io.", "ns-gce.sslip.io.", "ns-ovh.sslip.io."}, []string{}, []string{"a=b"})
 						Expect(strings.Join(logs, "")).To(MatchRegexp(`Adding delegated NS record "a\.=b\."`))
 						ns := x.NSResources("a.")
 						Expect(len(ns)).To(Equal(1))
@@ -229,8 +228,8 @@ var _ = Describe("Xip", func() {
 			Entry("www", "www.sslip.io"),
 			Entry("a lone number", "538.sslip.io"),
 			Entry("too big", "256.254.253.252"),
-			Entry("NS but no dot", "ns-aws.sslip.io"),
-			Entry("NS + cruft at beginning", "p-ns-aws.sslip.io"),
+			Entry("NS but no dot", "ns-azure.sslip.io"),
+			Entry("NS + cruft at beginning", "p-ns-azure.sslip.io"),
 			Entry("test-net address with dots-and-dashes mixed", "www-192.0-2.3.example-me.com"),
 		)
 		When("There is more than one A record", func() {

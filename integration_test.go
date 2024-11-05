@@ -236,20 +236,20 @@ var _ = Describe("sslip.io-dns-server", func() {
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`52.0.56.137`))
 				Eventually(digSession).Should(Say(`52.187.42.158`))
 				Eventually(digSession).Should(Say(`104.155.144.4`))
+				Eventually(digSession).Should(Say(`51.75.53.19`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA ns.sslip.io. \? 52.0.56.137, 52.187.42.158, 104.155.144.4\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA ns.sslip.io. \? 52.187.42.158, 104.155.144.4, 51.75.53.19\n`))
 			})
 			It("returns all the AAAA records", func() {
 				digArgs = "@localhost aaaa ns.sslip.io +short -p " + strconv.Itoa(port)
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`2600:1f18:aaf:6900::a`))
+				Eventually(digSession).Should(Say(`2001:41d0:602:2313::1`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeAAAA ns.sslip.io. \? 2600:1f18:aaf:6900::a, 2600:1900:4000:4d12::\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeAAAA ns.sslip.io. \? 2600:1900:4000:4d12::, 2001:41d0:602:2313::1\n`))
 			})
 		})
 		When("there are multiple MX records returned (e.g. sslip.io)", func() {
@@ -270,11 +270,9 @@ var _ = Describe("sslip.io-dns-server", func() {
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 4, AUTHORITY: 0, ADDITIONAL: 7`))
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 5`))
 				Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
 				Eventually(digSession).Should(Say(`;; ADDITIONAL SECTION:`))
-				Eventually(digSession).Should(Say(`ns-aws.sslip.io..*52.0.56.137\n`))
-				Eventually(digSession).Should(Say(`ns-aws.sslip.io..*2600:1f18:aaf:6900::a\n`))
 				Eventually(digSession).Should(Say(`ns-azure.sslip.io..*52.187.42.158\n`))
 				Eventually(digSession).Should(Say(`ns-gce.sslip.io..*104.155.144.4\n`))
 				Eventually(digSession).Should(Say(`ns-gce.sslip.io..*2600:1900:4000:4d12::\n`))
@@ -282,11 +280,10 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(digSession).Should(Say(`ns-ovh.sslip.io..*2001:41d0:602:2313::1\n`))
 				Eventually(digSession, 1).Should(Exit(0))
 				// the server names may appear out-of-order
-				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`NS\tns-aws.sslip.io.\n`))
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`NS\tns-azure.sslip.io.\n`))
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`NS\tns-gce.sslip.io.\n`))
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`NS\tns-ovh.sslip.io.\n`))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? ns-aws.sslip.io., ns-azure.sslip.io., ns-gce.sslip.io., ns-ovh.sslip.io.\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? ns-azure.sslip.io., ns-gce.sslip.io., ns-ovh.sslip.io.\n`))
 			})
 		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
@@ -408,8 +405,8 @@ var _ = Describe("sslip.io-dns-server", func() {
 			// use regex to account for rotated nameserver order
 			Entry("an NS record with acme_challenge with a forbidden string is not delegated",
 				"@localhost _acme-challenge.raiffeisen.fe80--.sslip.io ns +short",
-				`\Ans-[a-z]+.sslip.io.\nns-[a-z]+.sslip.io.\nns-[a-z]+.sslip.io.\nns-[a-z]+.sslip.io.\n\z`,
-				`TypeNS _acme-challenge.raiffeisen.fe80--.sslip.io. \? ns-aws.sslip.io., ns-azure.sslip.io., ns-gce.sslip.io., ns-ovh.sslip.io.\n$`),
+				`\Ans-[a-z]+.sslip.io.\nns-[a-z]+.sslip.io.\nns-[a-z]+.sslip.io.\n\z`,
+				`TypeNS _acme-challenge.raiffeisen.fe80--.sslip.io. \? ns-azure.sslip.io., ns-gce.sslip.io., ns-ovh.sslip.io.\n$`),
 			Entry("an A record with a forbidden CIDR is redirected",
 				"@localhost nf.43.134.66.67.sslip.io +short",
 				`\A52.0.56.137\n\z`,

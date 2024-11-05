@@ -656,7 +656,7 @@ func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage str
 	var logMessages []string
 	if response.Header.Authoritative {
 		// we're authoritative, so we reply with the answers
-		// but we rotate the nameservers every second so ns-aws doesn't bear the brunt (64%) of the traffic
+		// but we rotate the nameservers every second so one server doesn't bear the brunt of the traffic
 		epoch := time.Now().UTC().Unix()
 		index := int(epoch) % len(x.NameServers)
 		rotatedNameservers := append(x.NameServers[index:], x.NameServers[0:index]...)

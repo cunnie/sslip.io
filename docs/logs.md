@@ -1,6 +1,6 @@
 ### Tools for Exploring Log Files
 
-To generate log files on, say, ns-aws:
+To generate log files on, say, ns-ovh:
 
 ```zsh
 sudo journalctl -u sslip.io-dns -S yesterday > /tmp/sslip.io.log
