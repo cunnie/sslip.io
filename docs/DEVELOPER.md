@@ -96,15 +96,15 @@ sleep 10; while ! dig txt @ns-aws.sslip.io version.status.sslip.io +short; do sl
 ssh ns-azure sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-azure sudo shutdown -r now
  # check version number:
-sleep 10; while ! dig txt @ns-azure.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-azure
+sleep 10; while ! dig txt @ns-azure.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-gce
 ssh ns-gce sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-gce sudo shutdown -r now
  # check version number:
-sleep 10; while ! dig txt @ns-gce.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-gce
+sleep 10; while ! dig txt @ns-gce.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
 ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-ovh sudo shutdown -r now
  # check version number:
-sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
+sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done
 ```
 
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
