@@ -15,10 +15,10 @@ To find the domains queried (95% sslip.io):
 
 ```zsh
  # find all successful queries of A & AAAA records
-grep -v '\. \? nil' < sslip.io.log |\
+grep -v '\. \? nil' < /tmp/sslip.io.log |\
     egrep "TypeA | TypeAAAA " |\
     cut -d " " -f 10 > /tmp/hosts.log
-sed -E 's=.*(\.[^.]+\.[^.]+\.$)=\1=' < hosts.log | tr 'A-Z' 'a-z' | sort | uniq -c | sort -n
+sed -E 's=.*(\.[^.]+\.[^.]+\.$)=\1=' < /tmp/hosts.log | tr 'A-Z' 'a-z' | sort | uniq -c | sort -n
 ```
 
 ```zsh
