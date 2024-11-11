@@ -108,7 +108,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
           </tr>
         </tbody>
       </table>
-      <div class="alert alert-warning" role="alert">
+      <div class="alert alert-success" role="alert">
         <b>Developers: disable indexing of your staging site to avoid being blocked</b> (we block by disabling
         resolution of your sslip.io hostname); disable indexing by either including the <code>X-Robots-Tag:
         noindex</code> in your HTTP headers or include a <code>robots.txt</code> at the root of your website with the
@@ -127,9 +127,12 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
         "https://en.wikipedia.org/wiki/Public_recursive_name_server">public recursive name servers</a>. They will not
         resolve regular domain names (e.g. "<a href="https://google.com">google.com</a>").
       </div>
-      <div class="alert alert-warning" role="alert">
-        <b>2024-11-07</b><code>ns-aws.sslip.io</code> is deprecated. Please update your nameservers to the nameservers
-        below.
+      <div class="alert alert-danger" role="alert">
+        <b>2024-11-11</b> <code>ns-aws.sslip.io</code> is deprecated. Please update your nameservers to the nameservers
+        below. <code>ns-aws.sslip.io</code> will be shut down on <b>2024-12-12</b>.<br>
+        <br>
+        In October 2024, AWS charged me $113.88 for bandwidth for 1,265.3 GB at $0.09 / GB, and I am loath to spend
+        $1,366 on yearly bandwidth when other vendors, such as OVH, are much more reasonable.
       </div>
       <table class="table">
         <thead>
@@ -182,15 +185,15 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
       of the most popular examples. For example, if you had a webserver with the IP address 52.0.56.137, you could
       obtain a TLS certificate for "52.0.56.137.sslip.io", or "www.52.0.56.137.sslip.io", or
       "prod.www-52-0-56-137.sslip.io".</p>
-      <div class="alert alert-warning" role="alert">
-        <b>2021-02-12 Let's Encrypt Rate Limits</b> If your request for an "sslip.io" certificate is <a href=
+      <div class="alert alert-success" role="alert">
+        <b>Let's Encrypt Rate Limits</b> If your request for an "sslip.io" certificate is <a href=
         "https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please open a <a href=
         "https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and we'll request a rate-limit
         increase.
       </div>
       <p>If you have procured a wildcard certificate for your branded / white label / custom sslip.io-style subdomain,
       you may install it on your machines for TLS-verified connections.</p>
-      <div class="alert alert-warning" data-role="alert">
+      <div class="alert alert-success" data-role="alert">
         <p>When using a TLS wildcard certificate in conjunction with your branded sslip.io style subdomain, you must
         <b>use dashes not dots</b> as separators. For example, if you have the TLS certificate for
         <i>*.xip.example.com</i>, you could browse to https://www-52-0-56-137.xip.example.com/ but not
@@ -208,7 +211,7 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
 dig @ns.sslip.io txt ip.sslip.io +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
 dig @ns.sslip.io txt ip.sslip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
 dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
-      <div class="alert alert-warning" role="alert">
+      <div class="alert alert-success" role="alert">
         When querying for your IP address, always <b>include the sslip.io name server</b> (e.g. <i>@ns.sslip.io</i>).
         If omitted, you won't get your IP address; instead, you'll get the IP address of your upstream name server.
       </div>
