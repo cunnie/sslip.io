@@ -270,20 +270,21 @@ var _ = Describe("sslip.io-dns-server", func() {
 				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 5`))
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 6`))
 				Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
 				Eventually(digSession).Should(Say(`;; ADDITIONAL SECTION:`))
-				Eventually(digSession).Should(Say(`ns-azure.sslip.io..*52.187.42.158\n`))
 				Eventually(digSession).Should(Say(`ns-gce.sslip.io..*104.155.144.4\n`))
 				Eventually(digSession).Should(Say(`ns-gce.sslip.io..*2600:1900:4000:4d12::\n`))
+				Eventually(digSession).Should(Say(`ns-hetzner.sslip.io..*5.78.115.44\n`))
+				Eventually(digSession).Should(Say(`ns-hetzner.sslip.io..*2a01:4ff:1f0:c920::\n`))
 				Eventually(digSession).Should(Say(`ns-ovh.sslip.io..*51.75.53.19\n`))
 				Eventually(digSession).Should(Say(`ns-ovh.sslip.io..*2001:41d0:602:2313::1\n`))
 				Eventually(digSession, 1).Should(Exit(0))
 				// the server names may appear out-of-order
-				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`NS\tns-azure.sslip.io.\n`))
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`NS\tns-gce.sslip.io.\n`))
+				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`NS\tns-hetzner.sslip.io.\n`))
 				Eventually(string(digSession.Out.Contents())).Should(MatchRegexp(`NS\tns-ovh.sslip.io.\n`))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? ns-azure.sslip.io., ns-gce.sslip.io., ns-ovh.sslip.io.\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? ns-gce.sslip.io., ns-hetzner.sslip.io., ns-ovh.sslip.io.\n`))
 			})
 		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
@@ -406,7 +407,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 			Entry("an NS record with acme_challenge with a forbidden string is not delegated",
 				"@localhost _acme-challenge.raiffeisen.fe80--.sslip.io ns +short",
 				`\Ans-[a-z]+.sslip.io.\nns-[a-z]+.sslip.io.\nns-[a-z]+.sslip.io.\n\z`,
-				`TypeNS _acme-challenge.raiffeisen.fe80--.sslip.io. \? ns-azure.sslip.io., ns-gce.sslip.io., ns-ovh.sslip.io.\n$`),
+				`TypeNS _acme-challenge.raiffeisen.fe80--.sslip.io. \? ns-gce.sslip.io., ns-hetzner.sslip.io., ns-ovh.sslip.io.\n$`),
 			Entry("an A record with a forbidden CIDR is redirected",
 				"@localhost nf.43.134.66.67.sslip.io +short",
 				`\A52.0.56.137\n\z`,
