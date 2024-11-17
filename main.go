@@ -17,7 +17,7 @@ func main() {
 	var blocklistURL = flag.String("blocklistURL",
 		"https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt",
 		`URL containing a list of non-resolvable IPs/names/CIDRs, usually phishing or scamming sites. Example "file://etc/blocklist.txt"`)
-	var nameservers = flag.String("nameservers", "ns-azure.sslip.io.,ns-gce.sslip.io.,ns-ovh.sslip.io.",
+	var nameservers = flag.String("nameservers", "ns-gce.sslip.io.,ns-hetzner.sslip.io.,ns-ovh.sslip.io.",
 		"comma-separated list of FQDNs of nameservers. If you're running your own sslip.io nameservers, set them here")
 	var addresses = flag.String("addresses",
 		"sslip.io=78.46.204.247,"+
@@ -32,6 +32,8 @@ func main() {
 			"ns-azure.sslip.io=52.187.42.158,"+
 			"ns-gce.sslip.io=104.155.144.4,"+
 			"ns-gce.sslip.io=2600:1900:4000:4d12::,"+
+			"ns-hetzner.sslip.io=5.78.115.44,"+
+			"ns-hetzner.sslip.io=2a01:4ff:1f0:c920::,"+
 			"ns-ovh.sslip.io=51.75.53.19,"+
 			"ns-ovh.sslip.io=2001:41d0:602:2313::1",
 		"comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If you're running your own sslip.io nameservers, add their hostnames and addresses here. If unsure, add to the list rather than replace")
