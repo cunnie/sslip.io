@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta name="generator" content="HTML Tidy for HTML5 for Apple macOS version 5.8.0">
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -23,13 +23,14 @@ IE 9]> <script
 src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script> <script
 src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
 </head>
+
 <body>
   <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
-        aria-expanded="false" aria-controls="navbar"><span class="sr-only">Toggle navigation</span></button> <a class=
-        "navbar-brand" href="/">sslip.io</a>
+          aria-expanded="false" aria-controls="navbar"><span class="sr-only">Toggle navigation</span></button> <a
+          class="navbar-brand" href="/">sslip.io</a>
       </div>
       <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
@@ -46,15 +47,15 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
   <div class="container">
     <div class="starter-template">
       <h3 id="sslip.io">sslip.io</h3>
-      <p>Operational Status: <a href="https://ci.nono.io/teams/main/pipelines/sslip.io"><img src=
-      "https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/dns-servers/badge" alt="ci.nono.io"></a> <sup><a href=
-      "#status" class="alert-link">[Status]</a></sup></p>
+      <p>Operational Status: <a href="https://ci.nono.io/teams/main/pipelines/sslip.io"><img
+            src="https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/dns-servers/badge" alt="ci.nono.io"></a> <sup><a
+            href="#status" class="alert-link">[Status]</a></sup></p>
       <p><em>sslip.io</em> is a DNS (<a href="https://en.wikipedia.org/wiki/Domain_Name_System">Domain Name System</a>)
-      service that, when queried with a hostname with an embedded IP address, returns that IP address. It was inspired
-      by <a href="http://xip.io">xip.io</a>, which was created by <a href="https://github.com/sstephenson">Sam
-      Stephenson</a>.</p>
+        service that, when queried with a hostname with an embedded IP address, returns that IP address. It was inspired
+        by <a href="http://xip.io">xip.io</a>, which was created by <a href="https://github.com/sstephenson">Sam
+          Stephenson</a>.</p>
       <p>This service is dedicated to the late, great <a href="https://asiasamachar.com/2024/05/19/56886/">Roopinder
-      Singh</a>, who ran a similar service, <a href="https://nip.io">nip.io</a>.</p>
+          Singh</a>, who ran a similar service, <a href="https://nip.io">nip.io</a>.</p>
       <p>Here are some examples:</p>
       <table class="table">
         <thead>
@@ -120,13 +121,14 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       </div>
       <h3 id="branding">Branding / White Label / Custom Domains</h3>
       <p>sslip.io can be used to brand your own site (you don’t need to use the sslip.io domain). For example, say you
-      own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
-      accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
+        own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
+        accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
       <div class="alert alert-warning" role="alert">
         <b>Do not use these name servers for general-purpose name resolution</b>; instead, continue to use
         <code>1.1.1.1</code>, <code>8.8.8.8</code>, <code>9.9.9.9</code> or whatever name server you're currently
-        using. The sslip.io name servers are not <a href=
-        "https://en.wikipedia.org/wiki/Public_recursive_name_server">public recursive name servers</a>. They will not
+        using. The sslip.io name servers are not <a
+          href="https://en.wikipedia.org/wiki/Public_recursive_name_server">public recursive name servers</a>. They will
+        not
         resolve regular domain names (e.g. "<a href="https://google.com">google.com</a>").
       </div>
       <div class="alert alert-danger" role="alert">
@@ -158,7 +160,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
           <tr class="even">
             <td><code>ns-ovh.sslip.io.</code></td>
             <td>51.75.53.19<br>
-            2001:41d0:602:2313::1</td>
+              2001:41d0:602:2313::1</td>
             <td>Poland</td>
           </tr>
         </tbody>
@@ -168,10 +170,11 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       <p>Yields, hopefully: <sup><a href="#timeout" class="alert-link">[connection timed out]</a></sup></p>
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
-      <p>If you want to run your own DNS server, it's simple: you can compile from <a href=
-      "https://github.com/cunnie/sslip.io">source</a> or you can use one of our <a href=
-      "https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we install & run
-      our server within a docker container:</p>
+      <p>If you want to run your own DNS server, it's simple: you can compile from <a
+          href="https://github.com/cunnie/sslip.io">source</a> or you can use one of our <a
+          href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we
+        install & run
+        our server within a docker container:</p>
       <pre>
 docker run -it --rm fedora
 curl -L https://github.com/cunnie/sslip.io/releases/download/3.2.4/sslip.io-dns-server-linux-amd64 -o dns-server
@@ -181,34 +184,37 @@ dnf install -y bind-utils
 dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
       <h3 id="tls">TLS</h3>
       <p>You can acquire TLS certificates for your externally-accessible hosts from certificate authorities (CAs) such
-      as Let's Encrypt. The easiest mechanism to acquire a certificate would be to use the <a href=
-      "https://letsencrypt.org/docs/challenge-types/#http-01-challenge">HTTP-01 challenge</a>. It requires, at a
-      minimum, a web server running on your machine. The <a href="https://caddyserver.com/">Caddy</a> web server is one
-      of the most popular examples. For example, if you had a webserver with the IP address 52.0.56.137, you could
-      obtain a TLS certificate for "52.0.56.137.sslip.io", or "www.52.0.56.137.sslip.io", or
-      "prod.www-52-0-56-137.sslip.io".</p>
+        as Let's Encrypt. The easiest mechanism to acquire a certificate would be to use the <a
+          href="https://letsencrypt.org/docs/challenge-types/#http-01-challenge">HTTP-01 challenge</a>. It requires, at
+        a
+        minimum, a web server running on your machine. The <a href="https://caddyserver.com/">Caddy</a> web server is
+        one
+        of the most popular examples. For example, if you had a webserver with the IP address 52.0.56.137, you could
+        obtain a TLS certificate for "52.0.56.137.sslip.io", or "www.52.0.56.137.sslip.io", or
+        "prod.www-52-0-56-137.sslip.io".</p>
       <div class="alert alert-success" role="alert">
-        <b>Let's Encrypt Rate Limits</b> If your request for an "sslip.io" certificate is <a href=
-        "https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please open a <a href=
-        "https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and we'll request a rate-limit
+        <b>Let's Encrypt Rate Limits</b> If your request for an "sslip.io" certificate is <a
+          href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please open a <a
+          href="https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and we'll request a rate-limit
         increase.
       </div>
       <p>If you have procured a wildcard certificate for your branded / white label / custom sslip.io-style subdomain,
-      you may install it on your machines for TLS-verified connections.</p>
+        you may install it on your machines for TLS-verified connections.</p>
       <div class="alert alert-success" data-role="alert">
         <p>When using a TLS wildcard certificate in conjunction with your branded sslip.io style subdomain, you must
-        <b>use dashes not dots</b> as separators. For example, if you have the TLS certificate for
-        <i>*.xip.example.com</i>, you could browse to https://www-52-0-56-137.xip.example.com/ but not
-        https://www.52.0.56.137.xip.example.com/.</p>
+          <b>use dashes not dots</b> as separators. For example, if you have the TLS certificate for
+          <i>*.xip.example.com</i>, you could browse to https://www-52-0-56-137.xip.example.com/ but not
+          https://www.52.0.56.137.xip.example.com/.
+        </p>
       </div>
       <p>if you're interested in acquiring a wildcard certificate for your sslip.io domain, e.g.
-      "*.52-0-56-137.sslip.io", the procedure is described <a href=
-      "https://github.com/cunnie/sslip.io/blob/main/docs/wildcard.md">here</a>.</p>
+        "*.52-0-56-137.sslip.io", the procedure is described <a
+          href="https://github.com/cunnie/sslip.io/blob/main/docs/wildcard.md">here</a>.</p>
       <h3 id="experimental">Experimental Features</h3>
       <p>Experimental features can change; don't depend on them.</p>
       <h4 id="whatismyip">Determining Your External IP Address via DNS Lookup</h4>
       <p>You can use sslip.io's DNS servers (<code>ns.sslip.io</code>) to determine your public IP address by querying
-      the <code>TXT</code> record of <code>ip.sslip.io</code>:</p>
+        the <code>TXT</code> record of <code>ip.sslip.io</code>:</p>
       <pre>
 dig @ns.sslip.io txt ip.sslip.io +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
 dig @ns.sslip.io txt ip.sslip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
@@ -221,8 +227,8 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
       +short</code>. There are also popular HTTP-based services for determining your public IP address:</p>
       <ul>
         <li>
-          <a href="http://icanhazip.com/">icanhazip.com</a> (<a href=
-          "https://major.io/2021/06/06/a-new-future-for-icanhazip/">backstory</a>)
+          <a href="http://icanhazip.com/">icanhazip.com</a> (<a
+            href="https://major.io/2021/06/06/a-new-future-for-icanhazip/">backstory</a>)
         </li>
         <li>
           <a href="http://ipify.org/">ipify.org</a>
@@ -241,10 +247,12 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
         </li>
       </ul>
       <p>A big advantage of using DNS queries instead of HTTP queries is bandwidth: querying
-      <code>ns-azure.sslip.io</code> requires a mere 594 bytes spread over 2 packets; Querying <a href=
-      "https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over 14 times
-      as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
-      service.</p>
+        <code>ns-azure.sslip.io</code> requires a mere 594 bytes spread over 2 packets; Querying <a
+          href="https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over
+        14 times
+        as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
+        service.
+      </p>
       <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
       sslip.io software by querying the TXT record of <code>version.status.sslip.io</code>:
       <pre>
@@ -254,8 +262,9 @@ dig @ns-gce.nono.io version.status.sslip.io txt +short
   "8f7f2df"
 </pre>
       <p>The first number, ("2.6.1"), is the version of the sslip.io DNS software, and is most relevant. The other two
-      numbers are the date compiled and the most recent git hash, but those values can differ across servers due to the
-      manner in which the software is deployed.</p>
+        numbers are the date compiled and the most recent git hash, but those values can differ across servers due to
+        the
+        manner in which the software is deployed.</p>
       <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
       <code>metrics.status.sslip.io</code>
       <pre>
@@ -282,54 +291,55 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
           The first value ("2023-10-04 07:37:50-07") is the date the blocklist was last downloaded. The following two
           numbers are the number of string matches that are blocked (e.g. "raiffeisen" is a string that is blocked if
           it appears in the queried hostname) and the number of CIDR matches that are blocked (e.g. "43.134.66.67/24"
-          is blocked). The blocklist can be found <a href=
-          "https://github.com/cunnie/sslip.io/blob/main/etc/blocklist.txt">here</a>
+          is blocked). The blocklist can be found <a
+            href="https://github.com/cunnie/sslip.io/blob/main/etc/blocklist.txt">here</a>
         </dd>
         <dt>Queries</dt>
         <dd>This consists of two numbers: The first is the raw number of DNS queries that the server has responded to
-        since starting operation, and the second is the first number divided by the uptime (i.e. queries/second)</dd>
+          since starting operation, and the second is the first number divided by the uptime (i.e. queries/second)</dd>
         <dt>TCP/UDP</dt>
         <dd>This is the number of queries received on the TCP protocol versus the UDP protocol. The sum should equal
-        the number of queries. DNS typically uses the UDP protocol</dd>
+          the number of queries. DNS typically uses the UDP protocol</dd>
         <dt>Answered Queries</dt>
         <dd>This consists of two numbers: the first is the number of queries we responded to with at least one record
-        in the answer section, and the second is the first number divided by the uptime (i.e. queries/second). Note
-        that the number of answered queries is typically a third or fourth the size of the overall queries. This is
-        normal. One reason for this disparity is that often both the IPv4 (A) and IPv6 (AAAA) records will be checked,
-        but only one reply will have a record in the answer section . For example, browsing to "127.0.0.1.sslip.io"
-        generates two lookups, one with an answer (IPv4), and one without (IPv6). Another reason is that lookups follow
-        a chain, e.g. looking up "127.0.0.1.sslip.io" may generate up to four queries for A records ("1.sslip.io",
-        "0.1.sslip.io", "0.0.1.sslip.io" and "127.0.0.1.sslip.io"), only the last of which returns a record in the
-        answer section. Pro-tip: if you want to shave milliseconds off name resolution, use dashes not dots in your
-        hostname (e.g. "10-9-9-30.sslip.io" instead of "10.9.9.30.sslip.io")</dd>
+          in the answer section, and the second is the first number divided by the uptime (i.e. queries/second). Note
+          that the number of answered queries is typically a third or fourth the size of the overall queries. This is
+          normal. One reason for this disparity is that often both the IPv4 (A) and IPv6 (AAAA) records will be checked,
+          but only one reply will have a record in the answer section . For example, browsing to "127.0.0.1.sslip.io"
+          generates two lookups, one with an answer (IPv4), and one without (IPv6). Another reason is that lookups
+          follow
+          a chain, e.g. looking up "127.0.0.1.sslip.io" may generate up to four queries for A records ("1.sslip.io",
+          "0.1.sslip.io", "0.0.1.sslip.io" and "127.0.0.1.sslip.io"), only the last of which returns a record in the
+          answer section. Pro-tip: if you want to shave milliseconds off name resolution, use dashes not dots in your
+          hostname (e.g. "10-9-9-30.sslip.io" instead of "10.9.9.30.sslip.io")</dd>
         <dt>A</dt>
         <dd>The number of responses which included an A (IPv4) record since starting operation (e.g. "dig
-        127.0.0.1.sslip.io")</dd>
+          127.0.0.1.sslip.io")</dd>
         <dt>AAAA</dt>
         <dd>The number of responses which included an AAAA (IPv6) record since starting operation (e.g. "dig
-        --1.sslip.io aaaa")</dd>
+          --1.sslip.io aaaa")</dd>
         <dt>TXT Source</dt>
         <dd>The number of responses which included a TXT record of the querier's IP address since starting operation
-        (e.g. "dig @ns.sslip.io ip.sslip.io txt")</dd>
+          (e.g. "dig @ns.sslip.io ip.sslip.io txt")</dd>
         <dt>TXT Version</dt>
         <dd>The number of responses which included a TXT record of the DNS's servers version since starting operation
-        (e.g. "dig @ns-azure.sslip.io version.status.sslip.io txt")</dd>
+          (e.g. "dig @ns-azure.sslip.io version.status.sslip.io txt")</dd>
         <dt>PTR IPv4/IPv6</dt>
         <dd>This consists of two numbers; the first is the number of responses to IPv4 PTR queries
-        (<code>1.0.0.127.in-addr.arpa.</code> → <code>127-0-0-1.sslip.io.</code>), the second, IPv6 PTR queries</dd>
+          (<code>1.0.0.127.in-addr.arpa.</code> → <code>127-0-0-1.sslip.io.</code>), the second, IPv6 PTR queries</dd>
         <dt>NS DNS-01</dt>
         <dd>The number of responses which included a delegation of the NS (name server) to satisfy a certificate
-        authority's DNS-01 challenge. This lookup is used for generating wildcard certificates from Let's Encrypt and
-        other certificate authority. Technically this is not a "successful" query in that we don't return a record in
-        the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-gce.sslip.io
-        _acme-challenge.192.168.0.1.sslip.io. soa")</dd>
+          authority's DNS-01 challenge. This lookup is used for generating wildcard certificates from Let's Encrypt and
+          other certificate authority. Technically this is not a "successful" query in that we don't return a record in
+          the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-gce.sslip.io
+          _acme-challenge.192.168.0.1.sslip.io. soa")</dd>
       </dl>
       <h3 id="related">Related Services</h3>
       <ul>
         <li>
           <a href="http://xip.io/">xip.io</a>: the inspiration for sslip.io. Sadly, this appears to be no longer
           maintained after <a href="https://twitter.com/sstephenson/status/1388146129284603906">Sam Stephenson left
-          Basecamp</a>.
+            Basecamp</a>.
         </li>
         <li>
           <a href="http://nip.io">nip.io</a>: similar to xip.io, but the PowerDNS backend is written in elegant Python
@@ -342,20 +352,21 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
       <hr>
       <h4 id="footnotes">Footnotes</h4>
       <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
-      more often an indication that when the servers were last checked (currently every six hours), the CI (continuous
-      integration) <a href="https://ci.nono.io/teams/main/pipelines/sslip.io">server</a> had difficulty reaching one of
-      the three sslip.io name servers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
-      out]</a></sup></p>
+        more often an indication that when the servers were last checked (currently every six hours), the CI (continuous
+        integration) <a href="https://ci.nono.io/teams/main/pipelines/sslip.io">server</a> had difficulty reaching one
+        of
+        the three sslip.io name servers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
+            out]</a></sup></p>
       <p><a id="timeout"><sup>[connection timed out]</sup></a></p>
       <p>DNS runs over <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a> which has no guaranteed
-      delivery, and it’s not uncommon for the packets to get lost in transmission. DNS clients are programmed to
-      seamlessly query a different server when that happens. That’s why DNS, by fiat, requires at least two name
-      servers (for redundancy). From <a href="https://tools.ietf.org/html/rfc1034">IETF (Internet Engineering Task
-      Force) RFC (Request for Comment) 1034</a>:</p>
+        delivery, and it’s not uncommon for the packets to get lost in transmission. DNS clients are programmed to
+        seamlessly query a different server when that happens. That’s why DNS, by fiat, requires at least two name
+        servers (for redundancy). From <a href="https://tools.ietf.org/html/rfc1034">IETF (Internet Engineering Task
+          Force) RFC (Request for Comment) 1034</a>:</p>
       <blockquote>
         <p>A given zone will be available from several name servers to insure its availability in spite of host or
-        communication link failure. By administrative fiat, we require every zone to be available on at least two
-        servers, and many zones have more redundancy than that.</p>
+          communication link failure. By administrative fiat, we require every zone to be available on at least two
+          servers, and many zones have more redundancy than that.</p>
       </blockquote>
     </div>
   </div><!-- /.container -->
@@ -365,23 +376,24 @@ Bootstrap core JavaScript ================================================== -->
 Placed at the end of the document so the pages load faster -->
   <!-- jQuery
 (necessary for Bootstrap's JavaScript plugins) -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script> 
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
   <!-- Latest compiled and minified JavaScript -->
-   
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> 
-  <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-   
-  <script src=
-  "https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script> 
-  <!-- Google Analytics -->
-   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M32C798MGY"></script> 
-  <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-M32C798MGY');
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+
+  <script
+    src="https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script>
+  <!-- Google Analytics -->
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M32C798MGY"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-M32C798MGY');
   </script>
 </body>
+
 </html>
