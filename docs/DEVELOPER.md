@@ -88,6 +88,7 @@ git push --tags
 scp bin/sslip.io-dns-server-linux-arm64 ns-aws:
 scp bin/sslip.io-dns-server-linux-amd64 ns-azure:
 scp bin/sslip.io-dns-server-linux-amd64 ns-gce:
+scp bin/sslip.io-dns-server-linux-amd64 ns-hetzner:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
 ssh ns-aws sudo install sslip.io-dns-server-linux-arm64 /usr/bin/sslip.io-dns-server
 ssh ns-aws sudo shutdown -r now
@@ -100,7 +101,11 @@ sleep 10; while ! dig txt @ns-azure.sslip.io version.status.sslip.io +short; do 
 ssh ns-gce sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-gce sudo shutdown -r now
  # check version number:
-sleep 10; while ! dig txt @ns-gce.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
+sleep 10; while ! dig txt @ns-gce.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-hetzner
+ssh ns-hetzner sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
+ssh ns-hetzner sudo shutdown -r now
+ # check version number:
+sleep 10; while ! dig txt @ns-hetzner.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
 ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-ovh sudo shutdown -r now
  # check version number:
