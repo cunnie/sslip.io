@@ -144,6 +144,10 @@ func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool) {
 				return
 			}
 			_, err = conn.WriteToUDP(response, addr)
+			if err != nil {
+				log.Println(err.Error())
+				return
+			}
 			if !quiet {
 				log.Printf("%v.%d %s", addr.IP, addr.Port, logMessage)
 			}
@@ -168,6 +172,10 @@ func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
 		}
 		remoteAddrPort := tcpConn.RemoteAddr().String()
 		addr, port, err := net.SplitHostPort(remoteAddrPort)
+		if err != nil {
+			log.Println(err.Error())
+			continue
+		}
 
 		go func() {
 			defer func(tcpConn *net.TCPConn) {
@@ -184,6 +192,10 @@ func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
 			binary.BigEndian.PutUint16(responseSizeBigEndianBytes, responseSize)
 			response = append(responseSizeBigEndianBytes, response...)
 			_, err = tcpConn.Write(response)
+			if err != nil {
+				log.Println(err.Error())
+				return
+			}
 			if !quiet {
 				log.Printf("%s.%s %s", addr, port, logMessage)
 			}
