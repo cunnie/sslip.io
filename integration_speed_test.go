@@ -76,7 +76,7 @@ var _ = Describe("speed", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytesRead).To(Equal(52)) // The A record response "127.0.0.1" is 52 bytes
 			}
-			elapsedSeconds := time.Now().Sub(startTime).Seconds()
+			elapsedSeconds := time.Since(startTime).Seconds()
 			Eventually(serverSession.Err).Should(Say(`TypeA 127-0-0-1\.sslip\.io\. \? 127\.0\.0\.1`))
 			//fmt.Fprintf(os.Stderr, "Queries/second: %.2f\n", float64(numQueries)/elapsedSeconds)
 			Expect(float64(numQueries) / elapsedSeconds).Should(BeNumerically(">", minThroughput))

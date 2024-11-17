@@ -124,8 +124,9 @@ Update the webservers with the HTML with new versions:
 
 ```bash
 ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
-ssh ns-aws.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
-ssh ns-azure.sslip.io curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
+for HOST in ns-{aws,azure,gce,hetzner,ovh}.sslip.io; do
+  ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
+done
 ```
 
 Browse to <https://ci.nono.io/teams/main/pipelines/sslip.io> and check that everything is green.

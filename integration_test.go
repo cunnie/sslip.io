@@ -558,15 +558,13 @@ func squatOnTcp(port int) (squatters []net.Listener, err error) {
 		squatters = append(squatters, squatter)
 	}
 	addrCIDRs, err := net.InterfaceAddrs() // typical addrCIDR "10.9.9.161/24"
+	ipv6regex := regexp.MustCompile(`:`)
 	for _, addrCIDR := range addrCIDRs {
 		ip, _, err := net.ParseCIDR(addrCIDR.String())
 		if err != nil {
 			return squatters, err
 		}
-		ipv6, err := regexp.MatchString(`:`, addrCIDR.String())
-		if err != nil {
-			return squatters, err
-		}
+		ipv6 := ipv6regex.MatchString(addrCIDR.String())
 		// accommodate IPv6's requirements for brackets: "[::1]:1024" vs "127.0.0.1:1024"
 		if ipv6 {
 			squatter, err = net.Listen("tcp", "["+ip.String()+"]"+":"+strconv.Itoa(port))
