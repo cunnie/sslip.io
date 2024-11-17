@@ -22,9 +22,10 @@ func main() {
 	var addresses = flag.String("addresses",
 		"sslip.io=78.46.204.247,"+
 			"sslip.io=2a01:4f8:c17:b8f::2,"+
-			"ns.sslip.io=52.187.42.158,"+
 			"ns.sslip.io=104.155.144.4,"+
 			"ns.sslip.io=2600:1900:4000:4d12::,"+
+			"ns.sslip.io=5.78.115.44,"+
+			"ns.sslip.io=2a01:4ff:1f0:c920::,"+
 			"ns.sslip.io=51.75.53.19,"+
 			"ns.sslip.io=2001:41d0:602:2313::1,"+
 			"ns-aws.sslip.io=52.0.56.137,"+
