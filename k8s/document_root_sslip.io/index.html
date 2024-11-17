@@ -123,20 +123,13 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
       <p>sslip.io can be used to brand your own site (you don’t need to use the sslip.io domain). For example, say you
         own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
         accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
-      <div class="alert alert-warning" role="alert">
-        <b>Do not use these name servers for general-purpose name resolution</b>; instead, continue to use
-        <code>1.1.1.1</code>, <code>8.8.8.8</code>, <code>9.9.9.9</code> or whatever name server you're currently
-        using. The sslip.io name servers are not <a
-          href="https://en.wikipedia.org/wiki/Public_recursive_name_server">public recursive name servers</a>. They will
-        not
-        resolve regular domain names (e.g. "<a href="https://google.com">google.com</a>").
-      </div>
       <div class="alert alert-danger" role="alert">
-        <b>2024-11-11</b> <code>ns-aws.sslip.io</code> is deprecated. Please update your nameservers to the nameservers
-        below. <code>ns-aws.sslip.io</code> will be shut down on <b>2024-12-12</b>.<br>
+        <b>2024-11-16</b> <code>ns-aws.sslip.io</code> and <code>ns-azure.sslip.io</code> are deprecated. Please update
+        your nameservers to the nameservers
+        below. <code>ns-aws</code> and <code>ns-azure</code>will be shut down on <b>2024-12-25</b>.<br>
         <br>
         In October 2024, AWS charged me $113.88 for bandwidth for 1,265.3 GB at $0.09 / GB, and I am loath to spend
-        $1,366 on yearly bandwidth when other vendors, such as OVH, are much more reasonable.
+        $1,366 on yearly bandwidth when other vendors, such as OVH and Hetzner, are much more reasonable.
       </div>
       <table class="table">
         <thead>
@@ -147,19 +140,20 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
           </tr>
         </thead>
         <tbody>
-          <tr class="even">
-            <td><code>ns-azure.sslip.io.</code></td>
-            <td>52.187.42.158</td>
-            <td>Singapore</td>
-          </tr>
           <tr class="odd">
             <td><code>ns-gce.sslip.io.</code></td>
             <td>104.155.144.4</td>
             <td>USA</td>
           </tr>
           <tr class="even">
+            <td><code>ns-hetzner.sslip.io.</code></td>
+            <td>5.78.115.44<br />
+              2a01:4ff:1f0:c920::</td>
+            <td>USA</td>
+          </tr>
+          <tr class="odd">
             <td><code>ns-ovh.sslip.io.</code></td>
-            <td>51.75.53.19<br>
+            <td>51.75.53.19<br />
               2001:41d0:602:2313::1</td>
             <td>Poland</td>
           </tr>
@@ -345,8 +339,9 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
           <a href="http://nip.io">nip.io</a>: similar to xip.io, but the PowerDNS backend is written in elegant Python
         </li>
         <li>
-          <a href="https://github.com/Corollarium/localtls">localtls</a>: A DNS server + webserver to provide TLS to on
-          local addresses.
+          <a href="https://letsencrypt.org/">Let's Encrypt</a>: A Certificate Authority providing TLS certificates; they
+          have never failed to increase our rate limits when asked. If you can, <a
+            href="https://www.abetterinternet.org/donate/">donate</a>.
         </li>
       </ul>
       <hr>
