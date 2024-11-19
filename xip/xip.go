@@ -985,7 +985,7 @@ func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err er
 		len(x.BlocklistCIDRs)))
 	metrics = append(metrics, fmt.Sprintf("Queries: %d (%.1f/s)", x.Metrics.Queries, float64(x.Metrics.Queries)/uptime.Seconds()))
 	metrics = append(metrics, fmt.Sprintf("TCP/UDP: %d/%d", x.Metrics.TCPQueries, x.Metrics.UDPQueries))
-	metrics = append(metrics, fmt.Sprintf("Answered Queries: %d (%.1f/s)", x.Metrics.AnsweredQueries, float64(x.Metrics.AnsweredQueries)/uptime.Seconds()))
+	metrics = append(metrics, fmt.Sprintf("Answer ≥ 1: %d (%.1f/s)", x.Metrics.AnsweredQueries, float64(x.Metrics.AnsweredQueries)/uptime.Seconds()))
 	metrics = append(metrics, fmt.Sprintf("A: %d", x.Metrics.AnsweredAQueries))
 	metrics = append(metrics, fmt.Sprintf("AAAA: %d", x.Metrics.AnsweredAAAAQueries))
 	metrics = append(metrics, fmt.Sprintf("TXT Source: %d", x.Metrics.AnsweredTXTSrcIPQueries))

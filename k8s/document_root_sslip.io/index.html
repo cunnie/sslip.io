@@ -125,8 +125,8 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
         accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
       <div class="alert alert-danger" role="alert">
         <b>2024-11-16</b> <code>ns-aws.sslip.io</code> and <code>ns-azure.sslip.io</code> are deprecated. Please update
-        your nameservers to the nameservers
-        below. <code>ns-aws</code> and <code>ns-azure</code>will be shut down on <b>2024-12-25</b>.<br>
+        your nameservers to the nameservers below. <code>ns-aws</code> and <code>ns-azure</code>will be shut down on
+        <b>2024-12-25</b>.<br>
         <br>
         In October 2024, AWS charged me $113.88 for bandwidth for 1,265.3 GB at $0.09 / GB, and I am loath to spend
         $1,366 on yearly bandwidth when other vendors, such as OVH and Hetzner, are much more reasonable.
@@ -147,13 +147,13 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
           </tr>
           <tr class="even">
             <td><code>ns-hetzner.sslip.io.</code></td>
-            <td>5.78.115.44<br />
+            <td>5.78.115.44<br>
               2a01:4ff:1f0:c920::</td>
             <td>USA</td>
           </tr>
           <tr class="odd">
             <td><code>ns-ovh.sslip.io.</code></td>
-            <td>51.75.53.19<br />
+            <td>51.75.53.19<br>
               2001:41d0:602:2313::1</td>
             <td>Poland</td>
           </tr>
@@ -267,7 +267,7 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
   "Blocklist: 2023-10-04 07:37:50-07 3,6"
   "Queries: 14295231 (86.3/s)"
   "TCP/UDP: 5231/14290000"
-  "Answered Queries: 4872793 (29.4/s)"
+  "Answer ≥ 1: 4872793 (29.4/s)"
   "A: 4025711"
   "AAAA: 247215"
   "TXT Source: 57"
@@ -294,24 +294,23 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
         <dt>TCP/UDP</dt>
         <dd>This is the number of queries received on the TCP protocol versus the UDP protocol. The sum should equal
           the number of queries. DNS typically uses the UDP protocol</dd>
-        <dt>Answered Queries</dt>
+        <dt>Answer ≥ 1</dt>
         <dd>This consists of two numbers: the first is the number of queries we responded to with at least one record
           in the answer section, and the second is the first number divided by the uptime (i.e. queries/second). Note
-          that the number of answered queries is typically a third or fourth the size of the overall queries. This is
-          normal. One reason for this disparity is that often both the IPv4 (A) and IPv6 (AAAA) records will be checked,
-          but only one reply will have a record in the answer section . For example, browsing to "127.0.0.1.sslip.io"
-          generates two lookups, one with an answer (IPv4), and one without (IPv6). Another reason is that lookups
-          follow
-          a chain, e.g. looking up "127.0.0.1.sslip.io" may generate up to four queries for A records ("1.sslip.io",
-          "0.1.sslip.io", "0.0.1.sslip.io" and "127.0.0.1.sslip.io"), only the last of which returns a record in the
-          answer section. Pro-tip: if you want to shave milliseconds off name resolution, use dashes not dots in your
-          hostname (e.g. "10-9-9-30.sslip.io" instead of "10.9.9.30.sslip.io")</dd>
+          that the number of responses with an answer record is typically a fourth the size of the overall responses.
+          This is normal. One reason for this disparity is that often both the IPv4 (A) and IPv6 (AAAA) records will be
+          checked, but only one reply will have a record in the answer section . For example, browsing to
+          "127.0.0.1.sslip.io" generates two lookups, one with an answer (IPv4), and one without (IPv6). Another reason
+          is that lookups follow a chain, e.g. looking up "127.0.0.1.sslip.io" may generate up to four queries for A
+          records ("1.sslip.io", "0.1.sslip.io", "0.0.1.sslip.io" and "127.0.0.1.sslip.io"), only the last of which
+          returns a record in the answer section. Pro-tip: if you want to shave milliseconds off name resolution, use
+          dashes not dots in your hostname (e.g. "10-9-9-30.sslip.io" instead of "10.9.9.30.sslip.io")</dd>
         <dt>A</dt>
-        <dd>The number of responses which included an A (IPv4) record since starting operation (e.g. "dig
-          127.0.0.1.sslip.io")</dd>
+        <dd>The number of responses which included an A (IPv4) record in the answer section since starting operation
+          (e.g. "dig 127.0.0.1.sslip.io")</dd>
         <dt>AAAA</dt>
-        <dd>The number of responses which included an AAAA (IPv6) record since starting operation (e.g. "dig
-          --1.sslip.io aaaa")</dd>
+        <dd>The number of responses which included an AAAA (IPv6) record in the answer section since starting operation
+          (e.g. "dig --1.sslip.io aaaa")</dd>
         <dt>TXT Source</dt>
         <dd>The number of responses which included a TXT record of the querier's IP address since starting operation
           (e.g. "dig @ns.sslip.io ip.sslip.io txt")</dd>
@@ -339,8 +338,8 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
           <a href="http://nip.io">nip.io</a>: similar to xip.io, but the PowerDNS backend is written in elegant Python
         </li>
         <li>
-          <a href="https://letsencrypt.org/">Let's Encrypt</a>: A Certificate Authority providing TLS certificates; they
-          have never failed to increase our rate limits when asked. If you can, <a
+          <a href="https://letsencrypt.org/">Let's Encrypt</a>: A Certificate Authority providing TLS certificates;
+          they have never failed to increase our rate limits when asked. If you can, <a
             href="https://www.abetterinternet.org/donate/">donate</a>.
         </li>
       </ul>
@@ -349,8 +348,7 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
       <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
         more often an indication that when the servers were last checked (currently every six hours), the CI (continuous
         integration) <a href="https://ci.nono.io/teams/main/pipelines/sslip.io">server</a> had difficulty reaching one
-        of
-        the three sslip.io name servers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
+        of the three sslip.io name servers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
             out]</a></sup></p>
       <p><a id="timeout"><sup>[connection timed out]</sup></a></p>
       <p>DNS runs over <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a> which has no guaranteed

@@ -205,12 +205,13 @@ func getMetrics(port int) (m xip.Metrics) {
 	Expect(err).ToNot(HaveOccurred())
 	var uptime int
 	var junk string
+	var greaterThanOrEqualsUnicode string
 	_, err = fmt.Sscanf(string(stdout),
 		"\"Uptime: %d\"\n"+
 			"\"Blocklist: %s %s %s\n"+
 			"\"Queries: %d (%s\n"+ // %s "swallows" the `/s"` at the end
 			"\"TCP/UDP: %d/%d\"\n"+
-			"\"Answered Queries: %d (%s\n"+ // %s "swallows" the `/s"` at the end
+			"\"Answer %s 1: %d (%s\n"+ // %s "swallows" the `/s"` at the end
 			"\"A: %d\"\n"+
 			"\"AAAA: %d\"\n"+
 			"\"TXT Source: %d\"\n"+
@@ -222,7 +223,7 @@ func getMetrics(port int) (m xip.Metrics) {
 		&junk, &junk, &junk,
 		&m.Queries, &junk,
 		&m.TCPQueries, &m.UDPQueries,
-		&m.AnsweredQueries, &junk,
+		&greaterThanOrEqualsUnicode, &m.AnsweredQueries, &junk,
 		&m.AnsweredAQueries,
 		&m.AnsweredAAAAQueries,
 		&m.AnsweredTXTSrcIPQueries,
