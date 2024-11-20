@@ -725,3 +725,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 5.75.140.81/32 # kishss2.ir
 141.94.173.106/32 # cvut.cz
 66.23.193.126/32 # Interstellar
+46.250.237.97/32 # UNFPA
