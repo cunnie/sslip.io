@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=3.2.3
-export VERSION=3.2.4
+export OLD_VERSION=3.2.4
+export VERSION=3.2.5
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -42,13 +42,13 @@ Test from another window:
 
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=3.2.4
+export VERSION=3.2.5
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
 # NS ordering might be rotated
 dig +short ns example.com @$DNS_SERVER_IP
-printf "ns-azure.sslip.io.\nns-gce.sslip.io.\nns-ovh.sslip.io.\n"
+printf "ns-gce.sslip.io.\nns-hetzner.sslip.io.\nns-ovh.sslip.io.\n"
 dig +short mx example.com @$DNS_SERVER_IP
 echo "0 example.com."
 dig +short mx sslip.io @$DNS_SERVER_IP
@@ -81,7 +81,7 @@ original window. Commit our changes:
 
 ```bash
 git add -p
-git ci -vm"$VERSION: Shorten TTL for publicly-accessible A & AAAA records"
+git ci -vm"$VERSION: Minor bugfixes, tweaks"
 git tag $VERSION
 git push
 git push --tags
