@@ -205,11 +205,17 @@ func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
 }
 
 func bindUDPAddressesIndividually(bindPort int) (udpConns []*net.UDPConn, unboundIPs []string) {
-	ipCIDRs := listLocalIPCIDRs()
-	for _, ipCIDR := range ipCIDRs {
-		ip, _, err := net.ParseCIDR(ipCIDR)
+	// typical value of net.Addr.String() → "::1/128" "172.19.0.17/23"
+	// (don't worry about the port numbers in https://pkg.go.dev/net#Addr; they won't appear)
+	interfaceAddrs, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Printf(`I couldn't get the local interface addresses: "%s"`, err.Error())
+		return nil, nil
+	}
+	for _, interfaceAddr := range interfaceAddrs {
+		ip, _, err := net.ParseCIDR(interfaceAddr.String())
 		if err != nil {
-			log.Printf(`I couldn't parse the local interface "%s".`, ipCIDR)
+			log.Printf(`I couldn't parse the local interface "%s".`, interfaceAddr.String())
 			continue
 		}
 		udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
@@ -227,11 +233,17 @@ func bindUDPAddressesIndividually(bindPort int) (udpConns []*net.UDPConn, unboun
 }
 
 func bindTCPAddressesIndividually(bindPort int) (tcpListeners []*net.TCPListener, unboundIPs []string) {
-	ipCIDRs := listLocalIPCIDRs()
-	for _, ipCIDR := range ipCIDRs {
-		ip, _, err := net.ParseCIDR(ipCIDR)
+	// typical value of net.Addr.String() → "::1/128" "172.19.0.17/23"
+	// (don't worry about the port numbers in https://pkg.go.dev/net#Addr; they won't appear)
+	interfaceAddrs, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Printf(`I couldn't get the local interface addresses: "%s"`, err.Error())
+		return nil, nil
+	}
+	for _, interfaceAddr := range interfaceAddrs {
+		ip, _, err := net.ParseCIDR(interfaceAddr.String())
 		if err != nil {
-			log.Printf(`I couldn't parse the local interface "%s".`, ipCIDR)
+			log.Printf(`I couldn't parse the local interface "%s".`, interfaceAddr.String())
 			continue
 		}
 		listener, err := net.ListenTCP("tcp", &net.TCPAddr{IP: ip, Port: bindPort})
@@ -242,27 +254,6 @@ func bindTCPAddressesIndividually(bindPort int) (tcpListeners []*net.TCPListener
 		}
 	}
 	return tcpListeners, unboundIPs
-}
-
-// TODO: replace this function with net.InterfaceAddrs() ([]Addr, error)
-// typical addr "10.9.9.161/24"
-func listLocalIPCIDRs() []string {
-	var ifaces []net.Interface
-	var cidrStrings []string
-	var err error
-	if ifaces, err = net.Interfaces(); err != nil {
-		panic(err)
-	}
-	for _, iface := range ifaces {
-		var cidrs []net.Addr
-		if cidrs, err = iface.Addrs(); err != nil {
-			panic(err)
-		}
-		for _, cidr := range cidrs {
-			cidrStrings = append(cidrStrings, cidr.String())
-		}
-	}
-	return cidrStrings
 }
 
 // Thanks https://stackoverflow.com/a/52152912/2510873
