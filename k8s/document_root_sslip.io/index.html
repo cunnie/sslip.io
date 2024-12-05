@@ -267,7 +267,7 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
   "Blocklist: 2023-10-04 07:37:50-07 3,6"
   "Queries: 14295231 (86.3/s)"
   "TCP/UDP: 5231/14290000"
-  "Answer ≥ 1: 4872793 (29.4/s)"
+  "Answer > 0: 4872793 (29.4/s)"
   "A: 4025711"
   "AAAA: 247215"
   "TXT Source: 57"
@@ -294,7 +294,7 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
         <dt>TCP/UDP</dt>
         <dd>This is the number of queries received on the TCP protocol versus the UDP protocol. The sum should equal
           the number of queries. DNS typically uses the UDP protocol</dd>
-        <dt>Answer ≥ 1</dt>
+        <dt>Answer > 0</dt>
         <dd>This consists of two numbers: the first is the number of queries we responded to with at least one record
           in the answer section, and the second is the first number divided by the uptime (i.e. queries/second). Note
           that the number of responses with an answer record is typically a fourth the size of the overall responses.
