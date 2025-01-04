@@ -18,12 +18,12 @@ sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
   k8s/Dockerfile-sslip.io-dns-server
 ```
 
-Optional: Update the version for the ns-aws, ns-azure, ns-gce, ns-ovh install scripts
+Optional: Update the version for the ns-gce, ns-hetzner, and ns-ovh install scripts
 
 ```bash
 pushd ~/bin
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
-  ~/bin/install_ns-{aws,azure,gce,hetzner,ovh}.sh
+  ~/bin/install_ns-{gce,hetzner,ovh}.sh
 git add -p
 git ci -m"Update sslip.io DNS server $OLD_VERSION → $VERSION"
 git push
@@ -85,19 +85,9 @@ git ci -vm"$VERSION: Minor bugfixes, tweaks"
 git tag $VERSION
 git push
 git push --tags
-scp bin/sslip.io-dns-server-linux-arm64 ns-aws:
-scp bin/sslip.io-dns-server-linux-amd64 ns-azure:
 scp bin/sslip.io-dns-server-linux-amd64 ns-gce:
 scp bin/sslip.io-dns-server-linux-amd64 ns-hetzner:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
-ssh ns-aws sudo install sslip.io-dns-server-linux-arm64 /usr/bin/sslip.io-dns-server
-ssh ns-aws sudo shutdown -r now
- # check version number:
-sleep 10; while ! dig txt @ns-aws.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-azure
-ssh ns-azure sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
-ssh ns-azure sudo shutdown -r now
- # check version number:
-sleep 10; while ! dig txt @ns-azure.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-gce
 ssh ns-gce sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-gce sudo shutdown -r now
  # check version number:
@@ -124,7 +114,7 @@ Update the webservers with the HTML with new versions:
 
 ```bash
 ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
-for HOST in ns-{aws,azure,gce,hetzner,ovh}.sslip.io; do
+for HOST in {blocked,ns-gce,ns-hetzner,ns-ovh}.sslip.io; do
   ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 done
 ```

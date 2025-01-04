@@ -63,7 +63,7 @@ var _ = Describe("speed", func() {
 			// The queries/second is conservative, realistically should be higher
 			// - queries are done sequentially, not in parallel
 			// - each query includes an overhead of 4 Expect()
-			// current max queries is 132/second (ns-aws.sslip.io.)
+			// current max queries is 2047/second (ns-ovh.sslip.io.)
 			// ~19k Apple M2
 			// ~8k vSphere Xeon D-1736 2.7GHz
 			// ~6k AWS Graviton T2

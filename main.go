@@ -28,9 +28,8 @@ func main() {
 			"ns.sslip.io=2a01:4ff:1f0:c920::,"+
 			"ns.sslip.io=51.75.53.19,"+
 			"ns.sslip.io=2001:41d0:602:2313::1,"+
-			"ns-aws.sslip.io=52.0.56.137,"+
-			"ns-aws.sslip.io=2600:1f18:aaf:6900::a,"+
-			"ns-azure.sslip.io=52.187.42.158,"+
+			"blocked.sslip.io=52.0.56.137,"+
+			"blocked.sslip.io=2600:1f18:aaf:6900::a,"+
 			"ns-gce.sslip.io=104.155.144.4,"+
 			"ns-gce.sslip.io=2600:1900:4000:4d12::,"+
 			"ns-hetzner.sslip.io=5.78.115.44,"+

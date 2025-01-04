@@ -14,7 +14,7 @@ Let's Encrypt DNS-01 challenge process.
 Let's Encrypt will query your name servers for the TXT record
 `_acme-challenge.xip.example.com`, then your DNS server will respond with the
 TXT record _that should have been created on Route53 as part of the challenge_,
-otherwise it'll return the delegated nameservers (ns-azure.sslip.io and so on).
+otherwise it'll return the delegated nameservers (ns-gce.sslip.io and so on).
 
 ### Using the sslip.io domain
 
