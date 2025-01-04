@@ -241,7 +241,7 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
         </li>
       </ul>
       <p>A big advantage of using DNS queries instead of HTTP queries is bandwidth: querying
-        <code>ns-azure.sslip.io</code> requires a mere 594 bytes spread over 2 packets; Querying <a
+        <code>ns-ovh.sslip.io</code> requires a mere 594 bytes spread over 2 packets; Querying <a
           href="https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over
         14 times
         as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
@@ -262,7 +262,7 @@ dig @ns-gce.nono.io version.status.sslip.io txt +short
       <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
       <code>metrics.status.sslip.io</code>
       <pre>
-dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
+dig @ns-ovh.sslip.io metrics.status.sslip.io txt +short
   "Uptime: 165655"
   "Blocklist: 2023-10-04 07:37:50-07 3,6"
   "Queries: 14295231 (86.3/s)"
@@ -316,7 +316,7 @@ dig @ns-azure.sslip.io metrics.status.sslip.io txt +short
           (e.g. "dig @ns.sslip.io ip.sslip.io txt")</dd>
         <dt>TXT Version</dt>
         <dd>The number of responses which included a TXT record of the DNS's servers version since starting operation
-          (e.g. "dig @ns-azure.sslip.io version.status.sslip.io txt")</dd>
+          (e.g. "dig @ns-hetzner.sslip.io version.status.sslip.io txt")</dd>
         <dt>PTR IPv4/IPv6</dt>
         <dd>This consists of two numbers; the first is the number of responses to IPv4 PTR queries
           (<code>1.0.0.127.in-addr.arpa.</code> → <code>127-0-0-1.sslip.io.</code>), the second, IPv6 PTR queries</dd>

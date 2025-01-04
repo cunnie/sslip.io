@@ -3,7 +3,7 @@
 # This is a list of forbidden names and CIDRs that are often used in phishing
 # attacks. We won't resolve these hostnames to their embedded IP address (e.g.
 # we won't resolve "raiffeisen.94.228.116.140.sslip.io" to 94.228.116.140);
-# instead, we'll resolve it to one of our server's, ns-aws.sslip.io's, IP
+# instead, we'll resolve it to one of our server's, blocked.sslip.io's, IP
 # addresses, 52.0.56.137 or 2600:1f18:aaf:6900::a.  Similarly, we won't resolve
 # nf-43-134-66-67.sslip.io to 43.134.66.67 because it falls within one of our
 # blocked CIDRs (43.134.66.67/24).
