@@ -726,3 +726,6 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 141.94.173.106/32 # cvut.cz
 66.23.193.126/32 # Interstellar
 46.250.237.97/32 # UNFPA
+185.140.12.132 # telegram
+77.221.141.201 # telegram
+89.23.103.58 # don't know, but Namecheap wants 'em shut down
