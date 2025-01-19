@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -11,8 +11,7 @@ jobs:
     runs-on: self-hosted
     container: cunnie/fedora-golang-bosh
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Test
-      run: ginkgo -r -p .
-
+      - name: Test
+        run: ginkgo -r -p .
