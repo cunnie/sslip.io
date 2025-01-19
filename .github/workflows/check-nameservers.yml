@@ -1,4 +1,4 @@
-name: Check DNS
+name: Check Nameservers
 
 on:
   schedule:
