@@ -3,38 +3,27 @@ name: CI
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Only run on main repo, not forks
+    if: github.repository == 'cunnie/sslip.io'
+    runs-on: self-hosted
+    container: cunnie/fedora-golang-bosh
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21'
-
-    - name: Build
-      run: go build -v ./...
-
     - name: Test
-      run: go test -v ./...
+      run: ginkgo -r -p .
 
   release:
     needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    container: cunnie/fedora-golang-bosh
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'cunnie/sslip.io'
     
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21'
     
     - name: Build Release Binary
       run: |
