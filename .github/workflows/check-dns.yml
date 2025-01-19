@@ -1,0 +1,21 @@
+name: Check DNS
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # Runs every 6 hours
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  check-dns:
+    runs-on: self-hosted
+    container:
+      image: cunnie/fedora-ruby-bind-utils
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run DNS check
+        run: ./ci/tasks/check-dns.sh
+        env:
+          DOMAIN: "" # You can set your domain here if needed
