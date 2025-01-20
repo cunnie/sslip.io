@@ -3,8 +3,7 @@ name: Build cunnie/fedora-ruby-bind-utils
 on:
   push:
     paths:
-      - "Docker/fedora-
-        ruby-bind-utils/Dockerfile"
+      - "Docker/fedora-ruby-bind-utils/Dockerfile"
     branches:
       - main
   workflow_dispatch:
@@ -39,8 +38,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: Docker/fedora-
-            ruby-bind-utils
+          context: Docker/fedora-ruby-bind-utils
           platforms: linux/amd64,linux/arm64
           push: true
           tags: cunnie/fedora-ruby-bind-utils:latest
