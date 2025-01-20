@@ -1,16 +1,18 @@
-name: Build DNS Server Docker Image
+name: Build cunnie/fedora-golang-bosh
 
 on:
   push:
-    tags:
-      - '*'  # Trigger on any tag
-  workflow_dispatch:  # Allow manual triggering
+    paths:
+      - "Docker/fedora-golang-bosh/Dockerfile"
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up QEMU
@@ -28,10 +30,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: k8s/
-          file: k8s/Dockerfile-sslip.io-dns-server
+          context: Docker/fedora-golang-bosh
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            cunnie/sslip.io-dns-server:latest
-            cunnie/sslip.io-dns-server:${{ github.ref_name }} 
+          tags: cunnie/fedora-golang-bosh:latest
