@@ -1,5 +1,4 @@
-name: Build cunnie/fedora-
-  ruby-bind-utils
+name: Build cunnie/fedora-ruby-bind-utils
 
 on:
   push:
@@ -36,5 +35,4 @@ jobs:
             ruby-bind-utils
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: cunnie/fedora-
-            ruby-bind-utils:latest
+          tags: cunnie/fedora-ruby-bind-utils:latest
