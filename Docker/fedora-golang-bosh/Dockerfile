@@ -71,7 +71,7 @@ RUN curl -L https://github.com/cloudfoundry/bosh-cli/releases/download/v7.5.2/bo
   chmod +x /usr/local/bin/bosh
 
 RUN dnf install -y dnf-plugins-core; \
-  dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo; \
+  dnf-3 config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo; \
   dnf -y install vault; \
   setcap -r /usr/bin/vault
 
