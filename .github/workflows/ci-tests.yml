@@ -14,5 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Download dependencies
+        run: go mod download
+
       - name: Test
         run: ginkgo -r -p .
