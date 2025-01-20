@@ -12,6 +12,14 @@ on:
 jobs:
   build:
     runs-on: self-hosted
+    container:
+      image: docker:24.0-dind
+      options: --privileged
+    services:
+      docker:
+        image: docker:24.0-dind
+        options: --privileged
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

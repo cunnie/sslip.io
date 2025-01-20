@@ -9,6 +9,14 @@ on:
 jobs:
   build-and-push:
     runs-on: self-hosted
+    container:
+      image: docker:24.0-dind
+      options: --privileged
+    services:
+      docker:
+        image: docker:24.0-dind
+        options: --privileged
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
