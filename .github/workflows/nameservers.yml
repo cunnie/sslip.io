@@ -16,6 +16,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run DNS check
-        run: ./ci/tasks/check-nameservers.sh
+        run: rspec --format documentation --color spec/
         env:
           DOMAIN: sslip.io # You can set your domain here if needed
