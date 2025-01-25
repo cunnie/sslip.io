@@ -15,4 +15,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Test
-        run: go mod download && sleep 600 && go install github.com/onsi/ginkgo/v2/ginkgo && ginkgo -r -p .
+        run: HOME=/root ginkgo -r -p .
