@@ -307,7 +307,7 @@ var _ = Describe("Xip", func() {
 		var nsName dnsmessage.Name
 		nsName, err = dnsmessage.NewName("1.com")
 		Expect(err).ToNot(HaveOccurred())
-		xip.Customizations["a.com"] = xip.DomainCustomization{NS: []dnsmessage.NSResource{dnsmessage.NSResource{NS: nsName}}}
+		xip.Customizations["a.com"] = xip.DomainCustomization{NS: []dnsmessage.NSResource{{NS: nsName}}}
 		xip.Customizations["b.com"] = xip.DomainCustomization{}
 
 		When("the domain is delegated", func() {
