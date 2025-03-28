@@ -14,9 +14,8 @@ import (
 )
 
 // cidrList is a custom flag type for a list of CIDR blocks
-type cidrNetList []*net.IPNet
+type cidrNetList []net.IPNet
 
-// String returns a string representation of the CIDR blocks
 func (c *cidrNetList) String() string {
 	var cidrStrings []string
 	for _, cidr := range *c {
@@ -25,7 +24,6 @@ func (c *cidrNetList) String() string {
 	return strings.Join(cidrStrings, ",")
 }
 
-// Converts a comma-separated string of CIDR blocks into a list of net.IPNet
 func (c *cidrNetList) Set(value string) error {
 	parts := strings.Split(value, ",")
 	for _, part := range parts {
@@ -33,7 +31,7 @@ func (c *cidrNetList) Set(value string) error {
 		if err != nil {
 			return err
 		}
-		*c = append(*c, cidr)
+		*c = append(*c, *cidr)
 	}
 	return nil
 }
@@ -78,6 +76,8 @@ func main() {
 
 	x, logmessages := xip.NewXip(*blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","), strings.Split(*delegates, ","))
 	x.Public = *public
+	x.AllowedCIDRs = allowedCidrs
+
 	for _, logmessage := range logmessages {
 		log.Println(logmessage)
 	}
