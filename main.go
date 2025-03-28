@@ -13,6 +13,31 @@ import (
 	"xip/xip"
 )
 
+// cidrList is a custom flag type for a list of CIDR blocks
+type cidrNetList []*net.IPNet
+
+// String returns a string representation of the CIDR blocks
+func (c *cidrNetList) String() string {
+	var cidrStrings []string
+	for _, cidr := range *c {
+		cidrStrings = append(cidrStrings, cidr.String())
+	}
+	return strings.Join(cidrStrings, ",")
+}
+
+// Converts a comma-separated string of CIDR blocks into a list of net.IPNet
+func (c *cidrNetList) Set(value string) error {
+	parts := strings.Split(value, ",")
+	for _, part := range parts {
+		_, cidr, err := net.ParseCIDR(strings.TrimSpace(part))
+		if err != nil {
+			return err
+		}
+		*c = append(*c, cidr)
+	}
+	return nil
+}
+
 func main() {
 	var blocklistURL = flag.String("blocklistURL",
 		"https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt",
@@ -44,6 +69,8 @@ func main() {
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response. Use this to avoid Google Cloud charging you $30/month to retain the logs of your GKE-based sslip.io server")
 	var public = flag.Bool("public", true, "allows resolution of public IP addresses. If false, only resolves private IPs including localhost (127/8, ::1), link-local (169.254/16, fe80::/10), CG-NAT (100.64/12), private (10/8, 172.16/12, 192.168/16, fc/7). Set to false if you don't want miscreants impersonating you via public IPs. If unsure, set to false")
+	var allowedCidrs cidrNetList
+	flag.Var(&allowedCidrs, "allowed-cidrs", "Comma-separated list of CIDRs (IPv4 or IPv6), e.g., '192.168.1.0/24, 2001:db8::/32, 10.0.0.0/8, 2001:abcd:ef01:2345::/64'")
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	log.Printf("blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",

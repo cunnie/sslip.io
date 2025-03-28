@@ -32,6 +32,7 @@ type Xip struct {
 	BlocklistUpdated            time.Time               // The most recent time the Blocklist was updated
 	NameServers                 []dnsmessage.NSResource // The list of authoritative name servers (NS)
 	Public                      bool                    // Whether to resolve public IPs; set to false if security-conscious
+	AllowedCIDRs                []net.IPNet             // list of CIDRs that are allowed to be resolved; if empty, all CIDRs are allowed
 }
 
 // Metrics contains the counters of the important/interesting queries
@@ -675,7 +676,7 @@ func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage str
 	response.Additionals = append(response.Additionals,
 		func(b *dnsmessage.Builder) error {
 			for _, nameServer := range nameServers {
-				for _, aResource := range NameToA(nameServer.NS.String(), true) {
+				for _, aResource := range NameToA(nameServer.NS.String(), true, []net.IPNet{}) {
 					err := b.AResource(dnsmessage.ResourceHeader{
 						Name:   nameServer.NS,
 						Type:   dnsmessage.TypeA,
@@ -687,7 +688,7 @@ func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage str
 						return err
 					}
 				}
-				for _, aaaaResource := range NameToAAAA(nameServer.NS.String(), true) {
+				for _, aaaaResource := range NameToAAAA(nameServer.NS.String(), true, []net.IPNet{}) {
 					err := b.AAAAResource(dnsmessage.ResourceHeader{
 						Name:   nameServer.NS,
 						Type:   dnsmessage.TypeAAAA,
@@ -727,7 +728,8 @@ func buildNSRecords(b *dnsmessage.Builder, name dnsmessage.Name, nameServers []d
 // NameToA returns an []AResource that matched the hostname; it returns an array of zero-or-one records
 // possibly more if it's a customized record (e.g. the addresses of "ns.sslip.io.")
 // if "allowPublicIPs" is false, and the IP address is public, it'll return an empty array
-func NameToA(fqdnString string, allowPublicIPs bool) []dnsmessage.AResource {
+// if "allowedCIDRs" is not empty, it will only return IP addresses that are in the CIDR ranges
+func NameToA(fqdnString string, allowPublicIPs bool, allowedCIDRs []net.IPNet) []dnsmessage.AResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
 	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.A) > 0 {
@@ -747,6 +749,20 @@ func NameToA(fqdnString string, allowPublicIPs bool) []dnsmessage.AResource {
 			if (!allowPublicIPs) && IsPublic(ipv4address) {
 				return []dnsmessage.AResource{}
 			}
+			// Check if ipv4address is within allowedCIDRs
+			allowed := false
+			if len(allowedCIDRs) > 0 { // If allowedCIDRs is specified, use it as a filter.
+				for _, cidr := range allowedCIDRs {
+					if cidr.Contains(ipv4address) {
+						allowed = true
+						break
+					}
+				}
+				if !allowed {
+					return []dnsmessage.AResource{} // IP not in allowed CIDRs
+				}
+			}
+
 			return []dnsmessage.AResource{
 				{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
 			}
@@ -758,7 +774,7 @@ func NameToA(fqdnString string, allowPublicIPs bool) []dnsmessage.AResource {
 // NameToAAAA returns an []AAAAResource that matched the hostname; it returns an array of zero-or-one records
 // possibly more if it's a customized record (e.g. the addresses of "ns.sslip.io.")
 // if "allowPublicIPs" is false, and the IP address is public, it'll return an empty array
-func NameToAAAA(fqdnString string, allowPublicIPs bool) []dnsmessage.AAAAResource {
+func NameToAAAA(fqdnString string, allowPublicIPs bool, allowedCIDRs []net.IPNet) []dnsmessage.AAAAResource {
 	fqdn := []byte(fqdnString)
 	// is it a customized AAAA record? If so, return early
 	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.AAAA) > 0 {
@@ -779,6 +795,19 @@ func NameToAAAA(fqdnString string, allowPublicIPs bool) []dnsmessage.AAAAResourc
 	}
 	if (!allowPublicIPs) && IsPublic(ipv16address) {
 		return []dnsmessage.AAAAResource{}
+	}
+	// Check if ipv4address is within allowedCIDRs
+	allowed := false
+	if len(allowedCIDRs) > 0 { // If allowedCIDRs is specified, use it as a filter.
+		for _, cidr := range allowedCIDRs {
+			if cidr.Contains(ipv16address) {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return []dnsmessage.AAAAResource{} // IP not in allowed CIDRs
+		}
 	}
 	AAAAR := dnsmessage.AAAAResource{}
 	for i := range ipv16address {
@@ -813,8 +842,8 @@ func MXResources(fqdnString string) []dnsmessage.MXResource {
 func IsAcmeChallenge(fqdnString string) bool {
 	fqdnStringLowerCased := strings.ToLower(fqdnString)
 	if dns01ChallengeRE.MatchString(fqdnStringLowerCased) {
-		ipv4s := NameToA(fqdnStringLowerCased, true)
-		ipv6s := NameToAAAA(fqdnStringLowerCased, true)
+		ipv4s := NameToA(fqdnStringLowerCased, true, []net.IPNet{})
+		ipv6s := NameToAAAA(fqdnStringLowerCased, true, []net.IPNet{})
 		if len(ipv4s) > 0 || len(ipv6s) > 0 {
 			return true
 		}
@@ -1097,8 +1126,8 @@ func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklis
 }
 
 func (x *Xip) blocklist(hostname string) bool {
-	aResources := NameToA(hostname, true)
-	aaaaResources := NameToAAAA(hostname, true)
+	aResources := NameToA(hostname, true, []net.IPNet{})
+	aaaaResources := NameToAAAA(hostname, true, []net.IPNet{})
 	if len(aResources) == 0 && len(aaaaResources) == 0 {
 		return false
 	}
@@ -1130,7 +1159,7 @@ func (x *Xip) blocklist(hostname string) bool {
 
 func (x *Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
 	var nameToAs []dnsmessage.AResource
-	nameToAs = NameToA(q.Name.String(), x.Public)
+	nameToAs = NameToA(q.Name.String(), x.Public, x.AllowedCIDRs)
 	if len(nameToAs) == 0 {
 		// No Answers, only 1 Authorities
 		soaHeader, soaResource := SOAAuthority(q.Name)
@@ -1242,7 +1271,7 @@ func IsPublic(ip net.IP) (isPublic bool) {
 
 func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
 	var nameToAAAAs []dnsmessage.AAAAResource
-	nameToAAAAs = NameToAAAA(q.Name.String(), x.Public)
+	nameToAAAAs = NameToAAAA(q.Name.String(), x.Public, x.AllowedCIDRs)
 	if len(nameToAAAAs) == 0 {
 		// No Answers, only 1 Authorities
 		soaHeader, soaResource := SOAAuthority(q.Name)
