@@ -796,7 +796,7 @@ func NameToAAAA(fqdnString string, allowPublicIPs bool, allowedCIDRs []net.IPNet
 	if (!allowPublicIPs) && IsPublic(ipv16address) {
 		return []dnsmessage.AAAAResource{}
 	}
-	// Check if ipv4address is within allowedCIDRs
+	// Check if ipv6address is within allowedCIDRs
 	allowed := false
 	if len(allowedCIDRs) > 0 { // If allowedCIDRs is specified, use it as a filter.
 		for _, cidr := range allowedCIDRs {
