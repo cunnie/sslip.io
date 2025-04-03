@@ -730,3 +730,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 77.221.141.201/32 # telegram
 89.23.103.58/32 # don't know, but Namecheap wants 'em shut down
 93.127.160.4/32 # apple.com
+48.216.217.16/32 # coinbase
