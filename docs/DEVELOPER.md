@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=3.2.5
-export VERSION=3.2.6
+export OLD_VERSION=3.2.6
+export VERSION=3.2.7
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -14,8 +14,7 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   spec/check-dns_spec.rb
 # update the download instructions on the website
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
-  k8s/document_root_sslip.io/index.html \
-  k8s/Dockerfile-sslip.io-dns-server
+  Docker/sslip.io-dns-server/Dockerfile
 ```
 
 Optional: Update the version for the ns-gce, ns-hetzner, and ns-ovh install scripts
@@ -23,7 +22,7 @@ Optional: Update the version for the ns-gce, ns-hetzner, and ns-ovh install scri
 ```bash
 pushd ~/bin
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
-  ~/bin/install_ns-{gce,hetzner,ovh}.sh
+  ~/bin/install_ns-{gce,hetzner,ovh}.sh ~/bin/install_common.sh
 git add -p
 git ci -m"Update sslip.io DNS server $OLD_VERSION → $VERSION"
 git push
@@ -42,13 +41,13 @@ Test from another window:
 
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=3.2.6
+export VERSION=3.2.7
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
 # NS ordering might be rotated
 dig +short ns example.com @$DNS_SERVER_IP
-printf "ns-gce.sslip.io.\nns-hetzner.sslip.io.\nns-ovh.sslip.io.\n"
+printf "ns-hetzner.sslip.io.\nns-ovh.sslip.io.\nns-ovh-sg.sslip.io.\n"
 dig +short mx example.com @$DNS_SERVER_IP
 echo "0 example.com."
 dig +short mx sslip.io @$DNS_SERVER_IP
@@ -88,6 +87,7 @@ git push --tags
 scp bin/sslip.io-dns-server-linux-amd64 ns-gce:
 scp bin/sslip.io-dns-server-linux-amd64 ns-hetzner:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
+scp bin/sslip.io-dns-server-linux-amd64 ns-ovh-sg:
 ssh ns-gce sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-gce sudo shutdown -r now
  # check version number:
@@ -100,6 +100,10 @@ ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-se
 ssh ns-ovh sudo shutdown -r now
  # check version number:
 sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done
+ssh ns-ovh-sg sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
+ssh ns-ovh-sg sudo shutdown -r now
+ # check version number:
+sleep 10; while ! dig txt @ns-ovh-sg.sslip.io version.status.sslip.io +short; do sleep 5; done
 ```
 
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
@@ -114,7 +118,7 @@ Update the webservers with the HTML with new versions:
 
 ```bash
 ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
-for HOST in {blocked,ns-gce,ns-hetzner,ns-ovh}.sslip.io; do
+for HOST in {blocked,ns-gce,ns-hetzner,ns-ovh,ns-ovh-sg}.sslip.io; do
   ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 done
 ```
