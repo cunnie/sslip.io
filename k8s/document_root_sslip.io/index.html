@@ -141,26 +141,27 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
         </thead>
         <tbody>
           <tr class="odd">
-            <td><code>ns-gce.sslip.io.</code></td>
-            <td>104.155.144.4</td>
-            <td>USA</td>
-          </tr>
-          <tr class="even">
             <td><code>ns-hetzner.sslip.io.</code></td>
             <td>5.78.115.44<br>
               2a01:4ff:1f0:c920::</td>
             <td>USA</td>
           </tr>
-          <tr class="odd">
+          <tr class="even">
             <td><code>ns-ovh.sslip.io.</code></td>
             <td>51.75.53.19<br>
               2001:41d0:602:2313::1</td>
             <td>Poland</td>
           </tr>
+          <tr class="odd">
+            <td><code>ns-ovh-sg.sslip.io.</code></td>
+            <td>51.79.178.89<br>
+              2402:1f00:8001:d59::1</td>
+            <td>Singapore</td>
+          </tr>
         </tbody>
       </table>
       <p>Let’s test it from the command line using <code>dig</code>:</p>
-      <pre><code>dig @ns-gce.sslip.io. 169-254-169-254.xip.example.com +short</code></pre>
+      <pre><code>dig @ns-ovh.sslip.io. 169-254-169-254.xip.example.com +short</code></pre>
       <p>Yields, hopefully: <sup><a href="#timeout" class="alert-link">[connection timed out]</a></sup></p>
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
@@ -171,7 +172,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
         our server within a docker container:</p>
       <pre>
 docker run -it --rm fedora
-curl -L https://github.com/cunnie/sslip.io/releases/download/3.2.6/sslip.io-dns-server-linux-amd64 -o dns-server
+curl -L https://github.com/cunnie/sslip.io/releases/download/3.2.7/sslip.io-dns-server-linux-amd64 -o dns-server
 chmod +x dns-server
 ./dns-server 2&gt; dns-server.log &
 dnf install -y bind-utils
@@ -250,7 +251,7 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
       <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
       sslip.io software by querying the TXT record of <code>version.status.sslip.io</code>:
       <pre>
-dig @ns-gce.nono.io version.status.sslip.io txt +short
+dig @ns-ovh.nono.io version.status.sslip.io txt +short
   "2.7.0"
   "2023/10/04-18:51:49-0700"
   "8f7f2df"
@@ -324,7 +325,7 @@ dig @ns-ovh.sslip.io metrics.status.sslip.io txt +short
         <dd>The number of responses which included a delegation of the NS (name server) to satisfy a certificate
           authority's DNS-01 challenge. This lookup is used for generating wildcard certificates from Let's Encrypt and
           other certificate authority. Technically this is not a "successful" query in that we don't return a record in
-          the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-gce.sslip.io
+          the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-ovh.sslip.io
           _acme-challenge.192.168.0.1.sslip.io. soa")</dd>
       </dl>
       <h3 id="related">Related Services</h3>

@@ -121,8 +121,8 @@ as ARM64 (AWS Graviton, Apple M1/M2).
   privileged ports (<1024) ("`listen udp :53: bind: permission denied`"). For
   example, to run the server on port 9553: `go run main.go -port 9553`. To query,
   `dig @localhost 127.0.0.1.sslip.io -p 9553`
-- `-nameservers` overrides the default NS records
-  `ns-gce.sslip.io`, `ns-hetzner.sslip.io`, and `ns-ovh.sslip.io`; flag, e.g. `go run main.go
+- `-nameservers` overrides the default NS records `ns-hetzner.sslip.io`,
+  `ns-ovh.sslip.io`, and `ns-ovh-sg.sslip.io`; flag, e.g. `go run main.go
   -nameservers ns1.example.com,ns2.example.com`). If you're running your own
   nameservers, you probably want to set this. Don't forget to set address records
   for the new name servers with the `-addresses` flag (see below). Exception:
