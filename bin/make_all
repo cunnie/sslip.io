@@ -17,10 +17,7 @@ for GOARCH in amd64 arm64; do
       -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH \
       main.go &
   done
+  GOOS=windows
+  go build -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH.exe main.go &
 done
-
-# Windows has a custom extension, can't do arm64 yet
-GOOS=windows GOARCH=amd64
-go build -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH.exe main.go &
-
 wait
