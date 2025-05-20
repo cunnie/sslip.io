@@ -14,6 +14,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 )
@@ -25,6 +26,7 @@ var port = getFreePort()
 var serverPath, _ = Build("main.go")
 
 var _ = BeforeSuite(func() {
+	format.MaxLength = 0 // need more output, 4000 is the default
 	Expect(err).ToNot(HaveOccurred())
 	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist-test.txt")
 	serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
