@@ -1,6 +1,5 @@
 # sslip.io
 
-
 [![Production Nameservers](https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml/badge.svg)](https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml)
 [![CI Tests](https://github.com/cunnie/sslip.io/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/cunnie/sslip.io/actions/workflows/ci-tests.yml)
 
@@ -119,21 +118,21 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 - `-port` overrides the default port, 53, which the server binds to. This can
   be especially useful when running as a non-privileged user, unable to bind to
   privileged ports (<1024) ("`listen udp :53: bind: permission denied`"). For
-  example, to run the server on port 9553: `go run main.go -port 9553`. To query,
-  `dig @localhost 127.0.0.1.sslip.io -p 9553`
-- `-nameservers` overrides the default NS records `ns-hetzner.sslip.io`,
-  `ns-ovh.sslip.io`, and `ns-ovh-sg.sslip.io`; flag, e.g. `go run main.go
-  -nameservers ns1.example.com,ns2.example.com`). If you're running your own
-  nameservers, you probably want to set this. Don't forget to set address records
-  for the new name servers with the `-addresses` flag (see below). Exception:
-  `_acme-challenge` records are handled differently to accommodate the
-  procurement of Let's Encrypt wildcard certificates; you can read more about
-  that procedure [here](docs/wildcard.md)
+  example, to run the server on port 9553: `go run main.go -port 9553`. To
+  query, `dig @localhost 127.0.0.1.sslip.io -p 9553`
+- `-nameservers` overrides the default NS records `ns-do-sg.sslip.io`,
+  `ns-gce.sslip.io`, `ns-hetzner.sslip.io`, and `ns-ovh.sslip.io`; flag, e.g.
+  `go run main.go -nameservers ns1.example.com,ns2.example.com`). If you're
+  running your own nameservers, you probably want to set this. Don't forget to
+  set address records for the new name servers with the `-addresses` flag (see
+  below). Exception: `_acme-challenge` records are handled differently to
+  accommodate the procurement of Let's Encrypt wildcard certificates; you can
+  read more about that procedure [here](docs/wildcard.md)
 - `-addresses` overrides the default A/AAAA (IPv4/IPv6) address records. For
-  example, here's how we set the IPv4 record & IPv6 record for our nameserver (in
-  the `-nameservers` example above), ns1.example.com: `-addresses
-  ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note that you can set many
-  addresses for a single host, e.g.
+  example, here's how we set the IPv4 record & IPv6 record for our nameserver
+  (in the `-nameservers` example above), ns1.example.com: `-addresses
+  ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note that you can set
+  many addresses for a single host, e.g.
   `ns1.example.com=1.1.1.1,ns1.example.com=8.8.8.8,ns1.example.com=9.9.9.9`
 - `-blocklistURL` overrides the default block list,
   (<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
@@ -146,7 +145,7 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 - it binds to both UDP and TCP.
 - The SOA record is hard-coded except the _MNAME_ (primary master name server)
   record, which is set to the queried hostname (e.g. `dig big.apple.com
-  @ns-ovh.nono.io` would return an SOA with an _MNAME_ record of
+  @ns.sslip.io` would return an SOA with an _MNAME_ record of
   `big.apple.com.`
 - The MX records are hard-coded to the queried hostname with a preference of 0,
   except `sslip.io` itself, which has custom MX records to enable email
