@@ -110,15 +110,13 @@ sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sl
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
 - Click "Publish release"
 
-```bash
-fly -t nono trigger-job -j sslip.io/build-and-push-sslip.io-dns-server
-```
+Trigger a new workflow to publish the Docker image: <https://github.com/cunnie/sslip.io/actions/workflows/docker-sslip.io-dns-server.yml>
 
 Update the webservers with the HTML with new versions:
 
 ```bash
 ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
-for HOST in {blocked,ns-gce,ns-hetzner,ns-ovh,ns-ovh-sg}.sslip.io; do
+for HOST in {blocked,ns-do-sg,ns-gce,ns-hetzner,ns-ovh,ns-ovh-sg}.sslip.io; do
   ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 done
 ```
