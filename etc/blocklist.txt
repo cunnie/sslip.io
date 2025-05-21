@@ -732,3 +732,4 @@ raiffeisen # https://www.rbinternational.com/en/homepage.html
 93.127.160.4/32 # apple.com
 48.216.217.16/32 # coinbase
 135.237.45.132/32 # coinbase
+181.214.208.102/32 # telegram
