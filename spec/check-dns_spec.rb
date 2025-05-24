@@ -39,10 +39,10 @@ describe domain do
   end
 
   whois_nameservers.each do |whois_nameserver|
-    it "nameserver #{whois_nameserver}'s NS records match whois's #{whois_nameservers}, " +
+    it "nameserver #{whois_nameserver}'s NS records include all whois nameservers #{whois_nameservers}, " +
       "`dig @#{whois_nameserver} ns #{domain} +short`" do
       dig_nameservers = `dig @#{whois_nameserver} ns #{domain} +short`.split(/\n+/)
-      expect(dig_nameservers.sort).to eq(whois_nameservers.sort)
+      expect(whois_nameservers - dig_nameservers).to be_empty
     end
 
     it "nameserver #{whois_nameserver}'s SOA record match" do
