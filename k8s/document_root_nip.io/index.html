@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-25250258-6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'UA-25250258-6');
+    </script>
+
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <title>nip.io - wildcard DNS for any IP Address</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css"
+          integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+    <link rel="stylesheet" href="app.css" type="text/css"/>
+</head>
+<body>
+<div class="pure-g">
+    <div class="pure-u-1-5"></div>
+    <div class="pure-u-3-5">
+        <header>
+            <h1 class="header">nip.io</h1>
+        </header>
+
+        <article>
+            <h2>Dead simple wildcard DNS for any IP Address</h2>
+
+            <p>
+                Stop editing your <code>etc/hosts</code> file with custom hostname and IP address mappings.
+            </p>
+
+            <p>
+                <a href="/">nip.io</a> allows you to do that by mapping any IP
+                Address to a hostname using the following formats:
+            </p>
+
+            <p>Without a name:</p>
+
+            <ul>
+                <li><code>10.0.0.1.nip.io</code> maps to <code>10.0.0.1</code></li>
+                <li><code>192-168-1-250.nip.io</code> maps to <code>192.168.1.250</code></li>
+                <li><code>0a000803.nip.io</code> maps to <code>10.0.8.3</code></li>
+            </ul>
+
+            <p>With a name:</p>
+
+            <ul>
+                <li><code>app.10.8.0.1.nip.io</code> maps to <code>10.8.0.1</code></li>
+                <li><code>app-116-203-255-68.nip.io</code> maps to <code>116.203.255.68</code></li>
+                <li><code>app-c0a801fc.nip.io</code> maps to <code>192.168.1.252</code></li>
+                <li><code>customer1.app.10.0.0.1.nip.io</code> maps to <code>10.0.0.1</code></li>
+                <li><code>customer2-app-127-0-0-1.nip.io</code> maps to <code>127.0.0.1</code></li>
+                <li><code>customer3-app-7f000101.nip.io</code> maps to <code>127.0.1.1</code></li>
+            </ul>
+
+            <p>
+                <a href="/">nip.io</a> maps <code>&lt;anything&gt;[.-]&lt;IP Address&gt;.nip.io</code> in
+                <strong>&quot;dot&quot;</strong>, <strong>&quot;dash&quot;</strong> or <strong>&quot;hexadecimal&quot;</strong> notation to the corresponding
+                <code>&lt;IP Address&gt;</code>:
+            </p>
+
+            <ul>
+                <li>dot notation: <code>magic.127.0.0.1.nip.io</code></li>
+                <li>dash notation: <code>magic-127-0-0-1.nip.io</code></li>
+                <li>hexadecimal notation: <code>magic-7f000001.nip.io</code></li>
+            </ul>
+
+            <p>
+                The &quot;dash&quot; and &quot;hexadecimal&quot; notation is especially useful when using services like
+                <a href="https://letsencrypt.org/" target="_blank">LetsEncrypt</a> as it's just a regular sub-domain
+                of <a href="/">nip.io</a>
+            </p>
+
+            <h2>About this service</h2>
+
+            <p>
+                <a href="/">nip.io</a> is powered by <a href="http://www.powerdns.com/" target="_blank">PowerDNS</a> with a simple,
+                custom
+                <a href="https://doc.powerdns.com/authoritative/backends/pipe.html" target="_blank">PipeBackend</a>
+                written in Python:
+                <a href="https://github.com/exentriquesolutions/nip.io/blob/master/nipio/backend.py" target="_blank" rel="nofollow">backend.py</a>
+            </p>
+
+            <p>
+                It's open source, licensed under Apache 2.0:
+                <a href="https://github.com/exentriquesolutions/nip.io" target="_blank" rel="nofollow">https://github.com/exentriquesolutions/nip.io</a>
+                &#8212; pull requests are welcome.
+            </p>
+
+            <p>
+                This is a free service provided by
+                <a href="http://exentriquesolutions.com" target="_blank">Exentrique Solutions</a>
+                (the same people who run <a href="https://xp-dev.com" target="_blank">XP-Dev.com</a> which offer
+                <a href="https://xp-dev.com" target="_blank">Git, Mercurial and Subversion hosting</a>).
+            </p>
+
+            <p>
+                Feedback is appreciated, just
+                <a href="https://github.com/exentriquesolutions/nip.io/issues" target="_blank" rel="nofollow">
+                    raise an issue in GitHub
+                </a>.
+            </p>
+
+            <h2>Troubleshooting</h2>
+
+            <h3>DNS Rebinding Protection</h3>
+
+            <p>
+                Some DNS resolvers, forwarders and routers have
+                <a href="https://en.wikipedia.org/wiki/DNS_rebinding" target="_blank">DNS rebinding protection</a>
+                which may result in failure to resolve local and private IP addresses.
+                This service won't work in those situations.
+            </p>
+
+            <h2>Related Services</h2>
+            <ul>
+                <li>
+                    <a href="https://github.com/Corollarium/localtls" target="_blank">localtls</a>:
+                    A DNS server in Python3 to provide TLS to webservices on local addresses.
+                    It resolves addresses such as '192-168-0-1.yourdomain.net' to 192.168.0.1 and has a valid TLS certificate for them.
+                </li>
+                <li>
+                    <a href="https://sslip.io/" target="_blank">sslip.io</a>: Alternative to this service, supports IPv6 and custom domains.
+                </li>
+                <li>
+                    <a href="https://local.gd/" target="_blank">local.gd</a>: Alternative to this service, where everything is mapped to localhost/127.0.0.1.
+                </li>
+            </ul>
+        </article>
+    </div>
+    <div class="pure-u-1-5"></div>
+</div>
+</body>
+</html>
