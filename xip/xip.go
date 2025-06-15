@@ -92,9 +92,12 @@ var (
 	mbox, _  = dnsmessage.NewName("briancunnie.gmail.com.")
 	mx1, _   = dnsmessage.NewName("mail.protonmail.ch.")
 	mx2, _   = dnsmessage.NewName("mailsec.protonmail.ch.")
-	dkim1, _ = dnsmessage.NewName("protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
-	dkim2, _ = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
-	dkim3, _ = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	dkim1Sslip, _ = dnsmessage.NewName("protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	dkim2Sslip, _ = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	dkim3Sslip, _ = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
+	dkim1Nip, _ = dnsmessage.NewName("protonmail.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
+	dkim2Nip, _ = dnsmessage.NewName("protonmail2.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
+	dkim3Nip, _ = dnsmessage.NewName("protonmail3.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
 
 	VersionSemantic = "0.0.0"
 	VersionDate     = "0001/01/01-99:99:99-0800"
@@ -133,32 +136,32 @@ var (
 		// CNAMEs for nip.io/sslip.io for DKIM signing
 		"protonmail._domainkey.nip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim1,
+				CNAME: dkim1Nip,
 			},
 		},
 		"protonmail2._domainkey.nip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim2,
+				CNAME: dkim2Nip,
 			},
 		},
 		"protonmail3._domainkey.nip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim3,
+				CNAME: dkim3Nip,
 			},
 		},
 		"protonmail._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim1,
+				CNAME: dkim1Sslip,
 			},
 		},
 		"protonmail2._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim2,
+				CNAME: dkim2Sslip,
 			},
 		},
 		"protonmail3._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim3,
+				CNAME: dkim3Sslip,
 			},
 		},
 		// Special-purpose TXT records
