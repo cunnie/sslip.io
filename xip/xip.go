@@ -103,6 +103,19 @@ var (
 	MetricsBufferSize = 200 // big enough to run our tests, and small enough to prevent DNS amplification attacks
 
 	Customizations = DomainCustomizations{
+		"nip.io.": {
+			MX: []dnsmessage.MXResource{
+				{
+					Pref: 10,
+					MX:   mx1,
+				},
+				{
+					Pref: 20,
+					MX:   mx2,
+				},
+			},
+			TXT: TXTNipIoSPF,
+		},
 		"sslip.io.": {
 			MX: []dnsmessage.MXResource{
 				{
@@ -117,7 +130,22 @@ var (
 			TXT: TXTSslipIoSPF,
 		},
 		// nameserver addresses; we get queries for those every once in a while
-		// CNAMEs for sslip.io for DKIM signing
+		// CNAMEs for nip.io/sslip.io for DKIM signing
+		"protonmail._domainkey.nip.io.": {
+			CNAME: dnsmessage.CNAMEResource{
+				CNAME: dkim1,
+			},
+		},
+		"protonmail2._domainkey.nip.io.": {
+			CNAME: dnsmessage.CNAMEResource{
+				CNAME: dkim2,
+			},
+		},
+		"protonmail3._domainkey.nip.io.": {
+			CNAME: dnsmessage.CNAMEResource{
+				CNAME: dkim3,
+			},
+		},
 		"protonmail._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{
 				CNAME: dkim1,
@@ -956,7 +984,18 @@ func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 	return nil
 }
 
-// TXTSslipIoSPF SFP records for sslio.io
+// TXTSslipIoSPF SPF records for nip.io
+func TXTNipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+	// Although multiple TXT records with multiple strings are allowed, we're sticking
+	// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
+	// and that's what google.com does.
+	return []dnsmessage.TXTResource{
+		{TXT: []string{"protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313"}}, // ProtonMail verification; don't delete
+		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},
+	}, nil // Sender Policy Framework
+}
+
+// TXTSslipIoSPF SPF records for sslio.io
 func TXTSslipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 	// Although multiple TXT records with multiple strings are allowed, we're sticking
 	// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
