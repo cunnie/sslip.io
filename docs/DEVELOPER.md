@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=3.2.7
-export VERSION=3.2.8
+export OLD_VERSION=3.2.8
+export VERSION=4.0.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -41,7 +41,7 @@ Test from another window:
 
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=3.2.8
+export VERSION=4.0.0
 # quick sanity test
 dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1
@@ -54,6 +54,8 @@ dig +short mx sslip.io @$DNS_SERVER_IP
 printf "10 mail.protonmail.ch.\n20 mailsec.protonmail.ch.\n"
 dig +short txt sslip.io @$DNS_SERVER_IP
 printf "\"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26\"\n\"v=spf1 include:_spf.protonmail.ch mx ~all\"\n"
+dig +short txt nip.io @$DNS_SERVER_IP
+printf "\"protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313\"\n\"v=spf1 include:_spf.protonmail.ch mx ~all\"\n"
 dig +short txt 127.0.0.1.sslip.io @$DNS_SERVER_IP # no records
 dig +short cname sslip.io @$DNS_SERVER_IP # no records
 dig +short cname protonmail._domainkey.sslip.io @$DNS_SERVER_IP
