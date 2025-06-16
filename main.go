@@ -42,8 +42,6 @@ func main() {
 			"ns-hetzner.sslip.io=2a01:4ff:1f0:c920::,"+
 			"ns-ovh.sslip.io=51.75.53.19,"+
 			"ns-ovh.sslip.io=2001:41d0:602:2313::1,"+
-			"ns-ovh-sg.sslip.io=51.79.178.89,"+
-			"ns-ovh-sg.sslip.io=2402:1f00:8001:d59::1"+
 			"ns1.nip.io=51.75.53.19,"+
 			"ns1.nip.io=2001:41d0:602:2313::1,"+
 			"ns2.nip.io=5.78.115.44,"+
