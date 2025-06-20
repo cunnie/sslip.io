@@ -1,7 +1,6 @@
 package xip_test
 
 import (
-	"math/rand"
 	"net"
 	"strings"
 	"xip/testhelper"
@@ -16,8 +15,6 @@ var _ = Describe("Xip", func() {
 	var (
 		err error
 	)
-	rand.Seed(GinkgoRandomSeed()) // Set to ginkgo's seed so that it's different each test & we can reproduce failures if necessary
-
 	Describe("CNAMEResources()", func() {
 		It("returns nil by default", func() {
 			randomDomain := testhelper.Random8ByteString() + ".com."
