@@ -5,6 +5,7 @@ package xip
 
 import (
 	"bufio"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -83,21 +84,22 @@ type DomainCustomizations map[string]DomainCustomization
 var (
 	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
 	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?\d)?\d)-){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
+	ipv4REHex    = regexp.MustCompile(`(^|\.)([[:xdigit:]]{8})($|\.)`) // no dash separators, only dots
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([[:xdigit:]]{1,4}-){7}[[:xdigit:]]{1,4}|([[:xdigit:]]{1,4}-){1,7}-|([[:xdigit:]]{1,4}-){1,6}-[[:xdigit:]]{1,4}|([[:xdigit:]]{1,4}-){1,5}(-[[:xdigit:]]{1,4}){1,2}|([[:xdigit:]]{1,4}-){1,4}(-[[:xdigit:]]{1,4}){1,3}|([[:xdigit:]]{1,4}-){1,3}(-[[:xdigit:]]{1,4}){1,4}|([[:xdigit:]]{1,4}-){1,2}(-[[:xdigit:]]{1,4}){1,5}|[[:xdigit:]]{1,4}-((-[[:xdigit:]]{1,4}){1,6})|-((-[[:xdigit:]]{1,4}){1,7}|-)|fe80-(-[[:xdigit:]]{0,4}){0,4}%[\da-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d)|([[:xdigit:]]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
 	ipv4ReverseRE    = regexp.MustCompile(`^(.*)\.in-addr\.arpa\.$`)
 	ipv6ReverseRE    = regexp.MustCompile(`^(([[:xdigit:]]\.){32})ip6\.arpa\.`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
 
-	mbox, _  = dnsmessage.NewName("briancunnie.gmail.com.")
-	mx1, _   = dnsmessage.NewName("mail.protonmail.ch.")
-	mx2, _   = dnsmessage.NewName("mailsec.protonmail.ch.")
+	mbox, _       = dnsmessage.NewName("briancunnie.gmail.com.")
+	mx1, _        = dnsmessage.NewName("mail.protonmail.ch.")
+	mx2, _        = dnsmessage.NewName("mailsec.protonmail.ch.")
 	dkim1Sslip, _ = dnsmessage.NewName("protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
 	dkim2Sslip, _ = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
 	dkim3Sslip, _ = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
-	dkim1Nip, _ = dnsmessage.NewName("protonmail.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
-	dkim2Nip, _ = dnsmessage.NewName("protonmail2.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
-	dkim3Nip, _ = dnsmessage.NewName("protonmail3.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
+	dkim1Nip, _   = dnsmessage.NewName("protonmail.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
+	dkim2Nip, _   = dnsmessage.NewName("protonmail2.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
+	dkim3Nip, _   = dnsmessage.NewName("protonmail3.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
 
 	VersionSemantic = "0.0.0"
 	VersionDate     = "0001/01/01-99:99:99-0800"
@@ -781,6 +783,28 @@ func NameToA(fqdnString string, allowPublicIPs bool) []dnsmessage.AResource {
 			return []dnsmessage.AResource{
 				{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
 			}
+		}
+	}
+	if match := ipv4REHex.FindSubmatch(fqdn); match != nil {
+		hexes := match[2] // strip out leading & trailing "." by using only the 2nd capture group, e.g. "7f000001"
+		ipBytes := make([]byte, 4)
+		_, err := hex.Decode(ipBytes, []byte(hexes))
+		if err != nil || len(ipBytes) != 4 {
+			return []dnsmessage.AResource{}
+		}
+		ipv4address := net.IPv4(ipBytes[0], ipBytes[1], ipBytes[2], ipBytes[3])
+		if ipv4address == nil {
+			return []dnsmessage.AResource{}
+		}
+		ipv4address = ipv4address.To4()
+		if ipv4address == nil {
+			return []dnsmessage.AResource{}
+		}
+		if (!allowPublicIPs) && IsPublic(ipv4address) {
+			return []dnsmessage.AResource{}
+		}
+		return []dnsmessage.AResource{
+			{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
 		}
 	}
 	return []dnsmessage.AResource{}

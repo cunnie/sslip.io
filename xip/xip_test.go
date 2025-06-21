@@ -198,8 +198,8 @@ var _ = Describe("Xip", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedA dnsmessage.AResource) {
 				ipv4Answers := xip.NameToA(fqdn, true)
-				Expect(len(ipv4Answers)).To(Equal(1))
 				Expect(ipv4Answers[0]).To(Equal(expectedA))
+				Expect(len(ipv4Answers)).To(Equal(1))
 			},
 			Entry("custom record", "CusTom.RecOrd.", dnsmessage.AResource{A: [4]byte{78, 46, 204, 247}}),
 			// dots
@@ -213,6 +213,18 @@ var _ = Describe("Xip", func() {
 			Entry("IETF protocol assignments with domain and www", "www-192-0-0-1-com", dnsmessage.AResource{A: [4]byte{192, 0, 0, 1}}),
 			// dots-and-dashes, mix-and-matches
 			Entry("Pandaxin's paradox", "minio-01.192-168-1-100.sslip.io", dnsmessage.AResource{A: [4]byte{192, 168, 1, 100}}),
+			Entry("Hexadecimal #0", "filer.7f000001.sslip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}}),
+			Entry("Hexadecimal #1, TLD", "0A09091E", dnsmessage.AResource{A: [4]byte{10, 9, 9, 30}}),
+			Entry("Hexadecimal #1, TLD #2", "0A09091E.", dnsmessage.AResource{A: [4]byte{10, 9, 9, 30}}),
+			Entry("Hexadecimal #1, TLD #3", ".0A09091E.", dnsmessage.AResource{A: [4]byte{10, 9, 9, 30}}),
+			Entry("Hexadecimal #1, TLD #4", "www.0A09091E.", dnsmessage.AResource{A: [4]byte{10, 9, 9, 30}}),
+			Entry("Hexadecimal #2, mixed case", "ffffFFFF.nip.io", dnsmessage.AResource{A: [4]byte{255, 255, 255, 255}}),
+			Entry("Hexadecimal #3, different numbers", "www.fedcba98.nip.io", dnsmessage.AResource{A: [4]byte{254, 220, 186, 152}}),
+			Entry("Hexadecimal #3, different numbers #2", "www.76543210.nip.io", dnsmessage.AResource{A: [4]byte{118, 84, 50, 16}}),
+			Entry("Hexadecimal #4, dashes trump hex", "www.127-0-0-53.76543210.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
+			Entry("Hexadecimal #4, dashes trump hex #2", "www.76543210.127-0-0-53.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
+			Entry("Hexadecimal #4, dots trump hex", "www.127.0.0.53.76543210.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
+			Entry("Hexadecimal #4, dots trump hex #2", "www.76543210.127.0.0.53.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
 		)
 		DescribeTable("when it does NOT match an IP address",
 			func(fqdn string) {
@@ -228,6 +240,10 @@ var _ = Describe("Xip", func() {
 			Entry("NS but no dot", "ns-hetzner.sslip.io"),
 			Entry("NS + cruft at beginning", "p-ns-hetzner.sslip.io"),
 			Entry("test-net address with dots-and-dashes mixed", "www-192.0-2.3.example-me.com"),
+			Entry("Hexadecimal with too many digits (9 instead of 8)", "www.0A09091E0.com"),
+			Entry("Hexadecimal with too few  digits (7 instead of 8)", "www.0A09091.com"),
+			Entry("Hexadecimal with a dash instead of a .", "www-0A09091E.com"),
+			Entry("Hexadecimal with a dash instead of a . #2", "www.0A09091E-com"),
 		)
 		When("There is more than one A record", func() {
 			It("returns them all", func() {
