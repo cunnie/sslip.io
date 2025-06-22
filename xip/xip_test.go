@@ -351,8 +351,8 @@ var _ = Describe("Xip", func() {
 		DescribeTable("when it succeeds",
 			func(fqdn string, expectedAAAA dnsmessage.AAAAResource) {
 				ipv6Answers := xip.NameToAAAA(fqdn, true)
-				Expect(len(ipv6Answers)).To(Equal(1))
 				Expect(ipv6Answers[0]).To(Equal(expectedAAAA))
+				Expect(len(ipv6Answers)).To(Equal(1))
 			},
 			// dashes only
 			Entry("loopback", "--1", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
@@ -362,6 +362,16 @@ var _ = Describe("Xip", func() {
 			Entry("Browsing the logs", "2006-41d0-2-e01e--56dB-3598.sSLIP.io.", dnsmessage.AAAAResource{AAAA: [16]byte{32, 6, 65, 208, 0, 2, 224, 30, 0, 0, 0, 0, 86, 219, 53, 152}}),
 			Entry("Browsing the logs", "1-2-3--4-5-6.sSLIP.io.", dnsmessage.AAAAResource{AAAA: [16]byte{0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 4, 0, 5, 0, 6}}),
 			Entry("Browsing the logs", "1--2-3-4-5-6.sSLIP.io.", dnsmessage.AAAAResource{AAAA: [16]byte{0, 1, 0, 0, 0, 0, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6}}),
+			Entry("Hexadecimal #0", "filer.00000000000000000000000000000001.sslip.io", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
+			Entry("Hexadecimal #1, TLD", "00000000000000000000000000000001", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
+			Entry("Hexadecimal #1, TLD #2", "00000000000000000000000000000001.", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
+			Entry("Hexadecimal #1, TLD #3", ".00000000000000000000000000000001.", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
+			Entry("Hexadecimal #1, TLD #4", "www.00000000000000000000000000000001.", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
+			Entry("Hexadecimal #2, mixed case", "89abcdef0000000089ABCDEF00000000.nip.io", dnsmessage.AAAAResource{AAAA: [16]byte{137, 171, 205, 239, 0, 0, 0, 0, 137, 171, 205, 239, 0, 0, 0, 0}}),
+			Entry("Hexadecimal #3, different numbers", "www.0123456789abcdef0123456789abcdef.nip.io", dnsmessage.AAAAResource{AAAA: [16]byte{1, 35, 69, 103, 137, 171, 205, 239, 1, 35, 69, 103, 137, 171, 205, 239}}),
+			Entry("Hexadecimal #3, different numbers #2", "www.00000000000000000000000000000001.nip.io", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}),
+			Entry("Hexadecimal #4, dashes trump hex", "www.2600--.00000000000000000000000000000001.nip.io", dnsmessage.AAAAResource{AAAA: [16]byte{38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}),
+			Entry("Hexadecimal #4, dashes trump hex #2", "www.00000000000000000000000000000001.--2.nip.io", dnsmessage.AAAAResource{AAAA: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}}),
 		)
 		DescribeTable("when it does not match an IP address",
 			func(fqdn string) {
@@ -374,6 +384,10 @@ var _ = Describe("Xip", func() {
 			Entry("www", "www.sslip.io"),
 			Entry("a 1 without double-dash", "-1"),
 			Entry("too big", "--g"),
+			Entry("Hexadecimal with too many digits (33 instead of 32)", "www.0123456789abcdef0123456789abcdef0.com"),
+			Entry("Hexadecimal with too few  digits (31 instead of 32)", "www.0123456789abcdef0123456789abcde.com"),
+			Entry("Hexadecimal with a dash instead of a .", "www-0123456789abcdef0123456789abcdef.com"),
+			Entry("Hexadecimal with a dash instead of a . #2", "www.0123456789abcdef0123456789abcdef-com"),
 		)
 		When("using randomly generated IPv6 addresses (fuzz testing)", func() {
 			It("should succeed every time", func() {
