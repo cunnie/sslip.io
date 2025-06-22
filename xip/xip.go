@@ -226,7 +226,7 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 	// Parse and set our nameservers
 	for _, ns := range nameservers {
 		if len(ns) == 0 {
-			logmessages = append(logmessages, fmt.Sprintf(`-nameservers: ignoring zero-length nameserver ""`))
+			logmessages = append(logmessages, `-nameservers: ignoring zero-length nameserver ""`)
 			continue
 		}
 		// all nameservers must be absolute (end in ".")
@@ -473,8 +473,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 	case dnsmessage.TypeCNAME:
 		{
 			// If there is a CNAME, there can only be 1, and only from Customizations
-			var cname *dnsmessage.CNAMEResource
-			cname = CNAMEResource(q.Name.String())
+			cname := CNAMEResource(q.Name.String())
 			if cname == nil {
 				// No Answers, only 1 Authorities
 				soaHeader, soaResource := SOAAuthority(q.Name)
@@ -621,9 +620,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 			var logMessageTXTss []string
 			for _, txt := range txts {
 				var logMessageTXTs []string
-				for _, TXTstring := range txt.TXT {
-					logMessageTXTs = append(logMessageTXTs, TXTstring)
-				}
+				logMessageTXTs = append(logMessageTXTs, txt.TXT...)
 				logMessageTXTss = append(logMessageTXTss, `["`+strings.Join(logMessageTXTs, `", "`)+`"]`)
 			}
 			if len(logMessageTXTss) == 0 {
@@ -633,8 +630,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 		}
 	case dnsmessage.TypePTR:
 		{
-			var ptr *dnsmessage.PTRResource
-			ptr = x.PTRResource([]byte(q.Name.String()))
+			ptr := x.PTRResource([]byte(q.Name.String()))
 			if ptr == nil {
 				// No Answers, only 1 Authorities
 				soaHeader, soaResource := SOAAuthority(dnsmessage.MustNewName("sslip.io."))
@@ -1195,8 +1191,7 @@ func (x *Xip) blocklist(hostname string) bool {
 }
 
 func (x *Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
-	var nameToAs []dnsmessage.AResource
-	nameToAs = NameToA(q.Name.String(), x.Public)
+	nameToAs := NameToA(q.Name.String(), x.Public)
 	if len(nameToAs) == 0 {
 		// No Answers, only 1 Authorities
 		soaHeader, soaResource := SOAAuthority(q.Name)
@@ -1307,8 +1302,7 @@ func IsPublic(ip net.IP) (isPublic bool) {
 }
 
 func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
-	var nameToAAAAs []dnsmessage.AAAAResource
-	nameToAAAAs = NameToAAAA(q.Name.String(), x.Public)
+	nameToAAAAs := NameToAAAA(q.Name.String(), x.Public)
 	if len(nameToAAAAs) == 0 {
 		// No Answers, only 1 Authorities
 		soaHeader, soaResource := SOAAuthority(q.Name)
