@@ -27,19 +27,19 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
 <body>
   <div class="container">
     <div class="alert alert-info" role="alert" style="margin-top: 20px; margin-bottom: 10px; text-align: center;">
-      <strong>This service is dedicated to the late, great Roopinder Singh, who created & ran a similar service,
-        nip.io</strong>
+      <strong>This service is dedicated to the late, great Roopinder Singh, who created & ran nip.io</strong>
     </div>
     <div class="starter-template" style="padding-top: 10px;">
-      <h3 id="sslip.io">sslip.io</h3>
+      <h3 id="sslip.io">nip.io & sslip.io</h3>
       <p>Operational Status: <a href="https://ci.nono.io/teams/main/pipelines/sslip.io"><img
             src="https://ci.nono.io/api/v1/pipelines/sslip.io/jobs/dns-servers/badge" alt="ci.nono.io"></a> <sup><a
             href="#status" class="alert-link">[Status]</a></sup></p>
-      <p><em>sslip.io</em> is a DNS (<a href="https://en.wikipedia.org/wiki/Domain_Name_System">Domain Name System</a>)
+      <p><em>nip.io</em> and <em>sslip.io</em> are a DNS (<a
+          href="https://en.wikipedia.org/wiki/Domain_Name_System">Domain Name System</a>)
         service that, when queried with a hostname with an embedded IP address, returns that IP address. It was inspired
         by <a href="http://xip.io">xip.io</a>, which was created by <a href="https://github.com/sstephenson">Sam
           Stephenson</a>.</p>
-      <p>Here are some examples:</p>
+      <p>Here are some examples (the domains nip.io and sslip.io are interchangeable):</p>
       <table class="table">
         <thead>
           <tr class="header">
@@ -91,6 +91,13 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
             </td>
             <td>2a01:4f8:c17:b8f::2</td>
             <td>sslip.io website mirror (IPv6)</td>
+          </tr>
+          <tr class="even">
+            <td>
+              <a href="https://334B3513.nip.io">https://334B3513.nip.io/</a>
+            </td>
+            <td>51.75.53.19</td>
+            <td>sslip.io website mirror (hexadecimal notation)</td>
           </tr>
         </tbody>
       </table>
@@ -319,7 +326,8 @@ dig @ns-ovh.sslip.io metrics.status.sslip.io txt +short
             Basecamp</a>.
         </li>
         <li>
-          <a href="http://nip.io">nip.io</a>: similar to xip.io, but the PowerDNS backend is written in elegant Python
+          <a href="http://nip.io">nip.io</a>: formerly a separate service, but now incorporated into sslip.io. The
+          service previously used PowerDNS combined with a backend written in elegant Python.
         </li>
         <li>
           <a href="https://letsencrypt.org/">Let's Encrypt</a>: A Certificate Authority providing TLS certificates;
