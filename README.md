@@ -154,22 +154,17 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 
 ## Directory Structure
 
-- `ci/` contains the [Concourse](https://concourse.ci/) continuous integration
-  (CI) pipeline and task
 - `spec/` contains the tests for the production nameservers. To run
   the tests locally:
   ```bash
   DOMAIN=sslip.io rspec --format documentation --color spec/
   ```
 - `k8s/document_root_sslip.io/` contains the HTML content of the sslip.io
-  website. Please run `tidy -im -w 120 k8s/document_root_sslip.io/index.html`
-  before submitting pull requests
+  website.
 
 ### Acknowledgements
 
-- Sam Stephenson (xip.io), Roopinder Singh (nip.io), and the other DNS
+- Sam Stephenson (xip.io), the late Roopinder Singh (nip.io), and the other DNS
   developers out there
 - The contributors (@normanr, @jpambrun come to mind) who improved sslip.io
-- Jenessa Petersen of Let's Encrypt who bumped the rate limits
-- JetBrains who provided a free license for [open source
-  development](https://www.jetbrains.com/community/opensource/#support)
+- Let's Encrypt for bumping our rate limits
