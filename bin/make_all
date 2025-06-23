@@ -4,7 +4,7 @@
 #
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd $DIR/..
-ldflags="-X xip/xip.VersionSemantic=4.0.0 \
+ldflags="-X xip/xip.VersionSemantic=4.1.0 \
          -X xip/xip.VersionDate=$(date +%Y/%m/%d-%H:%M:%S%z) \
          -X xip/xip.VersionGitHash=$(git rev-parse --short HEAD)"
 export GOOS GOARCH
