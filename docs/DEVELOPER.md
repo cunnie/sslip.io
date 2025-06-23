@@ -127,4 +127,4 @@ for HOST in {blocked,ns-do-sg,ns-gce,ns-hetzner,ns-ovh}.sslip.io; do
 done
 ```
 
-Browse to <https://ci.nono.io/teams/main/pipelines/sslip.io> and check that everything is green.
+Browse to <https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml>, trigger the workflow, and check that everything is green.
