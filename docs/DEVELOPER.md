@@ -120,8 +120,10 @@ Trigger a new workflow to publish the Docker image: <https://github.com/cunnie/s
 Update the webservers with the HTML with new versions:
 
 ```bash
-ssh nono.io curl -L -o /www/sslip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
-ssh nono.io curl -L -o /www/nip.io/document_root/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_nip.io/index.html
+ssh nono.io
+cd /www/sslip.io/
+git pull -r
+exit
 for HOST in {blocked,ns-do-sg,ns-gce,ns-hetzner,ns-ovh}.sslip.io; do
   ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
 done

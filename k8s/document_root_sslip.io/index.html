@@ -10,18 +10,9 @@ other head content must come *after* these tags -->
   <title>Welcome to sslip.io</title>
   <meta name="description" content="sslip.io">
   <meta name="author" content="Brian Cunnie"><!-- cute Green Lock icon -->
-  <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico"><!-- Latest
+  <link rel="shortcut icon" type="image/x-icon" href="https://sslip.io/img/favicon.ico"><!-- Latest
 compiled and minified CSS -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"><!--
-Optional theme -->
-  <link rel="stylesheet" href="css/starter-template.css"><!--
-HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-  <!--
-WARNING: Respond.js doesn't work if you view the page via file:// -->
-  <!--[if lt
-IE 9]> <script
-src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script> <script
-src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 </head>
 
 <body>
@@ -29,7 +20,7 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
     <div class="alert alert-info" role="alert" style="margin-top: 20px; margin-bottom: 10px; text-align: center;">
       <strong>This service is dedicated to the late, great Roopinder Singh, who created & ran nip.io</strong>
     </div>
-    <div class="starter-template" style="padding-top: 10px;">
+    <div style="padding-top: 10px;">
       <h3 id="sslip.io">nip.io & sslip.io</h3>
       <p>Operational Status: <a href="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml"><img
             src="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml/badge.svg"
@@ -101,26 +92,10 @@ src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script> <![endif]-->
           </tr>
         </tbody>
       </table>
-      <div class="alert alert-success" role="alert">
-        <b>Developers: disable indexing of your staging site to avoid being blocked</b> (we block by disabling
-        resolution of your sslip.io hostname); disable indexing by either including the <code>X-Robots-Tag:
-        noindex</code> in your HTTP headers or include a <code>robots.txt</code> at the root of your website with the
-        following contents:<code><br>
-        User-agent: *<br>
-        Disallow: /</code>
-      </div>
       <h3 id="branding">Branding / White Label / Custom Domains</h3>
       <p>sslip.io can be used to brand your own site (you don’t need to use the sslip.io domain). For example, say you
         own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
         accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
-      <div class="alert alert-danger" role="alert">
-        <b>2024-11-16</b> <code>ns-aws.sslip.io</code> and <code>ns-azure.sslip.io</code> are deprecated. Please update
-        your nameservers to the nameservers below. <code>ns-aws</code> and <code>ns-azure</code>will be shut down on
-        <b>2024-12-25</b>.<br>
-        <br>
-        In October 2024, AWS charged me $113.88 for bandwidth for 1,265.3 GB at $0.09 / GB, and I am loath to spend
-        $1,366 on yearly bandwidth when other vendors, such as OVH and Hetzner, are much more reasonable.
-      </div>
       <table class="table">
         <thead>
           <tr class="header">
@@ -318,6 +293,14 @@ dig @ns-ovh.sslip.io metrics.status.sslip.io txt +short
           the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-ovh.sslip.io
           _acme-challenge.192.168.0.1.sslip.io. soa")</dd>
       </dl>
+      <div class="alert alert-success" role="alert">
+        <b>Developers: disable indexing of your staging site to avoid being blocked</b> (we block by disabling
+        resolution of your sslip.io hostname); disable indexing by either including the <code>X-Robots-Tag:
+        noindex</code> in your HTTP headers or include a <code>robots.txt</code> at the root of your website with the
+        following contents:<code><br>
+        User-agent: *<br>
+        Disallow: /</code>
+      </div>
       <h3 id="related">Related Services</h3>
       <ul>
         <li>
@@ -365,10 +348,6 @@ Placed at the end of the document so the pages load faster -->
   <!-- Latest compiled and minified JavaScript -->
 
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-  <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-
-  <script
-    src="https://raw.githubusercontent.com/twbs/bootstrap/master/docs/assets/js/ie10-viewport-bug-workaround.js"></script>
   <!-- Google Analytics -->
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-M32C798MGY"></script>
