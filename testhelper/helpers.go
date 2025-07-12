@@ -28,11 +28,15 @@ func RandomIPv6Address() net.IP {
 }
 
 // Random8ByteString() returns an 8-char mixed-case string consisting solely of the letters a-z.
+// the first & last characters are non-hexadecimal to avoid confusion with hexadecimal notation
 func Random8ByteString() string {
 	var randomString []byte
-	for i := 0; i < 8; i++ {
+	// 71 == ascii 'G', +32 (103) == ascii 'g'
+	randomString = append(randomString, byte(71+32*rand.Intn(2)+rand.Intn(20)))
+	for range 6 {
 		// 65 == ascii 'A', +32 (96) == ascii 'a', there are 26 letters in the alphabet. Mix upper case, too.
 		randomString = append(randomString, byte(65+32*rand.Intn(2)+rand.Intn(26)))
 	}
+	randomString = append(randomString, byte(71+32*rand.Intn(2)+rand.Intn(20)))
 	return string(randomString)
 }
