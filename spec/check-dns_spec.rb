@@ -6,6 +6,7 @@
 # against a DNS server -- a simple shell script would have been
 # shorter and more understandable. We are using rspec merely to
 # practice using rspec.
+#
 def get_whois_nameservers(domain)
   whois_output = `whois #{domain}`
   soa = nil
@@ -22,6 +23,10 @@ sslip_version = '4.1.0'
 whois_nameservers = get_whois_nameservers(domain)
 
 describe domain do
+  # I don't want a spurious failure, esp. ns-do-sg.sslip.io
+   # default is 3 tries, 5 seconds timeout
+  let(:dig_args) { ['+tries=15', '+timeout=10'] }
+  let(:dig_cmd) { "dig #{dig_args.join(' ')}" }
   soa = nil
 
   context "when evaluating $DOMAIN (\"#{domain}\") environment variable" do
@@ -40,73 +45,73 @@ describe domain do
 
   whois_nameservers.each do |whois_nameserver|
     it "nameserver #{whois_nameserver}'s NS records include all whois nameservers #{whois_nameservers}, " +
-      "`dig @#{whois_nameserver} ns #{domain} +short`" do
-      dig_nameservers = `dig @#{whois_nameserver} ns #{domain} +short`.split(/\n+/)
+      "`dig ... @#{whois_nameserver} ns #{domain} +short`" do
+      dig_nameservers = `#{dig_cmd} @#{whois_nameserver} ns #{domain} +short`.split(/\n+/)
       expect(whois_nameservers - dig_nameservers).to be_empty
     end
 
     it "nameserver #{whois_nameserver}'s SOA record match" do
-      dig_soa = `dig @#{whois_nameserver} soa #{domain} +short`
+      dig_soa = `#{dig_cmd} @#{whois_nameserver} soa #{domain} +short`
       soa = soa || dig_soa
       expect(dig_soa).to eq(soa)
     end
 
     it "nameserver #{whois_nameserver}'s has an A record" do
-      expect(`dig @#{whois_nameserver} a #{domain} +short`.chomp).not_to eq('')
+      expect(`#{dig_cmd} @#{whois_nameserver} a #{domain} +short`.chomp).not_to eq('')
       expect($?.success?).to be true
     end
 
     it "nameserver #{whois_nameserver}'s has an AAAA record" do
-      expect(`dig @#{whois_nameserver} a #{domain} +short`.chomp).not_to eq('')
+      expect(`#{dig_cmd} @#{whois_nameserver} a #{domain} +short`.chomp).not_to eq('')
       expect($?.success?).to be true
     end
 
     a = [ rand(256), rand(256), rand(256), rand(256) ]
     it "resolves #{a.join(".")}.#{domain} to #{a.join(".")}" do
-      expect(`dig @#{whois_nameserver} #{a.join(".") + "." + domain} +short`.chomp).to  eq(a.join("."))
+      expect(`#{dig_cmd} @#{whois_nameserver} #{a.join(".") + "." + domain} +short`.chomp).to  eq(a.join("."))
     end
 
     a = [ rand(256), rand(256), rand(256), rand(256) ]
     it "resolves #{a.join("-")}.#{domain} to #{a.join(".")}" do
-      expect(`dig @#{whois_nameserver} #{a.join("-") + "." + domain} +short`.chomp).to  eq(a.join("."))
+      expect(`#{dig_cmd} @#{whois_nameserver} #{a.join("-") + "." + domain} +short`.chomp).to  eq(a.join("."))
     end
 
     a = [ rand(256), rand(256), rand(256), rand(256) ]
     b = [ ('a'..'z').to_a, ('0'..'9').to_a ].flatten.shuffle[0,8].join
     it "resolves #{b}.#{a.join("-")}.#{domain} to #{a.join(".")}" do
-      expect(`dig @#{whois_nameserver} #{b}.#{a.join("-") + "." + domain} +short`.chomp).to  eq(a.join("."))
+      expect(`#{dig_cmd} @#{whois_nameserver} #{b}.#{a.join("-") + "." + domain} +short`.chomp).to  eq(a.join("."))
     end
 
     a = [ rand(256), rand(256), rand(256), rand(256) ]
     b = [ ('a'..'z').to_a, ('0'..'9').to_a ].flatten.shuffle[0,8].join
     it "resolves #{a.join("-")}.#{b} to #{a.join(".")}" do
-      expect(`dig @#{whois_nameserver} #{a.join("-") + "." + b} +short`.chomp).to  eq(a.join("."))
+      expect(`#{dig_cmd} @#{whois_nameserver} #{a.join("-") + "." + b} +short`.chomp).to  eq(a.join("."))
     end
 
     # don't begin the hostname with a double-dash -- `dig` mistakes it for an argument
     it "resolves api.--.#{domain}' to eq ::)}" do
-      expect(`dig @#{whois_nameserver} AAAA api.--.#{domain} +short`.chomp).to eq("::")
+      expect(`#{dig_cmd} @#{whois_nameserver} AAAA api.--.#{domain} +short`.chomp).to eq("::")
     end
 
     it "resolves localhost.--1.#{domain}' to eq ::1)}" do
-      expect(`dig @#{whois_nameserver} AAAA localhost.api.--1.#{domain} +short`.chomp).to eq("::1")
+      expect(`#{dig_cmd} @#{whois_nameserver} AAAA localhost.api.--1.#{domain} +short`.chomp).to eq("::1")
     end
 
     it "resolves 2001-4860-4860--8888.#{domain}' to eq 2001:4860:4860::8888)}" do
-      expect(`dig @#{whois_nameserver} AAAA 2001-4860-4860--8888.#{domain} +short`.chomp).to eq("2001:4860:4860::8888")
+      expect(`#{dig_cmd} @#{whois_nameserver} AAAA 2001-4860-4860--8888.#{domain} +short`.chomp).to eq("2001:4860:4860::8888")
     end
 
     it "resolves 2601-646-100-69f0--24.#{domain}' to eq 2601:646:100:69f0::24)}" do
-      expect(`dig @#{whois_nameserver} AAAA 2601-646-100-69f0--24.#{domain} +short`.chomp).to eq("2601:646:100:69f0::24")
+      expect(`#{dig_cmd} @#{whois_nameserver} AAAA 2601-646-100-69f0--24.#{domain} +short`.chomp).to eq("2601:646:100:69f0::24")
     end
 
     it "gets the expected version number, #{sslip_version}" do
-      expect(`dig @#{whois_nameserver} TXT version.status.#{domain} +short`).to include(sslip_version)
+      expect(`#{dig_cmd} @#{whois_nameserver} TXT version.status.#{domain} +short`).to include(sslip_version)
     end
 
     it "gets the source (querier's) IP address" do
       # Look on my Regular Expressions, ye mighty, and despair!
-      expect(`dig @#{whois_nameserver} TXT ip.#{domain} +short`).to match(/^"(\d+\.\d+\.\d+\.\d+)|(([[:xdigit:]]*:){2,7}[[:xdigit:]]*)"$/)
+      expect(`#{dig_cmd} @#{whois_nameserver} TXT ip.#{domain} +short`).to match(/^"(\d+\.\d+\.\d+\.\d+)|(([[:xdigit:]]*:){2,7}[[:xdigit:]]*)"$/)
     end
 
     # check the website
