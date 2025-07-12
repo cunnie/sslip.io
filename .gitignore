@@ -1,4 +1,7 @@
 .DS_Store
 # We don't check-in JetBrains's Goland settings
-.idea
+.idea/
+# We don't check-in our executables, either — source code only!
 bin/sslip.io-dns-server-*
+# We don't check in VS Code's configuration, either
+.vscode/
