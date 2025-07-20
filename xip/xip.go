@@ -168,8 +168,21 @@ var (
 			},
 		},
 		// Special-purpose TXT records
+		"ip.nip.io.": {
+			TXT: TXTIp,
+		},
 		"ip.sslip.io.": {
 			TXT: TXTIp,
+		},
+		"version.status.nip.io.": {
+			TXT: func(x *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+				x.Metrics.AnsweredTXTVersionQueries++
+				return []dnsmessage.TXTResource{
+					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
+					{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
+					{TXT: []string{VersionGitHash}},  // e.g. "9339c0d"
+				}, nil
+			},
 		},
 		"version.status.sslip.io.": {
 			TXT: func(x *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
@@ -189,7 +202,9 @@ var (
 				}, nil
 			},
 		},
-
+		"metrics.status.nip.io.": {
+			TXT: TXTMetrics,
+		},
 		"metrics.status.sslip.io.": {
 			TXT: TXTMetrics,
 		},
@@ -830,9 +845,7 @@ func NameToAAAA(fqdnString string, allowPublicIPs bool) []dnsmessage.AAAAResourc
 			return []dnsmessage.AAAAResource{}
 		}
 		AAAAR := dnsmessage.AAAAResource{}
-		for i := range ipv16address {
-			AAAAR.AAAA[i] = ipv16address[i]
-		}
+		copy(AAAAR.AAAA[:], ipv16address)
 		return []dnsmessage.AAAAResource{AAAAR}
 	}
 	if match := ipv6REHex.FindSubmatch(fqdn); match != nil {

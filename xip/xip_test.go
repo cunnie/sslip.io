@@ -21,9 +21,16 @@ var _ = Describe("Xip", func() {
 			cname := xip.CNAMEResource(randomDomain)
 			Expect(cname).To(BeNil())
 		})
-		When("querying one of sslip.io's DKIM CNAME's", func() {
+		When("querying one of sslip.io's DKIM CNAMEs", func() {
 			It("returns the CNAME", func() {
 				cname := xip.CNAMEResource("protonmail._domainkey.SSlip.Io.")
+				Expect(cname.CNAME.String()).To(MatchRegexp("^protonmail\\.domainkey.*.domains\\.proton\\.ch\\.$"))
+			})
+		})
+		When("querying one of nip.io's DKIM CNAMEs", func() {
+			It("returns the CNAME", func() {
+				cname := xip.CNAMEResource("protonmail._domainkey.nIP.iO.")
+				Expect(cname).ToNot(BeNil())
 				Expect(cname.CNAME.String()).To(MatchRegexp("^protonmail\\.domainkey.*.domains\\.proton\\.ch\\.$"))
 			})
 		})
@@ -70,6 +77,13 @@ var _ = Describe("Xip", func() {
 				mx := xip.MXResources("sslIP.iO.")
 				Expect(len(mx)).To(Equal(2))
 				Expect(mx[0].MX.Data).To(Equal(xip.Customizations["sslip.io."].MX[0].MX.Data))
+			})
+		})
+		When("nip.io is the domain being queried", func() {
+			It("returns nip.io's custom MX records", func() {
+				mx := xip.MXResources("nip.iO.")
+				Expect(len(mx)).To(Equal(2))
+				Expect(mx[0].MX.Data).To(Equal(xip.Customizations["nip.io."].MX[0].MX.Data))
 			})
 		})
 	})
@@ -164,6 +178,16 @@ var _ = Describe("Xip", func() {
 				Expect(txts[1].TXT[0]).To(MatchRegexp("v=spf1"))
 			})
 		})
+		When("queried for the nip.io domain", func() {
+			It("returns mail-related TXT resources for the nip.io domain", func() {
+				domain := "niP.iO."
+				txts, err := x.TXTResources(domain, nil)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(len(txts)).To(Equal(2))
+				Expect(txts[0].TXT[0]).To(MatchRegexp("protonmail-verification="))
+				Expect(txts[1].TXT[0]).To(MatchRegexp("v=spf1"))
+			})
+		})
 		When("a random domain has been customized w/out any TXT defaults", func() { // Unnecessary, but confirms Golang's behavior for me, a doubting Thomas
 			customizedDomain := testhelper.Random8ByteString() + ".com."
 			xip.Customizations[customizedDomain] = xip.DomainCustomization{}
@@ -180,6 +204,78 @@ var _ = Describe("Xip", func() {
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(1))
 				Expect(txts[0].TXT[0]).To(MatchRegexp("^1.1.1.1$"))
+			})
+		})
+		When(`the domain "ip.nip.io" is queried`, func() {
+			It("returns the IP address of the querier", func() {
+				txts, err := x.TXTResources("ip.nip.io.", net.IP{1, 1, 1, 1})
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(len(txts)).To(Equal(1))
+				Expect(txts[0].TXT[0]).To(MatchRegexp("^1.1.1.1$"))
+			})
+		})
+		When(`the domain "version.status.nip.io" is queried`, func() {
+			It("returns version information", func() {
+				txts, err := x.TXTResources("version.status.nip.io.", nil)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(len(txts)).To(Equal(3))
+				Expect(txts[0].TXT[0]).To(MatchRegexp(`^0\.0\.0$`))
+				Expect(txts[1].TXT[0]).To(MatchRegexp(`^0001/01/01-99:99:99-0800$`))
+				Expect(txts[2].TXT[0]).To(MatchRegexp(`^cafexxx$`))
+			})
+		})
+		When(`the domain "version.status.sslip.io" is queried`, func() {
+			It("returns version information", func() {
+				txts, err := x.TXTResources("version.status.sslip.io.", nil)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(len(txts)).To(Equal(3))
+				Expect(txts[0].TXT[0]).To(MatchRegexp(`^0\.0\.0$`))
+				Expect(txts[1].TXT[0]).To(MatchRegexp(`^0001/01/01-99:99:99-0800$`))
+				Expect(txts[2].TXT[0]).To(MatchRegexp(`^cafexxx$`))
+			})
+		})
+		When(`the domain "metrics.status.sslip.io" is queried`, func() {
+			// the simpler "var x xip.Xip" causes the metrics test to hang
+			var x, _ = xip.NewXip("file:///", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{})
+			It("returns metrics information", func() {
+				// panic("I love my dog!")
+				txts, err := x.TXTResources("metrics.status.sslip.io.", nil)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(len(txts)).To(Equal(12))
+				Expect(txts[0].TXT[0]).To(MatchRegexp(`Uptime: 0`))
+				Expect(txts[1].TXT[0]).To(MatchRegexp(`Blocklist: 0001-01-01 00:00:00\+00 0,0`))
+				Expect(txts[2].TXT[0]).To(MatchRegexp(`Queries: 0 \(0.0/s\)`))
+				Expect(txts[3].TXT[0]).To(MatchRegexp(`TCP/UDP: 0/0`))
+				Expect(txts[4].TXT[0]).To(MatchRegexp(`Answer > 0: 0 \(0.0/s\)`))
+				Expect(txts[5].TXT[0]).To(MatchRegexp(`A: 0`))
+				Expect(txts[6].TXT[0]).To(MatchRegexp(`AAAA: 0`))
+				Expect(txts[7].TXT[0]).To(MatchRegexp(`TXT Source: 0`))
+				Expect(txts[8].TXT[0]).To(MatchRegexp(`TXT Version: 0`))
+				Expect(txts[9].TXT[0]).To(MatchRegexp(`PTR IPv4/IPv6: 0/0`))
+				Expect(txts[10].TXT[0]).To(MatchRegexp(`NS DNS-01: 0`))
+				Expect(txts[11].TXT[0]).To(MatchRegexp(`Blocked: 0`))
+			})
+		})
+		When(`the domain "metrics.status.nip.io" is queried`, func() {
+			// the simpler "var x xip.Xip" causes the metrics test to hang
+			var x, _ = xip.NewXip("file:///", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{})
+			It("returns metrics information", func() {
+				// panic("I love my dog!")
+				txts, err := x.TXTResources("metrics.status.nip.io.", nil)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(len(txts)).To(Equal(12))
+				Expect(txts[0].TXT[0]).To(MatchRegexp(`Uptime: 0`))
+				Expect(txts[1].TXT[0]).To(MatchRegexp(`Blocklist: 0001-01-01 00:00:00\+00 0,0`))
+				Expect(txts[2].TXT[0]).To(MatchRegexp(`Queries: 0 \(0.0/s\)`))
+				Expect(txts[3].TXT[0]).To(MatchRegexp(`TCP/UDP: 0/0`))
+				Expect(txts[4].TXT[0]).To(MatchRegexp(`Answer > 0: 0 \(0.0/s\)`))
+				Expect(txts[5].TXT[0]).To(MatchRegexp(`A: 0`))
+				Expect(txts[6].TXT[0]).To(MatchRegexp(`AAAA: 0`))
+				Expect(txts[7].TXT[0]).To(MatchRegexp(`TXT Source: 0`))
+				Expect(txts[8].TXT[0]).To(MatchRegexp(`TXT Version: 0`))
+				Expect(txts[9].TXT[0]).To(MatchRegexp(`PTR IPv4/IPv6: 0/0`))
+				Expect(txts[10].TXT[0]).To(MatchRegexp(`NS DNS-01: 0`))
+				Expect(txts[11].TXT[0]).To(MatchRegexp(`Blocked: 0`))
 			})
 		})
 		When(`a customized domain without a TXT entry is queried`, func() {
