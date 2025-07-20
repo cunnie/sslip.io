@@ -176,10 +176,6 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@localhost sslip.io +short +vc",
 				`\A78.46.204.247\n\z`,
 				`TypeA sslip.io. \? 78.46.204.247\n`),
-			Entry(`TXT for _psl sslip.io is a link to the pull request for putting sslip.io on the Public Suffix List`,
-				"@localhost _psl.sslip.io txt +short",
-				`\A"https://github.com/publicsuffix/list/pull/2206"\n\z`,
-				`TypeTXT _psl.sslip.io. \? \["https://github.com/publicsuffix/list/pull/2206"\]`),
 		)
 	})
 	Describe("for more complex assertions", func() {
