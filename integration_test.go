@@ -228,6 +228,32 @@ var _ = Describe("sslip.io-dns-server", func() {
 				}
 			})
 		})
+		When("ns.nip.io is queried", func() {
+			It("returns all the A records", func() {
+				digArgs = "@localhost ns.nip.io +short -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`146.190.110.69`))
+				Eventually(digSession).Should(Say(`104.155.144.4`))
+				Eventually(digSession).Should(Say(`5.78.115.44`))
+				Eventually(digSession).Should(Say(`51.75.53.19`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeA ns.nip.io. \? 146.190.110.69, 104.155.144.4, 5.78.115.44, 51.75.53.19\n`))
+			})
+			It("returns all the AAAA records", func() {
+				digArgs = "@localhost aaaa ns.nip.io +short -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`2400:6180:0:d2:0:1:da21:d000`))
+				Eventually(digSession).Should(Say(`2600:1900:4000:4d12::`))
+				Eventually(digSession).Should(Say(`2a01:4ff:1f0:c920::`))
+				Eventually(digSession).Should(Say(`2001:41d0:602:2313::1`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeAAAA ns.nip.io. \? 2400:6180:0:d2:0:1:da21:d000, 2600:1900:4000:4d12::, 2a01:4ff:1f0:c920::, 2001:41d0:602:2313::1\n`))
+			})
+		})
 		When("ns.sslip.io is queried", func() {
 			It("returns all the A records", func() {
 				digArgs = "@localhost ns.sslip.io +short -p " + strconv.Itoa(port)

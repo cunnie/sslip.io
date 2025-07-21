@@ -24,6 +24,14 @@ func main() {
 			"sslip.io=78.46.204.247,"+
 			"nip.io=2a01:4f8:c17:b8f::2,"+
 			"sslip.io=2a01:4f8:c17:b8f::2,"+
+			"ns.nip.io=146.190.110.69,"+
+			"ns.nip.io=2400:6180:0:d2:0:1:da21:d000,"+
+			"ns.nip.io=104.155.144.4,"+
+			"ns.nip.io=2600:1900:4000:4d12::,"+
+			"ns.nip.io=5.78.115.44,"+
+			"ns.nip.io=2a01:4ff:1f0:c920::,"+
+			"ns.nip.io=51.75.53.19,"+
+			"ns.nip.io=2001:41d0:602:2313::1,"+
 			"ns.sslip.io=146.190.110.69,"+
 			"ns.sslip.io=2400:6180:0:d2:0:1:da21:d000,"+
 			"ns.sslip.io=104.155.144.4,"+
@@ -34,6 +42,14 @@ func main() {
 			"ns.sslip.io=2001:41d0:602:2313::1,"+
 			"blocked.sslip.io=52.0.56.137,"+
 			"blocked.sslip.io=2600:1f18:aaf:6900::a,"+
+			"ns-do-sg.nip.io=146.190.110.69,"+
+			"ns-do-sg.nip.io=2400:6180:0:d2:0:1:da21:d000,"+
+			"ns-gce.nip.io=104.155.144.4,"+
+			"ns-gce.nip.io=2600:1900:4000:4d12::,"+
+			"ns-hetzner.nip.io=5.78.115.44,"+
+			"ns-hetzner.nip.io=2a01:4ff:1f0:c920::,"+
+			"ns-ovh.nip.io=51.75.53.19,"+
+			"ns-ovh.nip.io=2001:41d0:602:2313::1,"+
 			"ns-do-sg.sslip.io=146.190.110.69,"+
 			"ns-do-sg.sslip.io=2400:6180:0:d2:0:1:da21:d000,"+
 			"ns-gce.sslip.io=104.155.144.4,"+
@@ -41,11 +57,7 @@ func main() {
 			"ns-hetzner.sslip.io=5.78.115.44,"+
 			"ns-hetzner.sslip.io=2a01:4ff:1f0:c920::,"+
 			"ns-ovh.sslip.io=51.75.53.19,"+
-			"ns-ovh.sslip.io=2001:41d0:602:2313::1,"+
-			"ns1.nip.io=51.75.53.19,"+
-			"ns1.nip.io=2001:41d0:602:2313::1,"+
-			"ns2.nip.io=5.78.115.44,"+
-			"ns2.nip.io=2a01:4ff:1f0:c920::,",
+			"ns-ovh.sslip.io=2001:41d0:602:2313::1,",
 		"comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If you're running your own sslip.io nameservers, add their hostnames and addresses here. If unsure, add to the list rather than replace")
 	var delegates = flag.String("delegates", "", "comma-separated list of domains you own "+
 		"and nameservers you control to which to delegate, often used to acquire wildcard certificates from "+
