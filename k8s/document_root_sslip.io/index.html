@@ -141,7 +141,7 @@ curl -L https://github.com/cunnie/sslip.io/releases/download/3.2.7/sslip.io-dns-
 chmod +x dns-server
 ./dns-server 2&gt; dns-server.log &
 dnf install -y bind-utils
-dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
+dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
       <h3 id="tls">TLS</h3>
       <p>You can acquire TLS certificates for your externally-accessible hosts from certificate authorities (CAs) such
         as Let's Encrypt. The easiest mechanism to acquire a certificate would be to use the <a
@@ -150,25 +150,25 @@ dig @localhost 127-0-0-1.sslip.io +short # returns "127.0.0.1"</pre>
         minimum, a web server running on your machine. The <a href="https://caddyserver.com/">Caddy</a> web server is
         one
         of the most popular examples. For example, if you had a webserver with the IP address 52.0.56.137, you could
-        obtain a TLS certificate for "52.0.56.137.sslip.io", or "www.52.0.56.137.sslip.io", or
-        "prod.www-52-0-56-137.sslip.io".</p>
+        obtain a TLS certificate for "52.0.56.137.nip.io", or "www.52.0.56.137.nip.io", or
+        "prod.www-52-0-56-137.nip.io".</p>
       <div class="alert alert-success" role="alert">
-        <b>Let's Encrypt Rate Limits</b> If your request for an "sslip.io" certificate is <a
+        <b>Let's Encrypt Rate Limits</b> If your request for a "nip.io" certificate is <a
           href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please open a <a
           href="https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and we'll request a rate-limit
         increase.
       </div>
-      <p>If you have procured a wildcard certificate for your branded / white label / custom sslip.io-style subdomain,
+      <p>If you have procured a wildcard certificate for your branded / white label / custom nip.io-style subdomain,
         you may install it on your machines for TLS-verified connections.</p>
       <div class="alert alert-success" data-role="alert">
-        <p>When using a TLS wildcard certificate in conjunction with your branded sslip.io style subdomain, you must
+        <p>When using a TLS wildcard certificate in conjunction with your branded nip.io style subdomain, you must
           <b>use dashes not dots</b> as separators. For example, if you have the TLS certificate for
           <i>*.xip.example.com</i>, you could browse to https://www-52-0-56-137.xip.example.com/ but not
           https://www.52.0.56.137.xip.example.com/.
         </p>
       </div>
-      <p>if you're interested in acquiring a wildcard certificate for your sslip.io domain, e.g.
-        "*.52-0-56-137.sslip.io", the procedure is described <a
+      <p>if you're interested in acquiring a wildcard certificate for your nip.io domain, e.g.
+        "*.52-0-56-137.nip.io", the procedure is described <a
           href="https://github.com/cunnie/sslip.io/blob/main/docs/wildcard.md">here</a>.</p>
       <h3 id="experimental">Experimental Features</h3>
       <p>Experimental features can change; don't depend on them.</p>
@@ -180,7 +180,7 @@ dig @ns.sslip.io txt ip.sslip.io +short    # sample reply "2607:fb90:464:ae1e:ed
 dig @ns.sslip.io txt ip.sslip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
 dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
       <div class="alert alert-success" role="alert">
-        When querying for your IP address, always <b>include the sslip.io name server</b> (e.g. <i>@ns.sslip.io</i>).
+        When querying for your IP address, always <b>include the nip.io name server</b> (e.g. <i>@ns.nip.io</i>).
         If omitted, you won't get your IP address; instead, you'll get the IP address of your upstream name server.
       </div>
       <p>This feature was inspired by Google's DNS lookup, i.e. <code>dig txt o-o.myaddr.l.google.com @8.8.8.8
@@ -214,22 +214,22 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
         service.
       </p>
       <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
-      sslip.io software by querying the TXT record of <code>version.status.sslip.io</code>:
+      nip.io software by querying the TXT record of <code>version.status.nip.io</code>:
       <pre>
-dig @ns-ovh.nono.io version.status.sslip.io txt +short
-  "2.7.0"
-  "2023/10/04-18:51:49-0700"
-  "8f7f2df"
+dig @ns-ovh.sslip.io version.status.nip.io txt +short
+  "4.1.0"
+  "2025/06/22-17:49:11-0700"
+  "b879e43"
 </pre>
-      <p>The first number, ("2.6.1"), is the version of the sslip.io DNS software, and is most relevant. The other two
+      <p>The first number, ("4.1.0"), is the version of the nip.io DNS software, and is most relevant. The other two
         numbers are the date compiled and the most recent git hash, but those values can differ across servers due to
         the
         manner in which the software is deployed.</p>
       <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
-      <code>metrics.status.sslip.io</code>
+      <code>metrics.status.nip.io</code>
       <pre>
-dig @ns-ovh.sslip.io metrics.status.sslip.io txt +short
-  "Uptime: 165655"
+  dig @ns-ovh.sslip.io metrics.status.nip.io txt +short
+    "Uptime: 165655"
   "Blocklist: 2023-10-04 07:37:50-07 3,6"
   "Queries: 14295231 (86.3/s)"
   "TCP/UDP: 5231/14290000"
@@ -266,23 +266,23 @@ dig @ns-ovh.sslip.io metrics.status.sslip.io txt +short
           that the number of responses with an answer record is typically a fourth the size of the overall responses.
           This is normal. One reason for this disparity is that often both the IPv4 (A) and IPv6 (AAAA) records will be
           checked, but only one reply will have a record in the answer section . For example, browsing to
-          "127.0.0.1.sslip.io" generates two lookups, one with an answer (IPv4), and one without (IPv6). Another reason
-          is that lookups follow a chain, e.g. looking up "127.0.0.1.sslip.io" may generate up to four queries for A
-          records ("1.sslip.io", "0.1.sslip.io", "0.0.1.sslip.io" and "127.0.0.1.sslip.io"), only the last of which
+          "127.0.0.1.nip.io" generates two lookups, one with an answer (IPv4), and one without (IPv6). Another reason
+          is that lookups follow a chain, e.g. looking up "127.0.0.1.nip.io" may generate up to four queries for A
+          records ("1.nip.io", "0.1.nip.io", "0.0.1.nip.io" and "127.0.0.1.nip.io"), only the last of which
           returns a record in the answer section. Pro-tip: if you want to shave milliseconds off name resolution, use
-          dashes not dots in your hostname (e.g. "10-9-9-30.sslip.io" instead of "10.9.9.30.sslip.io")</dd>
+          dashes not dots in your hostname (e.g. "10-9-9-30.nip.io" instead of "10.9.9.30.nip.io")</dd>
         <dt>A</dt>
         <dd>The number of responses which included an A (IPv4) record in the answer section since starting operation
-          (e.g. "dig 127.0.0.1.sslip.io")</dd>
+          (e.g. "dig 127.0.0.1.nip.io")</dd>
         <dt>AAAA</dt>
         <dd>The number of responses which included an AAAA (IPv6) record in the answer section since starting operation
-          (e.g. "dig --1.sslip.io aaaa")</dd>
+          (e.g. "dig --1.nip.io aaaa")</dd>
         <dt>TXT Source</dt>
         <dd>The number of responses which included a TXT record of the querier's IP address since starting operation
-          (e.g. "dig @ns.sslip.io ip.sslip.io txt")</dd>
+          (e.g. "dig @ns.nip.io ip.nip.io txt")</dd>
         <dt>TXT Version</dt>
         <dd>The number of responses which included a TXT record of the DNS's servers version since starting operation
-          (e.g. "dig @ns-hetzner.sslip.io version.status.sslip.io txt")</dd>
+          (e.g. "dig @ns-hetzner.sslip.io version.status.nip.io txt")</dd>
         <dt>PTR IPv4/IPv6</dt>
         <dd>This consists of two numbers; the first is the number of responses to IPv4 PTR queries
           (<code>1.0.0.127.in-addr.arpa.</code> → <code>127-0-0-1.sslip.io.</code>), the second, IPv6 PTR queries</dd>
@@ -291,11 +291,11 @@ dig @ns-ovh.sslip.io metrics.status.sslip.io txt +short
           authority's DNS-01 challenge. This lookup is used for generating wildcard certificates from Let's Encrypt and
           other certificate authority. Technically this is not a "successful" query in that we don't return a record in
           the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-ovh.sslip.io
-          _acme-challenge.192.168.0.1.sslip.io. soa")</dd>
+          _acme-challenge.192.168.0.1.nip.io. soa")</dd>
       </dl>
       <div class="alert alert-success" role="alert">
         <b>Developers: disable indexing of your staging site to avoid being blocked</b> (we block by disabling
-        resolution of your sslip.io hostname); disable indexing by either including the <code>X-Robots-Tag:
+        resolution of your nip.io hostname); disable indexing by either including the <code>X-Robots-Tag:
         noindex</code> in your HTTP headers or include a <code>robots.txt</code> at the root of your website with the
         following contents:<code><br>
         User-agent: *<br>
@@ -355,7 +355,6 @@ Placed at the end of the document so the pages load faster -->
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
-
     gtag('config', 'G-M32C798MGY');
   </script>
 </body>
