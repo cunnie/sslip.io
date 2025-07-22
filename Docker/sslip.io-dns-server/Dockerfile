@@ -26,7 +26,7 @@ LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 RUN dnf install -y bind-utils
 
 ARG TARGETARCH # amd64, arm64 (so I can run on AWS graviton2)
-RUN curl -f -L https://github.com/cunnie/sslip.io/releases/download/4.1.0/sslip.io-dns-server-linux-$TARGETARCH \
+RUN curl -f -L https://github.com/cunnie/sslip.io/releases/download/4.1.1/sslip.io-dns-server-linux-$TARGETARCH \
     -o /usr/sbin/sslip.io-dns-server; \
   chmod 755 /usr/sbin/sslip.io-dns-server
 
