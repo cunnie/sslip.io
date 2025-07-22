@@ -7,12 +7,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- The above 3 meta tags *must* come first in the head; any
 other head content must come *after* these tags -->
-  <title>Welcome to sslip.io</title>
-  <meta name="description" content="sslip.io">
+  <title>Welcome to nip.io / sslip.io</title>
+  <meta name="description" content="nip.io / sslip.io">
   <meta name="author" content="Brian Cunnie"><!-- cute Green Lock icon -->
   <link rel="shortcut icon" type="image/x-icon" href="https://sslip.io/img/favicon.ico"><!-- Latest
 compiled and minified CSS -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
 </head>
 
 <body>
@@ -173,12 +174,12 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
       <h3 id="experimental">Experimental Features</h3>
       <p>Experimental features can change; don't depend on them.</p>
       <h4 id="whatismyip">Determining Your External IP Address via DNS Lookup</h4>
-      <p>You can use sslip.io's DNS servers (<code>ns.sslip.io</code>) to determine your public IP address by querying
-        the <code>TXT</code> record of <code>ip.sslip.io</code>:</p>
+      <p>You can use sslip.io's DNS servers (<code>ns.nip.io</code>) to determine your public IP address by querying
+        the <code>TXT</code> record of <code>ip.nip.io</code>:</p>
       <pre>
-dig @ns.sslip.io txt ip.sslip.io +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
-dig @ns.sslip.io txt ip.sslip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
-dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
+dig @ns.nip.io txt ip.nip.io +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
+dig @ns.nip.io txt ip.nip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
+dig @ns.nip.io txt ip.nip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
       <div class="alert alert-success" role="alert">
         When querying for your IP address, always <b>include the nip.io name server</b> (e.g. <i>@ns.nip.io</i>).
         If omitted, you won't get your IP address; instead, you'll get the IP address of your upstream name server.
@@ -207,7 +208,7 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
         </li>
       </ul>
       <p>A big advantage of using DNS queries instead of HTTP queries is bandwidth: querying
-        <code>ns-ovh.sslip.io</code> requires a mere 594 bytes spread over 2 packets; Querying <a
+        <code>ns.nip.io</code> requires a mere 594 bytes spread over 2 packets; Querying <a
           href="https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over
         14 times
         as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
@@ -216,7 +217,7 @@ dig @ns.sslip.io txt ip.sslip.io +short -6 # forces IPv6 lookup; sample reply "2
       <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
       nip.io software by querying the TXT record of <code>version.status.nip.io</code>:
       <pre>
-dig @ns-ovh.sslip.io version.status.nip.io txt +short
+dig @ns-ovh.nip.io version.status.nip.io txt +short
   "4.1.0"
   "2025/06/22-17:49:11-0700"
   "b879e43"
@@ -228,20 +229,20 @@ dig @ns-ovh.sslip.io version.status.nip.io txt +short
       <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
       <code>metrics.status.nip.io</code>
       <pre>
-  dig @ns-ovh.sslip.io metrics.status.nip.io txt +short
-    "Uptime: 165655"
-  "Blocklist: 2023-10-04 07:37:50-07 3,6"
-  "Queries: 14295231 (86.3/s)"
-  "TCP/UDP: 5231/14290000"
-  "Answer > 0: 4872793 (29.4/s)"
-  "A: 4025711"
-  "AAAA: 247215"
-  "TXT Source: 57"
-  "TXT Version: 24"
-  "PTR IPv4/IPv6: 318/22"
-  "NS DNS-01: 135"
-  "Blocked: 175"
-      </pre>
+  dig @ns-ovh.nip.io metrics.status.nip.io txt +short
+    "Uptime: 1168705"
+    "Blocklist: 2025-07-22 04:30:18-07 3,722"
+    "Queries: 2619971786 (2241.8/s)"
+    "TCP/UDP: 2949450/2617181176"
+    "Answer > 0: 934226491 (799.4/s)"
+    "A: 827459036"
+    "AAAA: 8761271"
+    "TXT Source: 76"
+    "TXT Version: 66"
+    "PTR IPv4/IPv6: 2274/13"
+    "NS DNS-01: 143712"
+    "Blocked: 278944"
+       </pre>
       <h5>Explanation of Metrics</h5>
       <dl>
         <dt>Uptime</dt>
@@ -290,8 +291,12 @@ dig @ns-ovh.sslip.io version.status.nip.io txt +short
         <dd>The number of responses which included a delegation of the NS (name server) to satisfy a certificate
           authority's DNS-01 challenge. This lookup is used for generating wildcard certificates from Let's Encrypt and
           other certificate authority. Technically this is not a "successful" query in that we don't return a record in
-          the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-ovh.sslip.io
+          the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-ovh.nip.io
           _acme-challenge.192.168.0.1.nip.io. soa")</dd>
+        <dt>Blocked</dt>
+        <dd>The number of responses which were blocked because they were either spam or phishing sites. A blocked
+          response is an A or AAAA record to a website which notifies the user that the site they're trying to visit has
+          been blocked because it's unsafe.</dd>
       </dl>
       <div class="alert alert-success" role="alert">
         <b>Developers: disable indexing of your staging site to avoid being blocked</b> (we block by disabling
