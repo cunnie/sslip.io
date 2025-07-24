@@ -37,7 +37,7 @@ var _ = Describe("speed", func() {
 		var loopbackAddr *net.UDPAddr
 		var conn *net.UDPConn
 		var msg dnsmessage.Message
-		const numQueries = 5000
+		const numQueries = 5000 // set to 123456 when testing
 		const minThroughput = 1000
 
 		BeforeEach(func() {
@@ -64,10 +64,17 @@ var _ = Describe("speed", func() {
 			// - queries are done sequentially, not in parallel
 			// - each query includes an overhead of 4 Expect()
 			// current max queries is 2047/second (ns-ovh.sslip.io.)
+			// ~27k Apple M4
 			// ~19k Apple M2
 			// ~8k vSphere Xeon D-1736 2.7GHz
 			// ~6k AWS Graviton T2
 			// ~5k Azure Xeon E5-2673 v4 @ 2.30GHz
+
+			// blocklist exacts a 3% - 11% penalty
+			// with `-quiet` and 4-entry blocklist on M4
+			// ~32k-34k
+			// with 725 entry blocklist
+			// ~30k-31k
 			for i := 0; i < numQueries; i += 1 {
 				bytesWritten, err := conn.Write(queryBuf)
 				Expect(err).ToNot(HaveOccurred())
