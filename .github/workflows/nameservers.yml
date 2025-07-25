@@ -18,4 +18,4 @@ jobs:
       - name: Run DNS check
         run: rspec --format documentation --color spec/
         env:
-          DOMAIN: sslip.io # You can set your domain here if needed
+          DOMAINS: nip.io,sslip.io # You can set your domain here if needed
