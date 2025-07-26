@@ -157,7 +157,8 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 - `spec/` contains the tests for the production nameservers. To run
   the tests locally:
   ```bash
-  DOMAINS=nip.io,sslip.io rspec --format documentation --color spec
+  bundle
+  DOMAINS=nip.io,sslip.io bundle exec rspec --format documentation --color spec
   ```
 - `k8s/document_root_sslip.io/` contains the HTML content of the sslip.io
   website.
