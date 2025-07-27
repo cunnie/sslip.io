@@ -27,7 +27,7 @@ RUN dnf install -y bind-utils
 
 ARG TARGETARCH # amd64, arm64 (so I can run on AWS graviton2)
 RUN curl -f -L https://github.com/cunnie/sslip.io/releases/download/4.1.1/sslip.io-dns-server-linux-$TARGETARCH \
-    -o /usr/sbin/sslip.io-dns-server; \
+  -o /usr/sbin/sslip.io-dns-server; \
   chmod 755 /usr/sbin/sslip.io-dns-server
 
 ENTRYPOINT ["/usr/sbin/sslip.io-dns-server"]
