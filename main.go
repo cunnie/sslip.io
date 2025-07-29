@@ -57,7 +57,7 @@ func main() {
 			"ns-hetzner.sslip.io=5.78.115.44,"+
 			"ns-hetzner.sslip.io=2a01:4ff:1f0:c920::,"+
 			"ns-ovh.sslip.io=51.75.53.19,"+
-			"ns-ovh.sslip.io=2001:41d0:602:2313::1,",
+			"ns-ovh.sslip.io=2001:41d0:602:2313::1",
 		"comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If you're running your own sslip.io nameservers, add their hostnames and addresses here. If unsure, add to the list rather than replace")
 	var delegates = flag.String("delegates", "", "comma-separated list of domains you own "+
 		"and nameservers you control to which to delegate, often used to acquire wildcard certificates from "+
