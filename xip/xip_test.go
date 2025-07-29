@@ -90,7 +90,7 @@ var _ = Describe("Xip", func() {
 
 	Describe("NSResources()", func() {
 		When("we use the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{}, "")
 			It("returns the name servers", func() {
 				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -123,13 +123,13 @@ var _ = Describe("Xip", func() {
 			When("we delegate domains to other nameservers", func() {
 				When(`we don't use the "=" in the arguments`, func() {
 					It("returns an informative log message", func() {
-						var _, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{"noEquals"})
+						var _, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{"noEquals"}, "")
 						Expect(strings.Join(logs, "")).To(MatchRegexp(`"-delegates: arguments should be in the format "delegatedDomain=nameserver", not "noEquals"`))
 					})
 				})
 				When(`there's no "." at the end of the delegated domain or nameserver`, func() {
 					It(`helpfully adds the "."`, func() {
-						var x, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{"a=b"})
+						var x, logs = xip.NewXip("file://etc/blocklist-test.txt", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{"a=b"}, "")
 						Expect(strings.Join(logs, "")).To(MatchRegexp(`Adding delegated NS record "a\.=b\."`))
 						ns := x.NSResources("a.")
 						Expect(len(ns)).To(Equal(1))
@@ -138,7 +138,7 @@ var _ = Describe("Xip", func() {
 			})
 		})
 		When("we override the default nameservers", func() {
-			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"mickey", "minn.ie.", "goo.fy"}, []string{}, []string{}, "")
 			It("returns the configured servers", func() {
 				randomDomain := testhelper.Random8ByteString() + ".com."
 				ns := x.NSResources(randomDomain)
@@ -236,9 +236,8 @@ var _ = Describe("Xip", func() {
 		})
 		When(`the domain "metrics.status.sslip.io" is queried`, func() {
 			// the simpler "var x xip.Xip" causes the metrics test to hang
-			var x, _ = xip.NewXip("file:///", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{}, "")
 			It("returns metrics information", func() {
-				// panic("I love my dog!")
 				txts, err := x.TXTResources("metrics.status.sslip.io.", nil)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(12))
@@ -258,9 +257,8 @@ var _ = Describe("Xip", func() {
 		})
 		When(`the domain "metrics.status.nip.io" is queried`, func() {
 			// the simpler "var x xip.Xip" causes the metrics test to hang
-			var x, _ = xip.NewXip("file:///", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{})
+			var x, _ = xip.NewXip("file:///", []string{"ns-hetzner.sslip.io.", "ns-ovh.sslip.io.", "ns-do-sg.sslip.io."}, []string{}, []string{}, "")
 			It("returns metrics information", func() {
-				// panic("I love my dog!")
 				txts, err := x.TXTResources("metrics.status.nip.io.", nil)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(len(txts)).To(Equal(12))

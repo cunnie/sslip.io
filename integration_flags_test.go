@@ -266,4 +266,96 @@ var _ = Describe("flags", func() {
 			})
 		})
 	})
+	When("-ptr-domain is set", func() {
+		When("doing a reverse-lookup of an IPv4 address", func() {
+			BeforeEach(func() {
+				flags = []string{"-ptr-domain=" + "hp.com."}
+			})
+			It("should return the PTR record with the 'hp.com.' domain", func() {
+				digArgs := "@localhost -x 127.0.0.2 -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`2.0.0.127.in-addr.arpa.	604800	IN	PTR	127-0-0-2.hp.com.`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 2\.0\.0\.127\.in-addr\.arpa\. \? 127-0-0-2\.hp\.com\.`))
+			})
+		})
+		When("the PTR domain is set without a trailing dot", func() {
+			BeforeEach(func() {
+				flags = []string{"-ptr-domain=" + "ibm.com"}
+			})
+			It("should return the PTR record with the 'ibm.com.' domain", func() {
+				digArgs := "@localhost -x 127.0.0.3 -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`3.0.0.127.in-addr.arpa.	604800	IN	PTR	127-0-0-3.ibm.com.`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 3\.0\.0\.127\.in-addr\.arpa\. \? 127-0-0-3\.ibm\.com\.`))
+			})
+		})
+		When("the PTR domain is a mere '.'", func() {
+			BeforeEach(func() {
+				flags = []string{"-ptr-domain=" + "."}
+			})
+			It("should return the PTR record with the '.' domain (no double-dot, '..')", func() {
+				digArgs := "@localhost -x 127.0.0.4 -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`4.0.0.127.in-addr.arpa.	604800	IN	PTR	127-0-0-4.\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 4\.0\.0\.127\.in-addr\.arpa\. \? 127-0-0-4\.\n`))
+			})
+		})
+		When("the PTR domain is an empty string", func() {
+			BeforeEach(func() {
+				flags = []string{"-ptr-domain="}
+			})
+			It("should return the PTR record with the '.' domain", func() {
+				digArgs := "@localhost -x 127.0.0.5 -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`5.0.0.127.in-addr.arpa.	604800	IN	PTR	127-0-0-5.\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 5\.0\.0\.127\.in-addr\.arpa\. \? 127-0-0-5\.\n`))
+			})
+		})
+		When("the PTR record queried is IPv6", func() {
+			BeforeEach(func() {
+				flags = []string{}
+			})
+			It("should return the PTR record with the 'nip.io.' domain", func() {
+				digArgs := "@localhost -x 2601:646:100:69f0:8ab:8f21:27de:5375 -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. 604800 IN PTR	2601-646-100-69f0-8ab-8f21-27de-5375.nip.io.\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? 2601-646-100-69f0-8ab-8f21-27de-5375.nip.io.\n`))
+			})
+		})
+		When("the PTR domain is set and the PTR record queried is IPv6", func() {
+			BeforeEach(func() {
+				flags = []string{"-ptr-domain=att.com"}
+			})
+			It("should return the PTR record with the 'nip.io.' domain", func() {
+				digArgs := "@localhost -x 2601:646:100:69f0:8ab:8f21:27de:5375 -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. 604800 IN PTR	2601-646-100-69f0-8ab-8f21-27de-5375.att.com.\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? 2601-646-100-69f0-8ab-8f21-27de-5375.att.com.\n`))
+			})
+		})
+	})
 })

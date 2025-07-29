@@ -132,10 +132,10 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 example.com txt +short",
 				`\A\z`,
 				`TypeTXT example.com. \? nil, SOA example.com. briancunnie.gmail.com. 20250723 900 900 1800 180\n`),
-			Entry(`get a PTR for 1.0.168.192.in-addr.arpa returns 192-168-0-1.sslip.io`,
+			Entry(`get a PTR for 1.0.168.192.in-addr.arpa returns 192-168-0-1.nip.io`,
 				"@127.0.0.1 ptr -x 192.168.0.1 +short",
-				`\A192-168-0-1.sslip.io.\n\z`,
-				`TypePTR 1.0.168.192.in-addr.arpa. \? 192-168-0-1.sslip.io.`),
+				`\A192-168-0-1.nip.io.\n\z`,
+				`TypePTR 1.0.168.192.in-addr.arpa. \? 192-168-0-1.nip.io.`),
 			Entry(`get a PTR for 1.0.0.127.blah.in-addr.arpa returns no records; "blah.in-addr.arpa is not a valid domain."`,
 				"@127.0.0.1 1.0.0.127.blah.in-addr.arpa ptr +short",
 				`\A\z`,
@@ -148,10 +148,10 @@ var _ = Describe("sslip.io-dns-server", func() {
 				"@127.0.0.1 0.0.127.in-addr.arpa ptr +short",
 				`\A\z`,
 				`TypePTR 0.0.127.in-addr.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 20250723 900 900 1800 180\n`),
-			Entry(`get a PTR for 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa returns 2601-646-100-69f0-14ce-6eea-9204-bba2.sslip.io`,
+			Entry(`get a PTR for 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa returns 2601-646-100-69f0-14ce-6eea-9204-bba2.nip.io`,
 				"@127.0.0.1 ptr -x 2601:646:100:69f0:14ce:6eea:9204:bba2 +short",
-				`\A2601-646-100-69f0-14ce-6eea-9204-bba2.sslip.io.\n\z`,
-				`TypePTR 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? 2601-646-100-69f0-14ce-6eea-9204-bba2.sslip.io.`),
+				`\A2601-646-100-69f0-14ce-6eea-9204-bba2.nip.io.\n\z`,
+				`TypePTR 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? 2601-646-100-69f0-14ce-6eea-9204-bba2.nip.io.`),
 			Entry(`get a PTR for 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.blah.ip6.arpa returns no records; "blah isn't a valid subdomain'"`,
 				"@127.0.0.1 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.blah.ip6.arpa ptr +short",
 				`\A\z`,
@@ -166,12 +166,12 @@ var _ = Describe("sslip.io-dns-server", func() {
 				`TypePTR b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? nil, SOA sslip.io. briancunnie.gmail.com. 20250723 900 900 1800 180\n`),
 			Entry(`TODO: should, but doesn't, return an IDNA2008-compliant record for ::1`,
 				"@127.0.0.1 -x ::1 +short",
-				`\A--1.sslip.io.\n\z`,
-				`TypePTR 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa. \? --1.sslip.io.\n`),
+				`\A--1.nip.io.\n\z`,
+				`TypePTR 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa. \? --1.nip.io.\n`),
 			Entry(`TODO: should, but doesn't, return an IDNA2008-compliant record for 2600::`,
 				"@127.0.0.1 -x 2600:: +short",
-				`\A2600--.sslip.io.\n\z`,
-				`TypePTR 0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.6.2.ip6.arpa. \? 2600--.sslip.io.\n`),
+				`\A2600--.nip.io.\n\z`,
+				`TypePTR 0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.6.2.ip6.arpa. \? 2600--.nip.io.\n`),
 			Entry(`over TCP, A (customized) for sslip.io`,
 				"@localhost sslip.io +short +vc",
 				`\A78.46.204.247\n\z`,
@@ -222,7 +222,7 @@ var _ = Describe("sslip.io-dns-server", func() {
 					digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
 					digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
-					expectedPtr := strings.ReplaceAll(addr.String(), ":", "-") + ".sslip.io."
+					expectedPtr := strings.ReplaceAll(addr.String(), ":", "-") + ".nip.io."
 					Eventually(digSession).Should(Say(expectedPtr))
 					Eventually(digSession, 1).Should(Exit(0))
 				}

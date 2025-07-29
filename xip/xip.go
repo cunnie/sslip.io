@@ -33,6 +33,7 @@ type Xip struct {
 	BlocklistUpdated            time.Time               // The most recent time the Blocklist was updated
 	NameServers                 []dnsmessage.NSResource // The list of authoritative name servers (NS)
 	Public                      bool                    // Whether to resolve public IPs; set to false if security-conscious
+	PtrDomain                   string                  // The domain to use for PTR records, e.g. if "nip.io", `dig -x 127.0.0.1` will return "127-0-0-1.nip.io."
 }
 
 // Metrics contains the counters of the important/interesting queries
@@ -218,7 +219,7 @@ type Response struct {
 }
 
 // NewXip follows convention for constructors: https://go.dev/doc/effective_go#allocation_new
-func NewXip(blocklistURL string, nameservers []string, addresses []string, delegates []string) (x *Xip, logmessages []string) {
+func NewXip(blocklistURL string, nameservers []string, addresses []string, delegates []string, ptrDomain string) (x *Xip, logmessages []string) {
 	x = &Xip{Metrics: Metrics{Start: time.Now()}}
 
 	// Download the blocklist
@@ -356,6 +357,14 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 			time.Sleep(250 * time.Millisecond)
 		}
 	}()
+	x.PtrDomain = ptrDomain
+	if !strings.HasSuffix(x.PtrDomain, ".") {
+		x.PtrDomain += "." // always end with a dot lest the DNS server appends the search domains
+	}
+	if x.PtrDomain == "." {
+		x.PtrDomain = "" // corner-case: if top-level, we don't want to append _two_ dots (e.g. "127-0-0-1..")
+	}
+	logmessages = append(logmessages, fmt.Sprintf(`Setting PTR domain to "%s"`, x.PtrDomain))
 	return x, logmessages
 }
 
@@ -994,7 +1003,7 @@ func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 			reversedIPv4address[1],
 			reversedIPv4address[0],
 		})
-		ptrName, err := dnsmessage.NewName(strings.ReplaceAll(ip.String(), ".", "-") + ".sslip.io.")
+		ptrName, err := dnsmessage.NewName(strings.ReplaceAll(ip.String(), ".", "-") + "." + x.PtrDomain)
 		if err != nil {
 			return nil
 		}
@@ -1020,7 +1029,7 @@ func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 		if ip == nil {
 			return nil
 		}
-		ptrName, err := dnsmessage.NewName(strings.ReplaceAll(ip.String(), ":", "-") + ".sslip.io.")
+		ptrName, err := dnsmessage.NewName(strings.ReplaceAll(ip.String(), ":", "-") + "." + x.PtrDomain)
 		if err != nil {
 			return nil
 		}
