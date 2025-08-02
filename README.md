@@ -47,8 +47,8 @@ have a subdomain, "xip.pivotal.io", that does sslip.io-style lookups (e.g.
 "127.0.0.1.xip.pivotal.io" would resolve to "127.0.0.1"). Let's say we have two
 servers that we've set aside for this purpose:
 
-- ns-sslip-0.pivotal.io, 10.8.8.8 (IPv4)
-- ns-sslip-1.pivotal.io, fc88:: (IPv6)
+- ns-ip-0.pivotal.io, 10.8.8.8 (IPv4)
+- ns-ip-1.pivotal.io, fc88:: (IPv6)
 
 First, we delegate the subdomain "xip.pivotal.io" to our two nameservers, and
 then we run the following command run on each of the two servers:
@@ -56,8 +56,9 @@ then we run the following command run on each of the two servers:
 ```bash
 # after we've cloned our repo & cd'ed into it
 go run main.go \
-  -nameservers=ns-sslip-0.pivotal.io,ns-sslip-1.pivotal.io \
-  -addresses ns-sslip-0.pivotal.io=10.8.8.8,ns-sslip-1.pivotal.io=fc88::
+  -nameservers=ns-ip-0.pivotal.io,ns-ip-1.pivotal.io \
+  -addresses ns-ip-0.pivotal.io=10.8.8.8,ns-ip-1.pivotal.io=fc88:: \
+  -ptr-domain=xip.pivotal.io
 ```
 
 **Note: These nameservers are not general-purpose nameservers; for example,
@@ -82,7 +83,7 @@ If we see the error, "`Error starting userland proxy: listen udp4 0.0.0.0:53:
 bind: address already in use.`", we turn off the systemd resolver: `sudo
 systemctl stop systemd-resolved`
 
-Let's try a more complicated setup: we're on our workstation, jammy.nono.io,
+Let's try a more complicated setup: we're on our workstation, noble.nono.io,
 whose IP addresses are 10.9.9.114 and 2601:646:0100:69f0:0:ff:fe00:72. We'd like
 our workstation to be the DNS server:
 
@@ -92,22 +93,22 @@ docker run \
   --rm \
   -p 53:53/udp \
   cunnie/sslip.io-dns-server \
-    -nameservers jammy.nono.io \
-    -addresses jammy.nono.io=10.9.9.114,jammy.nono.io=2601:646:100:69f0:0:ff:fe00:72
+    -nameservers noble.nono.io \
+    -addresses noble.nono.io=10.9.9.114,noble.nono.io=2601:646:100:69f0:0:ff:fe00:72
 ```
 
 From another machine, we look up the DNS NS record for "127.0.0.1.com", and we
 see the expected reply:
 
 ```bash
-dig ns 127.0.0.1.com @jammy.nono.io +short
+dig ns 127.0.0.1.com @noble.nono.io +short
 ...
   ;; ANSWER SECTION:
-  127.0.0.1.com.		604800	IN	NS	jammy.nono.io.
+  127.0.0.1.com.		604800	IN	NS	noble.nono.io.
 
   ;; ADDITIONAL SECTION:
-  jammy.nono.io.		604800	IN	A	10.9.9.114
-  jammy.nono.io.		604800	IN	AAAA	2601:646:100:69f0:0:ff:fe00:72
+  noble.nono.io.		604800	IN	A	10.9.9.114
+  noble.nono.io.		604800	IN	AAAA	2601:646:100:69f0:0:ff:fe00:72
 ```
 
 The Docker image is multi-platform, supporting both x86_64 architecture as well
@@ -136,9 +137,20 @@ as ARM64 (AWS Graviton, Apple M1/M2).
   `ns1.example.com=1.1.1.1,ns1.example.com=8.8.8.8,ns1.example.com=9.9.9.9`
 - `-blocklistURL` overrides the default block list,
   (<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
-  It's not necessary to override this if you're in an internetless environment:
-  if the DNS server can't download the blocklist, it prints out a message and
-  continues to serve DNS queries
+  The blocklist is not a show-stopper: if the DNS server can't download the
+  blocklist, it logs a message and continues to serve DNS queries
+- `ptr-domain` the domain to use for PTR records. For example, if you set
+  `ptr-domain=ip.example.com` and then do a reverse-lookup (PTR record), e.g.
+  `dig -x 127.0.0.1`, the result will be `127-0-0-1.ip.example.com`. Best
+  practice: make sure the forward lookup matches the reverse lookup, e.g. `dig
+  127-0-0-1.ip.example.com` should return an A record of `127.0.0.1`.
+- `public` controls whether public addresses are resolved. If unsure, set
+  `-public=false`, which means only private IP addresses will resolve, e.g.
+  `10.9.9.30`, `192.168.0.1`, `169.254.169.254`. Let's say you run a bank, and
+  your nip.io-style subdomain is `ip.wellsfargo.com`, you don't a phisher
+  scammer to spin up a VM with a public IP address and get a certificate for
+  that IP address's hostname `52-0-56-137.ip.wellsfargo.com` and use it to
+  phish your customers. `-public=false` prevents that scenario.
 
 ## DNS Server Miscellany
 
