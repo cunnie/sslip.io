@@ -1,0 +1,44 @@
+name: Queries per Second shields.io badge
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # Runs every 6 hours
+  workflow_dispatch:
+
+jobs:
+  update-qps-gist:
+    runs-on: self-hosted
+    steps:
+      - name: Calculate QPS
+        id: qps
+        uses: docker://cunnie/fedora-golang-bosh
+        with:
+          entrypoint: /bin/bash
+          args: |
+            -c "
+              for NS in ns-{do-sg,gce,hetzner,ovh}.sslip.io; do
+                dig TXT metrics.status.sslip.io @$NS +short |
+                rg \"Queries:\" |
+                sed 's/\"Queries.*[(]//; s~/.*$~~g'
+              done |
+                awk '{ sum += $1 } END { printf \"qps=%.0f\n\", sum }' \
+                > $GITHUB_OUTPUT
+            "
+
+      - name: Create QPS JSON file
+        run: |
+          cat > qps.json << EOF
+          {
+            "schemaVersion": 1,
+            "label": "Queries / second",
+            "message": "${{ steps.qps.outputs.qps }}",
+            "color": "blue"
+          }
+          EOF
+
+      - name: Update Gist with QPS data
+        uses: exuanbo/actions-deploy-gist@v1
+        with:
+          token: ${{ secrets.GIST_TOKEN }}
+          gist_id: 67dc2a78c9ac6032db05027727c63ea1
+          file_path: qps.json
