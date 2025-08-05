@@ -2,6 +2,7 @@
 
 [![Production Nameservers](https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml/badge.svg)](https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml)
 [![CI Tests](https://github.com/cunnie/sslip.io/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/cunnie/sslip.io/actions/workflows/ci-tests.yml)
+![QPS Badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunnie/67dc2a78c9ac6032db05027727c63ea1/raw/qps.json)
 
 _sslip.io_ is a DNS server that maps specially-crafted DNS A records to IP
 addresses (e.g. "127-0-0-1.sslip.io" maps to 127.0.0.1). It is similar to, and
