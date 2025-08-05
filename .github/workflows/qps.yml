@@ -27,7 +27,7 @@ jobs:
 
       - name: Create QPS JSON file
         run: |
-          cat > qps.json << EOF
+          cat > /tmp/qps.json << EOF
           {
             "schemaVersion": 1,
             "label": "Queries / second",
@@ -41,4 +41,4 @@ jobs:
         with:
           token: ${{ secrets.GIST_TOKEN }}
           gist_id: 67dc2a78c9ac6032db05027727c63ea1
-          file_path: qps.json
+          file_path: /tmp/qps.json
