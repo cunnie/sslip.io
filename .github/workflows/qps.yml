@@ -9,6 +9,9 @@ jobs:
   update-qps-gist:
     runs-on: self-hosted
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Calculate QPS
         id: qps
         uses: docker://cunnie/fedora-golang-bosh
@@ -27,7 +30,7 @@ jobs:
 
       - name: Create QPS JSON file
         run: |
-          cat > /tmp/qps.json << EOF
+          cat > qps.json << EOF
           {
             "schemaVersion": 1,
             "label": "Queries / second",
@@ -41,4 +44,4 @@ jobs:
         with:
           token: ${{ secrets.GIST_TOKEN }}
           gist_id: 67dc2a78c9ac6032db05027727c63ea1
-          file_path: /tmp/qps.json
+          file_path: qps.json
