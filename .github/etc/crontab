@@ -1,0 +1,16 @@
+# To install this crontab:
+#
+#   sudo crontab crontab
+#
+# Bug: my self-hosted GitHub Actions experiences failures when files owned by root are 
+# introduced in the runner user's homedir. I'm not sure how they're introduced because
+# runner doesn't have sudo access, but this ugly workaround will prevent the problem
+# from getting too bad.
+#
+# Fixes, from GitHub Actions: <https://github.com/cunnie/sslip.io/actions/runs/16803947661/job/47591559499>
+#
+# Error: File was unable to be removed Error: EACCES: permission denied, rmdir '/home/runner/actions-runner/_work/sslip.io/sslip.io/.github/workflows'
+#
+# 
+#
+58 * * * * chown -R runner:users /home/runner
