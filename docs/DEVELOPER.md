@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=4.1.0
-export VERSION=4.1.1
+export OLD_VERSION=4.1.1
+export VERSION=4.2.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -41,7 +41,7 @@ Test from another window:
 
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=4.1.1
+export VERSION=4.2.0
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1 ) | uniq -c
@@ -67,7 +67,7 @@ echo 127.0.0.1 ) | uniq -c
 ( dig @$DNS_SERVER_IP txt version.status.sslip.io +short | grep $VERSION
 echo "\"$VERSION\"" ) | uniq -c
 ( dig @$DNS_SERVER_IP 1.0.0.127.in-addr.arpa ptr +short
-echo "127-0-0-1.sslip.io." ) | uniq -c
+echo "127-0-0-1.nip.io." ) | uniq -c
 ( dig @$DNS_SERVER_IP 7f000001.nip.io +short
 echo 127.0.0.1 ) | uniq -c
 dig @$DNS_SERVER_IP metrics.status.sslip.io txt +short | grep '"Queries: '
@@ -78,7 +78,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: nip.io has special-purpose TXT records"
+GIT_MESSAGE="$VERSION: -ptr-domain flag sets PTR domain, which now defaults to nip.io"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
