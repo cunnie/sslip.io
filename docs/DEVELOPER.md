@@ -84,6 +84,11 @@ git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
 git push
 git push --tags
+for HOST in {ns-do-sg,ns-gce,ns-hetzner,ns-ovh}.sslip.io; do
+  ssh $HOST sudo apt-get update
+  ssh $HOST sudo apt-get upgrade -y
+  ssh $HOST sudo apt-get autoremove -y
+done
 scp bin/sslip.io-dns-server-linux-amd64 ns-do-sg:
 scp bin/sslip.io-dns-server-linux-amd64 ns-gce:
 scp bin/sslip.io-dns-server-linux-amd64 ns-hetzner:
