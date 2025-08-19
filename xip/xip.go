@@ -1049,7 +1049,7 @@ func TXTNipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 	// and that's what google.com does.
 	return []dnsmessage.TXTResource{
 		{TXT: []string{"protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313"}}, // ProtonMail verification; don't delete
-		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},
+		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx -all"}},
 	}, nil // Sender Policy Framework
 }
 
@@ -1060,7 +1060,7 @@ func TXTSslipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 	// and that's what google.com does.
 	return []dnsmessage.TXTResource{
 		{TXT: []string{"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"}}, // ProtonMail verification; don't delete
-		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx ~all"}},
+		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx -all"}},
 	}, nil // Sender Policy Framework
 }
 

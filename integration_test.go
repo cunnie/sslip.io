@@ -318,6 +318,18 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeNS example.com. \? ns-do-sg.sslip.io., ns-gce.sslip.io., ns-hetzner.sslip.io., ns-ovh.sslip.io.\n`))
 			})
 		})
+		When(`there are multiple TXT records returned (e.g. SPF for nip.io)`, func() {
+			It("returns the custom TXT records", func() {
+				digArgs = "@localhost nip.io txt +short -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`"protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313"`))
+				Eventually(digSession).Should(Say(`"v=spf1 include:_spf.protonmail.ch mx -all"`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT nip.io. \? \["protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313"\], \["v=spf1 include:_spf.protonmail.ch mx -all"\]\n`))
+			})
+		})
 		When(`there are multiple TXT records returned (e.g. SPF for sslip.io)`, func() {
 			It("returns the custom TXT records", func() {
 				digArgs = "@localhost sslip.io txt +short -p " + strconv.Itoa(port)
@@ -325,9 +337,9 @@ var _ = Describe("sslip.io-dns-server", func() {
 				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 				Eventually(digSession).Should(Say(`"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"`))
-				Eventually(digSession).Should(Say(`"v=spf1 include:_spf.protonmail.ch mx ~all"`))
+				Eventually(digSession).Should(Say(`"v=spf1 include:_spf.protonmail.ch mx -all"`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx ~all"\]\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx -all"\]\n`))
 			})
 		})
 		When(`a record for an "_acme-challenge" domain is queried`, func() {
