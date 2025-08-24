@@ -3,8 +3,7 @@
 # This is a shortened variant meant to be used for testing (`ginkgo`) because
 # the legitimate one has grown so long it clutters the test output
 
-raiffeisen # https://www.rbinternational.com/en/homepage.html
-43-134-66-67 # Netflix, https://nf-43-134-66-67.sslip.io/sg
-43.134.66.67/24 # Netflix
-2601:646:100:69f7:cafe:bebe:cafe:bebe/112 # personal (Comcast) IPv6 range for testing blocklist
-
+12.34.56.78/24 # IPv4 CIDR
+1234::/64      # IPv6 CIDR
+23.45.67.89    # IPv4
+raiffeisen     # string

@@ -28,8 +28,9 @@ import (
 type Xip struct {
 	DnsAmplificationAttackDelay chan struct{}           // for throttling metrics.status.sslip.io
 	Metrics                     Metrics                 // DNS server metrics
-	BlocklistStrings            []string                // list of blacklisted strings that shouldn't appear in public hostnames
-	BlocklistCIDRs              []net.IPNet             // list of blacklisted CIDRs; no A/AAAA records should resolve to IPs in these CIDRs
+	BlocklistCIDRs              []net.IPNet             // list of blocked CIDRs; no A/AAAA records should resolve to IPs in these CIDRs
+	BlocklistIPs                map[string]struct{}     // list of blocked IPs; no A/AAAA records should resolve to these IPs
+	BlocklistStrings            []string                // list of blocked strings that shouldn't appear in public hostnames
 	BlocklistUpdated            time.Time               // The most recent time the Blocklist was updated
 	NameServers                 []dnsmessage.NSResource // The list of authoritative name servers (NS)
 	Public                      bool                    // Whether to resolve public IPs; set to false if security-conscious
@@ -1076,10 +1077,12 @@ func TXTMetrics(x *Xip, _ net.IP) (txtResources []dnsmessage.TXTResource, err er
 	var metrics []string
 	uptime := time.Since(x.Metrics.Start)
 	metrics = append(metrics, fmt.Sprintf("Uptime: %.0f", uptime.Seconds()))
-	metrics = append(metrics, fmt.Sprintf("Blocklist: %s %d,%d",
+	metrics = append(metrics, fmt.Sprintf("Blocklist: %s %d,%d,%d",
 		x.BlocklistUpdated.Format("2006-01-02 15:04:05-07"),
+		len(x.BlocklistCIDRs),
+		len(x.BlocklistIPs),
 		len(x.BlocklistStrings),
-		len(x.BlocklistCIDRs)))
+	))
 	metrics = append(metrics, fmt.Sprintf("Queries: %d (%.1f/s)", x.Metrics.Queries, float64(x.Metrics.Queries)/uptime.Seconds()))
 	metrics = append(metrics, fmt.Sprintf("TCP/UDP: %d/%d", x.Metrics.TCPQueries, x.Metrics.UDPQueries))
 	metrics = append(metrics, fmt.Sprintf("Answer > 0: %d (%.1f/s)", x.Metrics.AnsweredQueries, float64(x.Metrics.AnsweredQueries)/uptime.Seconds()))
@@ -1152,21 +1155,25 @@ func (x *Xip) downloadBlockList(blocklistURL string) string {
 			return fmt.Sprintf(`failed to download blocklist "%s", HTTP status: "%d"`, blocklistURL, resp.StatusCode)
 		}
 	}
-	blocklistStrings, blocklistCIDRs, err := ReadBlocklist(blocklistReader)
+	blocklistCIDRs, blocklistIPs, blocklistStrings, err := ReadBlocklist(blocklistReader)
 	if err != nil {
 		return fmt.Sprintf(`failed to parse blocklist "%s": %s`, blocklistURL, err.Error())
 	}
-	x.BlocklistStrings = blocklistStrings
 	x.BlocklistCIDRs = blocklistCIDRs
+	x.BlocklistIPs = blocklistIPs
+	x.BlocklistStrings = blocklistStrings
 	x.BlocklistUpdated = time.Now()
-	return fmt.Sprintf("Successfully downloaded blocklist from %s: %v, %v", blocklistURL, x.BlocklistStrings, x.BlocklistCIDRs)
+	return fmt.Sprintf("Successfully downloaded blocklist from %s: %v, %v, %v", blocklistURL, x.BlocklistCIDRs, x.BlocklistIPs, x.BlocklistStrings)
 }
 
 // ReadBlocklist "sanitizes" the block list, removing comments, invalid characters
 // and lowercasing the names to be blocked.
 // public to make testing easier
-func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklists []net.IPNet, err error) {
+func ReadBlocklist(blocklist io.Reader) (blocklistCIDRs []net.IPNet, blocklistIPs map[string]struct{}, blocklistStrings []string, err error) {
 	scanner := bufio.NewScanner(blocklist)
+	blocklistCIDRs = []net.IPNet{}
+	blocklistIPs = make(map[string]struct{})
+	blocklistStrings = []string{}
 	comments := regexp.MustCompile(`#.*`)
 	invalidDNSchars := regexp.MustCompile(`[^-\da-z]`)
 	invalidDNScharsWithSlashesDotsAndColons := regexp.MustCompile(`[^-_\da-z/.:]`)
@@ -1177,20 +1184,42 @@ func ReadBlocklist(blocklist io.Reader) (stringBlocklists []string, cidrBlocklis
 		line = comments.ReplaceAllString(line, "")                                // strip comments
 		line = invalidDNScharsWithSlashesDotsAndColons.ReplaceAllString(line, "") // strip invalid characters
 		_, ipcidr, err := net.ParseCIDR(line)
-		if err != nil {
-			line = invalidDNSchars.ReplaceAllString(line, "") // strip invalid DNS characters
-			if line == "" {
+		if err == nil {
+			// Previously we blocked by CIDRs, not IPs, but that was flawed:
+			// of the 746 CIDRs, 744 of them were /32 — in other words, IP
+			// addresses. And matching CIDRs is computationally expensive:
+			// consuming 0.25s of 2.21s of xip.QueryResponse() -> 11%,
+			// so we use a string-indexed map instead
+			//
+			// All blocked sites are IPv4. I have never gotten a takedown for an IPv6
+			if ipcidr.IP.To4() != nil && ipcidr.Mask.String() == "ffffffff" {
+				blocklistIPs[ipcidr.IP.String()] = struct{}{}
 				continue
 			}
-			stringBlocklists = append(stringBlocklists, line)
-		} else {
-			cidrBlocklists = append(cidrBlocklists, *ipcidr)
+			// We still need CIDRs though, especially for poorly-secured WordPress
+			// hosting sites like Valkyrie Hosting, where we block entire subnets
+			blocklistCIDRs = append(blocklistCIDRs, *ipcidr)
+			continue
 		}
+		// it's not a CIDR; is it an IP?
+		// we convert the IP to a string because we can't use net.IP as a map index
+		ip := net.ParseIP(line)
+		if ip != nil {
+			blocklistIPs[ip.String()] = struct{}{}
+			continue
+		}
+		// it's not a CIDR or IP; is it a string?
+		line = invalidDNSchars.ReplaceAllString(line, "") // strip [/.:]
+		if line == "" {
+			continue
+		}
+		// it's a string
+		blocklistStrings = append(blocklistStrings, line)
 	}
 	if err = scanner.Err(); err != nil {
-		return []string{}, []net.IPNet{}, err
+		return []net.IPNet{}, map[string]struct{}{}, []string{}, err
 	}
-	return stringBlocklists, cidrBlocklists, nil
+	return blocklistCIDRs, blocklistIPs, blocklistStrings, nil
 }
 
 func (x *Xip) blocklist(hostname string) bool {
@@ -1212,13 +1241,16 @@ func (x *Xip) blocklist(hostname string) bool {
 	if ip.IsPrivate() {
 		return false
 	}
-	for _, blockstring := range x.BlocklistStrings {
-		if strings.Contains(hostname, blockstring) {
+	for _, blockCIDR := range x.BlocklistCIDRs {
+		if blockCIDR.Contains(ip) {
 			return true
 		}
 	}
-	for _, blockCIDR := range x.BlocklistCIDRs {
-		if blockCIDR.Contains(ip) {
+	if _, exists := x.BlocklistIPs[ip.String()]; exists {
+		return true
+	}
+	for _, blockstring := range x.BlocklistStrings {
+		if strings.Contains(hostname, blockstring) {
 			return true
 		}
 	}
