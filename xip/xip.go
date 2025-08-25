@@ -788,6 +788,9 @@ func NameToA(fqdnString string, allowPublicIPs bool) []dnsmessage.AResource {
 			// We shouldn't reach here because `match` should always be valid, but we're not optimists
 			if ipv4address == nil {
 				// e.g. "ubuntu20.04.235.249.181-notify.sslip.io." <- the leading zero is the problem
+				// funprdmongo30-03.10.1.4.133.nip.io.
+				// olvm-engine-01.132.145.157.105.nip.io.
+				// wt32-ETh01-03.172.26.131.29.NIp.IO.
 				log.Printf("----> Should be valid A but isn't: %s\n", fqdn) // TODO: delete this
 				return []dnsmessage.AResource{}
 			}
