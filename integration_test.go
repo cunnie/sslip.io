@@ -342,6 +342,27 @@ var _ = Describe("sslip.io-dns-server", func() {
 				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT sslip.io. \? \["protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"\], \["v=spf1 include:_spf.protonmail.ch mx -all"\]\n`))
 			})
 		})
+		When(`the DMARC records are queried`, func() {
+			It(`returns the nip.io DMARC TXT record`, func() {
+				digArgs = "@localhost _dmarc.nip.io. txt +short -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`"v=DMARC1; p=reject"`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT _dmarc\.nip\.io\. \? \["v=DMARC1; p=reject"\]\n`))
+			})
+			It(`returns the sslip.io DMARC TXT record`, func() {
+				digArgs = "@localhost _dmarc.sslip.io. txt +short -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`"v=DMARC1; p=reject"`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypeTXT _dmarc\.sslip\.io\. \? \["v=DMARC1; p=reject"\]\n`))
+			})
+		})
+
 		When(`a record for an "_acme-challenge" domain is queried`, func() {
 			When(`it's an NS record`, func() {
 				It(`returns the NS record of the query with the "_acme-challenge." stripped`, func() {

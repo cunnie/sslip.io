@@ -137,6 +137,12 @@ var (
 			},
 			TXT: TXTSslipIoSPF,
 		},
+		"_dmarc.nip.io.": {
+			TXT: TXTDmarc,
+		},
+		"_dmarc.sslip.io.": {
+			TXT: TXTDmarc,
+		},
 		// nameserver addresses; we get queries for those every once in a while
 		// CNAMEs for nip.io/sslip.io for DKIM signing
 		"protonmail._domainkey.nip.io.": {
@@ -1066,6 +1072,15 @@ func TXTSslipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 		{TXT: []string{"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"}}, // ProtonMail verification; don't delete
 		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx -all"}},
 	}, nil // Sender Policy Framework
+}
+
+// TXTDmarc DMARC record
+// Tighten the screws to prevent spam, thanks @brakhane
+// - p=reject -> reject all emails that don't meet SPF requirements, subdomains inherit
+func TXTDmarc(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+	return []dnsmessage.TXTResource{
+		{TXT: []string{"v=DMARC1; p=reject"}},
+	}, nil
 }
 
 // TXTIp when TXT for "ip.sslip.io" is queried, return the IP address of the querier
