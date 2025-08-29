@@ -20,7 +20,7 @@ end
 
 domains_env = ENV['DOMAINS'] || 'example.com'
 domains = domains_env.split(',').map(&:strip)
-sslip_version = '4.2.2'
+sslip_version = '4.2.3'
 
 domains.each do |domain|
   whois_nameservers = get_whois_nameservers(domain)

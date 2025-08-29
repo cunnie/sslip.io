@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=4.2.1
-export VERSION=4.2.2
+export OLD_VERSION=4.2.2
+export VERSION=4.2.3
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -41,7 +41,7 @@ Test from another window:
 
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=4.2.2
+export VERSION=4.2.3
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1 ) | uniq -c
@@ -50,10 +50,14 @@ echo 127.0.0.1 ) | uniq -c
 printf "ns-do-sg.sslip.io.\nns-gce.sslip.io.\nns-hetzner.sslip.io.\nns-ovh.sslip.io.\n" ) | sort | uniq -c
 ( dig +short mx sslip.io @$DNS_SERVER_IP
 printf "10 mail.protonmail.ch.\n20 mailsec.protonmail.ch.\n" ) | sort | uniq -c
-( dig +short txt sslip.io @$DNS_SERVER_IP
-printf "\"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26\"\n\"v=spf1 include:_spf.protonmail.ch mx -all\"\n" ) | sort | uniq -c
 ( dig +short txt nip.io @$DNS_SERVER_IP
 printf "\"protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313\"\n\"v=spf1 include:_spf.protonmail.ch mx -all\"\n" ) | sort | uniq -c
+( dig +short txt sslip.io @$DNS_SERVER_IP
+printf "\"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26\"\n\"v=spf1 include:_spf.protonmail.ch mx -all\"\n" ) | sort | uniq -c
+( dig +short txt _dmarc.nip.io. @$DNS_SERVER_IP ;
+  dig +short txt _dmarc.sslip.io. @$DNS_SERVER_IP ;
+  printf "\"v=DMARC1; p=reject\"\n"
+  printf "\"v=DMARC1; p=reject\"\n" ; ) | sort | uniq -c
 dig +short txt 127.0.0.1.sslip.io @$DNS_SERVER_IP # no records
 dig +short cname sslip.io @$DNS_SERVER_IP # no records
 ( dig +short cname protonmail._domainkey.sslip.io @$DNS_SERVER_IP
@@ -78,7 +82,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: email: SPF soft fail → hard fail"
+GIT_MESSAGE="$VERSION: performance: blocklist 5x speedup"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
