@@ -609,4 +609,24 @@ var _ = Describe("Xip", func() {
 			Entry("Private internets", net.ParseIP("fc00::"), false),
 		)
 	})
+	Describe("String2IPv4()", func() {
+		DescribeTable("when determining if a name is IPv4",
+			func(fqdn string, expectedPublic net.IP) {
+				Expect(xip.String2IPv4(fqdn)).To(Equal(expectedPublic))
+			},
+			Entry("ubuntu20.04.52.0.56.137-notify.sslip.io.", "ubuntu20.04.52.0.56.137.181-notify.sslip.io.", net.ParseIP("52.0.56.137")),
+			Entry("funprdmongo30-03.10.1.4.133.nip.io.", "funprdmongo30-03.10.1.4.133.nip.io.", net.ParseIP("10.1.4.133")),
+			Entry("olvm-engine-01.132.145.157.105.nip.io.", "olvm-engine-01.132.145.157.105.nip.io.", net.ParseIP("132.145.157.105")),
+			Entry("wt32-ETh01-03.172.26.131.29.NIp.IO.", "wt32-ETh01-03.172.26.131.29.NIp.IO.", net.ParseIP("172.26.131.29")),
+			Entry("prepend-zeros.01.23.45.67.89.", "prepend-zeros.01.23.45.67.89.", net.ParseIP("23.45.67.89")),
+			Entry("moar-zeros.23.45.67.09.", "prepend-zeros.23.45.67.09.", nil),
+		)
+		When("we're fuzz testing", func() {
+			for i := 0; i < 1000; i++ {
+				It("correctly identifies the IPv4 address", func() {
+					Expect(xip.String2IPv4(testhelper.RandomIPv4String())).ToNot(BeNil())
+				})
+			}
+		})
+	})
 })

@@ -2,8 +2,10 @@ package testhelper
 
 import (
 	"encoding/binary"
-	"math/rand"
+	"math/rand/v2"
 	"net"
+	"strconv"
+	"strings"
 )
 
 // RandomIPv6Address is used for fuzz testing
@@ -32,11 +34,25 @@ func RandomIPv6Address() net.IP {
 func Random8ByteString() string {
 	var randomString []byte
 	// 71 == ascii 'G', +32 (103) == ascii 'g'
-	randomString = append(randomString, byte(71+32*rand.Intn(2)+rand.Intn(20)))
+	randomString = append(randomString, byte(71+32*rand.IntN(2)+rand.IntN(20)))
 	for range 6 {
 		// 65 == ascii 'A', +32 (96) == ascii 'a', there are 26 letters in the alphabet. Mix upper case, too.
-		randomString = append(randomString, byte(65+32*rand.Intn(2)+rand.Intn(26)))
+		randomString = append(randomString, byte(65+32*rand.IntN(2)+rand.IntN(26)))
 	}
-	randomString = append(randomString, byte(71+32*rand.Intn(2)+rand.Intn(20)))
+	randomString = append(randomString, byte(71+32*rand.IntN(2)+rand.IntN(20)))
 	return string(randomString)
+}
+
+// returns a random IPv4 address, sometimes with dots, sometimes with dashes
+func RandomIPv4String() string {
+	separator := "."
+	if rand.IntN(2) == 1 {
+		separator = "-"
+	}
+	ipString := ""
+	for i := 0; i < 4; i++ {
+		ipString += strconv.Itoa(int(rand.IntN(256))) + separator
+	}
+	ipString = strings.TrimSuffix(ipString, separator)
+	return ipString
 }

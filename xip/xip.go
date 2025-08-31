@@ -84,8 +84,8 @@ type DomainCustomizations map[string]DomainCustomization
 // Some of these are global because they are, in essence, constants which
 // I don't want to waste time recreating with every function call.
 var (
-	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
-	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1?\d)?\d)-){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
+	ipv4REDots   = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1\d|[1-9])?\d)\.){3}(25[0-5]|(2[0-4]|1\d|[1-9])?\d))($|[.-])`)
+	ipv4REDashes = regexp.MustCompile(`(^|[.-])(((25[0-5]|(2[0-4]|1\d|[1-9])?\d)\-){3}(25[0-5]|(2[0-4]|1\d|[1-9])?\d))($|[.-])`)
 	ipv4REHex    = regexp.MustCompile(`(^|\.)([[:xdigit:]]{8})($|\.)`) // no dash separators, only dots
 	// https://stackoverflow.com/questions/53497/regular-expression-that-matches-valid-ipv6-addresses
 	ipv6RE           = regexp.MustCompile(`(^|[.-])(([[:xdigit:]]{1,4}-){7}[[:xdigit:]]{1,4}|([[:xdigit:]]{1,4}-){1,7}-|([[:xdigit:]]{1,4}-){1,6}-[[:xdigit:]]{1,4}|([[:xdigit:]]{1,4}-){1,5}(-[[:xdigit:]]{1,4}){1,2}|([[:xdigit:]]{1,4}-){1,4}(-[[:xdigit:]]{1,4}){1,3}|([[:xdigit:]]{1,4}-){1,3}(-[[:xdigit:]]{1,4}){1,4}|([[:xdigit:]]{1,4}-){1,2}(-[[:xdigit:]]{1,4}){1,5}|[[:xdigit:]]{1,4}-((-[[:xdigit:]]{1,4}){1,6})|-((-[[:xdigit:]]{1,4}){1,7}|-)|fe80-(-[[:xdigit:]]{0,4}){0,4}%[\da-zA-Z]+|--(ffff(-0{1,4})?-)?((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d)|([[:xdigit:]]{1,4}-){1,4}-((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d))($|[.-])`)
@@ -781,56 +781,53 @@ func buildNSRecords(b *dnsmessage.Builder, name dnsmessage.Name, nameServers []d
 // possibly more if it's a customized record (e.g. the addresses of "ns.sslip.io.")
 // if "allowPublicIPs" is false, and the IP address is public, it'll return an empty array
 func NameToA(fqdnString string, allowPublicIPs bool) []dnsmessage.AResource {
-	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
 	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.A) > 0 {
 		return domain.A
 	}
+	ipv4 := String2IPv4(fqdnString)
+	if ipv4 == nil {
+		return []dnsmessage.AResource{}
+	}
+	if (!allowPublicIPs) && IsPublic(ipv4) {
+		return []dnsmessage.AResource{}
+	}
+	return []dnsmessage.AResource{
+		{A: [4]byte{ipv4[12], ipv4[13], ipv4[14], ipv4[15]}},
+	}
+}
+
+func String2IPv4(fqdn string) net.IP {
 	for _, ipv4RE := range []*regexp.Regexp{ipv4REDashes, ipv4REDots} {
-		if ipv4RE.Match(fqdn) {
-			match := string(ipv4RE.FindSubmatch(fqdn)[2])
+		if ipv4RE.MatchString(fqdn) {
+			match := string(ipv4RE.FindStringSubmatch(fqdn)[2])
 			match = strings.Replace(match, "-", ".", -1)
-			ipv4address := net.ParseIP(match).To4()
+			ipv4address := net.ParseIP(match)
 			// We shouldn't reach here because `match` should always be valid, but we're not optimists
 			if ipv4address == nil {
-				// e.g. "ubuntu20.04.235.249.181-notify.sslip.io." <- the leading zero is the problem
-				// funprdmongo30-03.10.1.4.133.nip.io.
-				// olvm-engine-01.132.145.157.105.nip.io.
-				// wt32-ETh01-03.172.26.131.29.NIp.IO.
-				log.Printf("----> Should be valid A but isn't: %s\n", fqdn) // TODO: delete this
-				return []dnsmessage.AResource{}
-			}
-			if (!allowPublicIPs) && IsPublic(ipv4address) {
-				return []dnsmessage.AResource{}
-			}
-			return []dnsmessage.AResource{
-				{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
+				fmt.Printf("----> match: %s, Should be valid A but isn't: %s\n", match, fqdn) // TODO: delete this
+			} else {
+				return ipv4address
 			}
 		}
 	}
-	if match := ipv4REHex.FindSubmatch(fqdn); match != nil {
+	if match := ipv4REHex.FindStringSubmatch(fqdn); match != nil {
 		hexes := match[2] // strip out leading & trailing "." by using only the 2nd capture group, e.g. "7f000001"
 		ipBytes := make([]byte, 4)
 		_, err := hex.Decode(ipBytes, []byte(hexes))
 		if err != nil || len(ipBytes) != 4 {
-			return []dnsmessage.AResource{}
+			return nil
 		}
 		ipv4address := net.IPv4(ipBytes[0], ipBytes[1], ipBytes[2], ipBytes[3])
 		if ipv4address == nil {
-			return []dnsmessage.AResource{}
+			return nil
 		}
-		ipv4address = ipv4address.To4()
 		if ipv4address == nil {
-			return []dnsmessage.AResource{}
+			return nil
 		}
-		if (!allowPublicIPs) && IsPublic(ipv4address) {
-			return []dnsmessage.AResource{}
-		}
-		return []dnsmessage.AResource{
-			{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
-		}
+		return ipv4address
 	}
-	return []dnsmessage.AResource{}
+	return nil
 }
 
 // NameToAAAA returns an []AAAAResource that matched the hostname; it returns an array of zero-or-one records
