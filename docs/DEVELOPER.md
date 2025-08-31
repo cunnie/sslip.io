@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=4.2.2
-export VERSION=4.2.3
+export OLD_VERSION=4.2.3
+export VERSION=5.0.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the version number for the TXT record for version.status.sslip.io
@@ -41,7 +41,7 @@ Test from another window:
 
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=4.2.3
+export VERSION=5.0.0
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1 ) | uniq -c
@@ -82,7 +82,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: performance: blocklist 5x speedup"
+GIT_MESSAGE="$VERSION: 🐞: IPv4 regex, hex includes dashes"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
