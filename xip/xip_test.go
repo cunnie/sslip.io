@@ -319,6 +319,15 @@ var _ = Describe("Xip", func() {
 			Entry("Hexadecimal #4, dashes trump hex #2", "www.76543210.127-0-0-53.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
 			Entry("Hexadecimal #4, dots trump hex", "www.127.0.0.53.76543210.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
 			Entry("Hexadecimal #4, dots trump hex #2", "www.76543210.127.0.0.53.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
+			Entry("Hexadecimal #5", "filer-7f000001-sslip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 1}}),
+			Entry("Hexadecimal #6, TLD #1", "-0A09091E.", dnsmessage.AResource{A: [4]byte{10, 9, 9, 30}}),
+			Entry("Hexadecimal #6, TLD #2", "www-0A09091E.", dnsmessage.AResource{A: [4]byte{10, 9, 9, 30}}),
+			Entry("Hexadecimal #8, different numbers", "www.fedcba98-nip.io", dnsmessage.AResource{A: [4]byte{254, 220, 186, 152}}),
+			Entry("Hexadecimal #8, different numbers #2", "www-76543210.nip.io", dnsmessage.AResource{A: [4]byte{118, 84, 50, 16}}),
+			Entry("Hexadecimal #9, dashes trump hex", "www.127-0-0-53-76543210-nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
+			Entry("Hexadecimal #9, dashes trump hex #2", "www-76543210-127-0-0-53.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
+			Entry("Hexadecimal #9, dots trump hex", "www-127.0.0.53-76543210.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
+			Entry("Hexadecimal #9, dots trump hex #2", "www-76543210-127.0.0.53.nip.io", dnsmessage.AResource{A: [4]byte{127, 0, 0, 53}}),
 		)
 		DescribeTable("when it does NOT match an IP address",
 			func(fqdn string) {
@@ -336,8 +345,6 @@ var _ = Describe("Xip", func() {
 			Entry("test-net address with dots-and-dashes mixed", "www-192.0-2.3.example-me.com"),
 			Entry("Hexadecimal with too many digits (9 instead of 8)", "www.0A09091E0.com"),
 			Entry("Hexadecimal with too few  digits (7 instead of 8)", "www.0A09091.com"),
-			Entry("Hexadecimal with a dash instead of a .", "www-0A09091E.com"),
-			Entry("Hexadecimal with a dash instead of a . #2", "www.0A09091E-com"),
 		)
 		When("There is more than one A record", func() {
 			It("returns them all", func() {
