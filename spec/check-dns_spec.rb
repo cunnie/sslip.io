@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 # rubocop:disable Metrics/BlockLength
-#
+
 # DOMAINS=nip.io,sslip.io rspec --format documentation --color spec
 #
 # Admittedly it's overkill to use rspec to run a set of assertions
@@ -47,7 +49,7 @@ domains.each do |domain|
     end
 
     whois_nameservers.each do |whois_nameserver|
-      it "nameserver #{whois_nameserver}'s NS records include all whois nameservers #{whois_nameservers}, " +
+      it "nameserver #{whois_nameserver}'s NS records include all whois nameservers #{whois_nameservers}, " \
          "`dig ... @#{whois_nameserver} ns #{domain} +short`" do
         dig_nameservers = `#{dig_cmd} @#{whois_nameserver} ns #{domain} +short`.split(/\n+/)
         expect(whois_nameservers - dig_nameservers).to be_empty
@@ -61,34 +63,34 @@ domains.each do |domain|
 
       it "nameserver #{whois_nameserver}'s has an A record" do
         expect(`#{dig_cmd} @#{whois_nameserver} a #{domain} +short`.chomp).not_to eq('')
-        expect($?.success?).to be true
+        expect($CHILD_STATUS.success?).to be true
       end
 
       it "nameserver #{whois_nameserver}'s has an AAAA record" do
         expect(`#{dig_cmd} @#{whois_nameserver} a #{domain} +short`.chomp).not_to eq('')
-        expect($?.success?).to be true
+        expect($CHILD_STATUS.success?).to be true
       end
 
       a = [rand(256), rand(256), rand(256), rand(256)]
       it "resolves #{a.join('.')}.#{domain} to #{a.join('.')}" do
-        expect(`#{dig_cmd} @#{whois_nameserver} #{a.join('.') + '.' + domain} +short`.chomp).to  eq(a.join('.'))
+        expect(`#{dig_cmd} @#{whois_nameserver} #{"#{a.join('.')}.#{domain}"} +short`.chomp).to  eq(a.join('.'))
       end
 
       a = [rand(256), rand(256), rand(256), rand(256)]
       it "resolves #{a.join('-')}.#{domain} to #{a.join('.')}" do
-        expect(`#{dig_cmd} @#{whois_nameserver} #{a.join('-') + '.' + domain} +short`.chomp).to  eq(a.join('.'))
+        expect(`#{dig_cmd} @#{whois_nameserver} #{"#{a.join('-')}.#{domain}"} +short`.chomp).to  eq(a.join('.'))
       end
 
       a = [rand(256), rand(256), rand(256), rand(256)]
       b = [('a'..'z').to_a, ('0'..'9').to_a].flatten.sample(8).join
       it "resolves #{b}.#{a.join('-')}.#{domain} to #{a.join('.')}" do
-        expect(`#{dig_cmd} @#{whois_nameserver} #{b}.#{a.join('-') + '.' + domain} +short`.chomp).to eq(a.join('.'))
+        expect(`#{dig_cmd} @#{whois_nameserver} #{b}.#{"#{a.join('-')}.#{domain}"} +short`.chomp).to eq(a.join('.'))
       end
 
       a = [rand(256), rand(256), rand(256), rand(256)]
       b = [('a'..'z').to_a, ('0'..'9').to_a].flatten.sample(8).join
       it "resolves #{a.join('-')}.#{b} to #{a.join('.')}" do
-        expect(`#{dig_cmd} @#{whois_nameserver} #{a.join('-') + '.' + b} +short`.chomp).to eq(a.join('.'))
+        expect(`#{dig_cmd} @#{whois_nameserver} #{"#{a.join('-')}.#{b}"} +short`.chomp).to eq(a.join('.'))
       end
 
       # don't begin the hostname with a double-dash -- `dig` mistakes it for an argument
@@ -120,7 +122,7 @@ domains.each do |domain|
       # check the website
       it "is able to reach https://#{domain} and get a valid response (2xx)" do
         `curl -If https://#{domain} 2> /dev/null`
-        expect($?.success?).to be true
+        expect($CHILD_STATUS.success?).to be true
       end
     end
   end
