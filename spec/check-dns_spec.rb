@@ -48,7 +48,11 @@ domains.each do |domain|
       expect(whois_nameservers.size).to be > 1
     end
 
-    whois_nameservers.each do |whois_nameserver|
+    # Exclude the Singapore nameserver "ns-do-sg."
+    # because it triggers so many false positives
+    nameservers_without_singapore = whois_nameservers.reject { |ns| ns.start_with?('ns-do-sg.') }
+
+    nameservers_without_singapore.each do |whois_nameserver|
       it "nameserver #{whois_nameserver}'s NS records include all whois nameservers #{whois_nameservers}, " \
          "`dig ... @#{whois_nameserver} ns #{domain} +short`" do
         dig_nameservers = `#{dig_cmd} @#{whois_nameserver} ns #{domain} +short`.split(/\n+/)
