@@ -74,7 +74,7 @@ domains.each do |domain|
       end
 
       it "nameserver #{whois_nameserver}'s has an AAAA record" do
-        expect(`#{dig_cmd} @#{whois_nameserver} a #{domain} +short`.chomp).not_to eq('')
+        expect(`#{dig_cmd} @#{whois_nameserver} aaaa #{domain} +short`.chomp).not_to eq('')
         expect($CHILD_STATUS.success?).to be true
       end
 
