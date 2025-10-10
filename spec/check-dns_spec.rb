@@ -10,6 +10,9 @@
 # shorter and more understandable. We are using rspec merely to
 # practice using rspec.
 #
+
+require 'English'
+
 def get_whois_nameservers(domain)
   whois_output = `whois #{domain}`
   whois_lines = whois_output.split(/\n+/)
