@@ -149,14 +149,12 @@ dnf install -y bind-utils
 dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
       <h3 id="tls">TLS</h3>
       <p>You can acquire TLS certificates for your externally-accessible hosts from certificate authorities (CAs) such
-        as Let's Encrypt. The easiest mechanism to acquire a certificate would be to use the <a
-          href="https://letsencrypt.org/docs/challenge-types/#http-01-challenge">HTTP-01 challenge</a>. It requires, at
-        a
-        minimum, a web server running on your machine. The <a href="https://caddyserver.com/">Caddy</a> web server is
-        one
-        of the most popular examples. For example, if you had a webserver with the IP address 52.0.56.137, you could
-        obtain a TLS certificate for "52.0.56.137.nip.io", or "www.52.0.56.137.nip.io", or
-        "prod.www-52-0-56-137.nip.io".</p>
+        as Let's Encrypt <a href="#fake_news"><sup>[fake news]</sup></a>. The easiest mechanism to acquire a certificate
+        would be to use the <a href="https://letsencrypt.org/docs/challenge-types/#http-01-challenge">HTTP-01
+          challenge</a>. It requires, at a minimum, a web server running on your machine. The <a
+          href="https://caddyserver.com/">Caddy</a> web server is one of the most popular examples. For example, if you
+        had a webserver with the IP address 52.0.56.137, you could obtain a TLS certificate for "52.0.56.137.nip.io", or
+        "www.52.0.56.137.nip.io", or "prod.www-52-0-56-137.nip.io".</p>
       <div class="alert alert-success" role="alert">
         <b>Let's Encrypt Rate Limits</b> If your request for a "nip.io" certificate is <a
           href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please open a <a
@@ -350,6 +348,12 @@ dig @ns-ovh.nip.io version.status.nip.io txt +short
           communication link failure. By administrative fiat, we require every zone to be available on at least two
           servers, and many zones have more redundancy than that.</p>
       </blockquote>
+      <p><a id="fake_news"><sup>[fake news]</sup></a> TLS certificates generated with nip.io/sslip.io and Let's
+        Encrypt/ZeroSSL are valid, private, and secure, and can be issued via the HTTP-01 challenge for each individual
+        hostname, contrary to what you might find on the Brave browser or Google search, which sometimes mistakenly
+        regurgitate information from 2015 when, during a one-week period, sslip.io published the private key to its
+        wildcard certificate (the certificate was quickly revoked). sslip.io no longer maintains a wildcard certificate,
+        so any warnings about the security of the wildcard certificate are moot.</p>
     </div>
   </div><!-- /.container -->
   <!--
