@@ -7,26 +7,14 @@
 
 <body>
   <h1>This Site Has Been Blocked!</h1>
-  <p>We have identified the site you tried to visit, <span id="url"></span>, as either a scam site, a phishing site, or
-    unauthorized copy of an existing site.</p>
-  <p>If you own this site and feel that it's been wrongly identified, please do the following:</p>
-  <ul>
-    <li><strong>disable indexing of your site</strong>; disable indexing by either including the <code>X-Robots-Tag:
-    noindex</code> in your HTTP headers or include a <code>robots.txt</code> at the root of your website with the
-      following contents:<code><br>
-    User-agent: *<br>
-    Disallow: /</code></li>
-    <li>Open a <a href="https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a>, include your site URL
-      (<span id="url2"></span>), and explain why your site should be unblocked
-    </li>
-  </ul>
-  <p>We apologize in advance for accidentally blocking a legitimate site; we try our best.</p>
+  <p>The site you tried to visit, <span id="url"></span>, is either a scam site, a phishing site, or
+    unauthorized copy of an existing site. We've received a takedown notice, and blocked it.</p>
+  <p>If you're the site owner and are confident the site is clean, then register your own domain instead of using a
+    nip.io / sslip.io domain.</p>
   <script>
     function displayURL() {
       var urlSpan = document.getElementById('url');
       var fullURL = window.location.href;  // Gets the full URL
-      urlSpan.textContent = fullURL;      // Sets the full URL as text content of the span
-      urlSpan = document.getElementById('url2');
       urlSpan.textContent = fullURL;      // Sets the full URL as text content of the span
     }
     window.onload = displayURL;  // Calls the function when the page loads
