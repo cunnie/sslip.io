@@ -159,14 +159,9 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
           href="https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and we'll request a rate-limit
         increase.
       </div>
-      <p>If you have procured a wildcard certificate for your branded / white label / custom nip.io-style subdomain,
-        you may install it on your machines for TLS-verified connections.</p>
-      <div class="alert alert-success" data-role="alert">
-        <p>When using a TLS wildcard certificate in conjunction with your branded nip.io style subdomain, you must
-          <b>use dashes not dots</b> as separators. For example, if you have the TLS certificate for
-          <i>*.xip.example.com</i>, you could browse to https://www-52-0-56-137.xip.example.com/ but not
-          https://www.52.0.56.137.xip.example.com/.
-        </p>
+      <a id="wildcard"></a>
+      <div class="alert alert-success" role="alert">
+        <b>nip.io & sslip.io do not support wildcard certificates</b>.
       </div>
       <h3 id="related">Related Services</h3>
       <ul>
