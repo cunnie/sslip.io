@@ -32,9 +32,7 @@ compiled and minified CSS -->
       </p>
       <p><em>nip.io</em> and <em>sslip.io</em> are a DNS (<a
           href="https://en.wikipedia.org/wiki/Domain_Name_System">Domain Name System</a>)
-        service that, when queried with a hostname with an embedded IP address, returns that IP address. It was inspired
-        by <a href="http://xip.io">xip.io</a>, which was created by <a href="https://github.com/sstephenson">Sam
-          Stephenson</a>.</p>
+        service that, when queried with a hostname with an embedded IP address, returns that IP address.</p>
       <p>Here are some examples (the domains nip.io and sslip.io are interchangeable):</p>
       <table class="table">
         <thead>
@@ -142,7 +140,7 @@ compiled and minified CSS -->
         our server within a docker container:</p>
       <pre>
 docker run -it --rm fedora
-curl -L https://github.com/cunnie/sslip.io/releases/download/3.2.7/sslip.io-dns-server-linux-amd64 -o dns-server
+curl -L https://github.com/cunnie/sslip.io/releases/download/5.0.0/sslip.io-dns-server-linux-amd64 -o dns-server
 chmod +x dns-server
 ./dns-server 2&gt; dns-server.log &
 dnf install -y bind-utils
@@ -170,6 +168,45 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
           https://www.52.0.56.137.xip.example.com/.
         </p>
       </div>
+      <h3 id="related">Related Services</h3>
+      <ul>
+        <li>
+          <a href="http://traefik.me/">traefik.me</a>: Also an excellent service maintained by Michael Hurni "<a
+            href="https://github.com/pyrou">pyrou</a>" using the original nip.io PowerDNS + Python backend.
+        </li>
+        <li>
+          <a href="https://freedns.afraid.org">afraid.org</a>: Josh Anderson has taken DNS hosting to a whole
+          new level: "Free DNS Hosting, Dynamic DNS Hosting, Static DNS Hosting, subdomain and domain hosting". You
+          don't need to embed your IP address in the hostname!
+        </li>
+        <li>
+          <a href="https://ipq.co/">ipq.co</a>: John Leach also has take DNS hosting to a whole
+          new level: "It’s the tinyurl of the DNS world". You don't need to embed your IP address in the hostname!
+        </li>
+        <li>
+          <a href="http://nip.io">nip.io</a>: formerly a separate service, but now incorporated into sslip.io. The
+          service previously used PowerDNS combined with a backend written in elegant Python.
+        </li>
+        <li>
+          <a href="http://backname.io/">backname.io</a>&trade;: An excellent service maintained by <a
+            href="https://github.com/Twixes">Michael Matloka</a> using Golang + Miek Gieben's awesome DNS library.
+        </li>
+        <li>
+          xip.io: written by <a href="https://sls.name/">Sam Stephenson</a>, this was the original inspiration for
+          sslip.io. The backend was written in the tightest bash code I've ever seen. No longer in service.
+        </li>
+        <li>
+          <a href="https://letsencrypt.org/">Let's Encrypt</a>: A Certificate Authority providing TLS certificates;
+          they have never failed to increase our rate limits when asked. If you can, <a
+            href="https://www.abetterinternet.org/donate/">donate</a>.
+        </li>
+      </ul>
+      <h3 id="about">About</h3>
+      <p><a href="https://github.com/tylerschultz">Tyler Schultz</a>, <a href="https://github.com/APShirley">Alvaro
+          Perez-Shirley</a>, and <a href="https://github.com/cunnie">Brian Cunnie</a> created sslip.io on Tuesday August
+        11, 2015 during a Pivotal Software-sponsored Hack Day. Thanks Pivotal!</p>
+      <p>Brian Cunnie has continued to run sslip.io since then.</p>
+      <p>Sam Stephenson, who built xip.io, suggested the name <i>sslip.io</i>.</p>
       <h3 id="experimental">Experimental Features</h3>
       <p>Experimental features can change; don't depend on them.</p>
       <h4 id="whatismyip">Determining Your External IP Address via DNS Lookup</h4>
@@ -217,9 +254,9 @@ dig @ns.nip.io txt ip.nip.io +short -6 # forces IPv6 lookup; sample reply "2607:
       nip.io software by querying the TXT record of <code>version.status.nip.io</code>:
       <pre>
 dig @ns-ovh.nip.io version.status.nip.io txt +short
-  "4.1.0"
-  "2025/06/22-17:49:11-0700"
-  "b879e43"
+  "5.0.0"
+  "2025/08/30-19:52:37-0700"
+  "afb37dd"
 </pre>
       <p>The first number, ("4.1.0"), is the version of the nip.io DNS software, and is most relevant. The other two
         numbers are the date compiled and the most recent git hash, but those values can differ across servers due to
@@ -229,18 +266,18 @@ dig @ns-ovh.nip.io version.status.nip.io txt +short
       <code>metrics.status.nip.io</code>
       <pre>
   dig @ns-ovh.nip.io metrics.status.nip.io txt +short
-    "Uptime: 1168705"
-    "Blocklist: 2025-07-22 04:30:18-07 3,722,2"
-    "Queries: 2619971786 (2241.8/s)"
-    "TCP/UDP: 2949450/2617181176"
-    "Answer > 0: 934226491 (799.4/s)"
-    "A: 827459036"
-    "AAAA: 8761271"
-    "TXT Source: 76"
-    "TXT Version: 66"
-    "PTR IPv4/IPv6: 2274/13"
-    "NS DNS-01: 143712"
-    "Blocked: 278944"
+    "Uptime: 13940"
+    "Blocklist: 2025-11-07 08:08:50-08 3,773,2"
+    "Queries: 58116774 (4169.1/s)"
+    "TCP/UDP: 457/58259316"
+    "Answer > 0: 18236428 (1308.2/s)"
+    "A: 15664900"
+    "AAAA: 119999"
+    "TXT Source: 3"
+    "TXT Version: 3"
+    "PTR IPv4/IPv6: 8/0"
+    "NS DNS-01: 147"
+    "Blocked: 13421"
        </pre>
       <h5>Explanation of Metrics</h5>
       <dl>
@@ -293,43 +330,10 @@ dig @ns-ovh.nip.io version.status.nip.io txt +short
           the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-ovh.nip.io
           _acme-challenge.192.168.0.1.nip.io. soa")</dd>
         <dt>Blocked</dt>
-        <dd>The number of responses which were blocked because they were either spam or phishing sites. A blocked
+        <dd>The number of responses which were blocked because we've received a takedown notice. A blocked
           response is an A or AAAA record to a website which notifies the user that the site they're trying to visit has
           been blocked because it's unsafe.</dd>
       </dl>
-      <div class="alert alert-success" role="alert">
-        <b>Developers: disable indexing of your staging site to avoid being blocked</b> (we block by disabling
-        resolution of your nip.io hostname); disable indexing by either including the <code>X-Robots-Tag:
-        noindex</code> in your HTTP headers or include a <code>robots.txt</code> at the root of your website with the
-        following contents:<code><br>
-        User-agent: *<br>
-        Disallow: /</code>
-      </div>
-      <h3 id="related">Related Services</h3>
-      <ul>
-        <li>
-          <a href="http://backname.io/">backname.io</a>&trade;: An excellent service maintained by <a
-            href="https://github.com/Twixes">Michael Matloka</a> using Golang + Miek Gieben's awesome DNS library.
-        </li>
-        <li>
-          <a href="http://traefik.me/">traefik.me</a>: Also an excellent service maintained by Michael Hurni "<a
-            href="https://github.com/pyrou">pyrou</a>" using the original nip.io PowerDNS + Python backend.
-        </li>
-        <li>
-          <a href="http://xip.io/">xip.io</a>: the inspiration for sslip.io. Sadly, this appears to be no longer
-          maintained after <a href="https://twitter.com/sstephenson/status/1388146129284603906">Sam Stephenson left
-            Basecamp</a>.
-        </li>
-        <li>
-          <a href="http://nip.io">nip.io</a>: formerly a separate service, but now incorporated into sslip.io. The
-          service previously used PowerDNS combined with a backend written in elegant Python.
-        </li>
-        <li>
-          <a href="https://letsencrypt.org/">Let's Encrypt</a>: A Certificate Authority providing TLS certificates;
-          they have never failed to increase our rate limits when asked. If you can, <a
-            href="https://www.abetterinternet.org/donate/">donate</a>.
-        </li>
-      </ul>
       <hr>
       <h4 id="footnotes">Footnotes</h4>
       <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
