@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The above 3 meta tags *must* come first in the head; any
+other head content must come *after* these tags -->
+  <title>nip.io / sslip.io Experimental Features</title>
+  <meta name="description" content="nip.io / sslip.io">
+  <meta name="author" content="Brian Cunnie"><!-- cute Green Lock icon -->
+  <link rel="shortcut icon" type="image/x-icon" href="https://sslip.io/img/favicon.ico"><!-- Latest
+compiled and minified CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+</head>
+
+<body>
+  <div class="container">
+    <div style="padding-top: 10px;">
+      <h3 id="experimental">Experimental Features</h3>
+      <p>Experimental features can change; don't depend on them.</p>
+      <h4 id="whatismyip">Determining Your External IP Address via DNS Lookup</h4>
+      <p>You can use sslip.io's DNS servers (<code>ns.nip.io</code>) to determine your public IP address by querying
+        the <code>TXT</code> record of <code>ip.nip.io</code>:</p>
+      <pre>
+dig @ns.nip.io txt ip.nip.io +short    # sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"
+dig @ns.nip.io txt ip.nip.io +short -4 # forces IPv4 lookup; sample reply "172.58.35.231"
+dig @ns.nip.io txt ip.nip.io +short -6 # forces IPv6 lookup; sample reply "2607:fb90:464:ae1e:ed60:29c:884c:4b52"</pre>
+      <div class="alert alert-success" role="alert">
+        When querying for your IP address, always <b>include the nip.io name server</b> (e.g. <i>@ns.nip.io</i>).
+        If omitted, you won't get your IP address; instead, you'll get the IP address of your upstream name server.
+      </div>
+      <p>This feature was inspired by Google's DNS lookup, i.e. <code>dig txt o-o.myaddr.l.google.com @8.8.8.8
+      +short</code>. There are also popular HTTP-based services for determining your public IP address:</p>
+      <ul>
+        <li>
+          <a href="http://icanhazip.com/">icanhazip.com</a> (<a
+            href="https://major.io/2021/06/06/a-new-future-for-icanhazip/">backstory</a>)
+        </li>
+        <li>
+          <a href="http://ipify.org/">ipify.org</a>
+        </li>
+        <li>
+          <a href="http://ip4.me/">ip4.me</a>
+        </li>
+        <li>
+          <a href="http://curlmyip.org/">curlmyip.org</a>
+        </li>
+        <li>
+          <a href="http://ifconfig.co/">ifconfig.co</a>
+        </li>
+        <li>
+          <a href="http://ipinfo.io/">ipinfo.io</a> (commercial)
+        </li>
+      </ul>
+      <p>A big advantage of using DNS queries instead of HTTP queries is bandwidth: querying
+        <code>ns.nip.io</code> requires a mere 594 bytes spread over 2 packets; Querying <a
+          href="https://icanhazip.com/">https://icanhazip.com/</a> requires 8692 bytes spread out over 34 packets—over
+        14 times
+        as much! Admittedly bandwidth usage is a bigger concern for the one hosting the service than the one using the
+        service.
+      </p>
+      <h4 id="version">Determining The Server Version of Software</h4>You can determine the server version of the
+      nip.io software by querying the TXT record of <code>version.status.nip.io</code>:
+      <pre>
+dig @ns-ovh.nip.io version.status.nip.io txt +short
+  "5.0.0"
+  "2025/08/30-19:52:37-0700"
+  "afb37dd"
+</pre>
+      <p>The first number, ("4.1.0"), is the version of the nip.io DNS software, and is most relevant. The other two
+        numbers are the date compiled and the most recent git hash, but those values can differ across servers due to
+        the
+        manner in which the software is deployed.</p>
+      <h4 id="metrics">Server Metrics</h4>You can retrieve metrics from a given server by querying the TXT records of
+      <code>metrics.status.nip.io</code>
+      <pre>
+  dig @ns-ovh.nip.io metrics.status.nip.io txt +short
+    "Uptime: 13940"
+    "Blocklist: 2025-11-07 08:08:50-08 3,773,2"
+    "Queries: 58116774 (4169.1/s)"
+    "TCP/UDP: 457/58259316"
+    "Answer > 0: 18236428 (1308.2/s)"
+    "A: 15664900"
+    "AAAA: 119999"
+    "TXT Source: 3"
+    "TXT Version: 3"
+    "PTR IPv4/IPv6: 8/0"
+    "NS DNS-01: 147"
+    "Blocked: 13421"
+       </pre>
+      <h5>Explanation of Metrics</h5>
+      <dl>
+        <dt>Uptime</dt>
+        <dd>The time since the DNS server has been started, in seconds</dd>
+        <dt>Blocklist</dt>
+        <dd>
+          The first value ("2023-10-04 07:37:50-07") is the date the blocklist was last downloaded. The following three
+          numbers are the number of CIDR matches that are blocked (e.g. 86.106.104.0/24), the number of IP addresses
+          that are blocked (e.g. 212.64.214.54), and the number of strings that are blocked (e.g. "raiffeisen" is a
+          string that is blocked if it appears in the queried hostname). The blocklist can be found <a
+            href="https://github.com/cunnie/sslip.io-blocklist/blob/main/blocklist.txt">here</a>
+        </dd>
+        <dt>Queries</dt>
+        <dd>This consists of two numbers: The first is the raw number of DNS queries that the server has responded to
+          since starting operation, and the second is the first number divided by the uptime (i.e. queries/second)</dd>
+        <dt>TCP/UDP</dt>
+        <dd>This is the number of queries received on the TCP protocol versus the UDP protocol. The sum should equal
+          the number of queries. DNS typically uses the UDP protocol</dd>
+        <dt>Answer > 0</dt>
+        <dd>This consists of two numbers: the first is the number of queries we responded to with at least one record
+          in the answer section, and the second is the first number divided by the uptime (i.e. queries/second). Note
+          that the number of responses with an answer record is typically a fourth the size of the overall responses.
+          This is normal. One reason for this disparity is that often both the IPv4 (A) and IPv6 (AAAA) records will be
+          checked, but only one reply will have a record in the answer section . For example, browsing to
+          "127.0.0.1.nip.io" generates two lookups, one with an answer (IPv4), and one without (IPv6). Another reason
+          is that lookups follow a chain, e.g. looking up "127.0.0.1.nip.io" may generate up to four queries for A
+          records ("1.nip.io", "0.1.nip.io", "0.0.1.nip.io" and "127.0.0.1.nip.io"), only the last of which
+          returns a record in the answer section. Pro-tip: if you want to shave milliseconds off name resolution, use
+          dashes not dots in your hostname (e.g. "10-9-9-30.nip.io" instead of "10.9.9.30.nip.io")</dd>
+        <dt>A</dt>
+        <dd>The number of responses which included an A (IPv4) record in the answer section since starting operation
+          (e.g. "dig 127.0.0.1.nip.io")</dd>
+        <dt>AAAA</dt>
+        <dd>The number of responses which included an AAAA (IPv6) record in the answer section since starting operation
+          (e.g. "dig --1.nip.io aaaa")</dd>
+        <dt>TXT Source</dt>
+        <dd>The number of responses which included a TXT record of the querier's IP address since starting operation
+          (e.g. "dig @ns.nip.io ip.nip.io txt")</dd>
+        <dt>TXT Version</dt>
+        <dd>The number of responses which included a TXT record of the DNS's servers version since starting operation
+          (e.g. "dig @ns-hetzner.sslip.io version.status.nip.io txt")</dd>
+        <dt>PTR IPv4/IPv6</dt>
+        <dd>This consists of two numbers; the first is the number of responses to IPv4 PTR queries
+          (<code>1.0.0.127.in-addr.arpa.</code> → <code>127-0-0-1.sslip.io.</code>), the second, IPv6 PTR queries</dd>
+        <dt>NS DNS-01</dt>
+        <dd>The number of responses which included a delegation of the NS (name server) to satisfy a certificate
+          authority's DNS-01 challenge. This lookup is used for generating wildcard certificates from Let's Encrypt and
+          other certificate authority. Technically this is not a "successful" query in that we don't return a record in
+          the ANSWER section, but we do return an NS record in the AUTHORITY section. (e.g. "dig @ns-ovh.nip.io
+          _acme-challenge.192.168.0.1.nip.io. soa")</dd>
+        <dt>Blocked</dt>
+        <dd>The number of responses which were blocked because we've received a takedown notice. A blocked
+          response is an A or AAAA record to a website which notifies the user that the site they're trying to visit has
+          been blocked because it's unsafe.</dd>
+      </dl>
+    </div>
+  </div><!-- /.container -->
+  <!--
+Bootstrap core JavaScript ================================================== -->
+  <!--
+Placed at the end of the document so the pages load faster -->
+  <!-- jQuery
+(necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <!-- Latest compiled and minified JavaScript -->
+
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <!-- Google Analytics -->
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M32C798MGY"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-M32C798MGY');
+  </script>
+</body>
+
+</html>
