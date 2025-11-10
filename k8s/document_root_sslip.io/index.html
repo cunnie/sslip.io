@@ -51,60 +51,60 @@ compiled and minified CSS -->
         <tbody>
           <tr class="odd">
             <td>
-              <a href="https://52.0.56.137.sslip.io">https://52.0.56.137.sslip.io</a>
+              <a href="https://52.0.56.137.sslip.io">https://52.0.56.137.nip.io</a>
             </td>
             <td>52.0.56.137</td>
-            <td>dot separators, sslip.io website mirror (IPv4)</td>
+            <td>dot separators, nip.io website mirror (IPv4)</td>
           </tr>
           <tr class="even">
             <td>
-              <a href="https://52-0-56-137.sslip.io">https://52-0-56-137.sslip.io</a>
+              <a href="https://52-0-56-137.sslip.io">https://52-0-56-137.nip.io</a>
             </td>
             <td>52.0.56.137</td>
-            <td>dash separators, sslip.io website mirror (IPv4)</td>
+            <td>dash separators, nip.io website mirror (IPv4)</td>
           </tr>
           <tr class="odd">
-            <td>www.192.168.0.1.sslip.io</td>
+            <td>www.192.168.0.1.nip.io</td>
             <td>192.168.0.1</td>
             <td>subdomain</td>
           </tr>
           <tr class="even">
-            <td>www.192-168-0-1.sslip.io</td>
+            <td>www.192-168-0-1.nip.io</td>
             <td>192.168.0.1</td>
             <td>subdomain + dashes</td>
           </tr>
           <tr class="odd">
             <td>
-              <a href="https://www-78-46-204-247.sslip.io">https://www-78-46-204-247.sslip.io</a>
+              <a href="https://www-78-46-204-247.sslip.io">https://www-78-46-204-247.nip.io</a>
             </td>
             <td>78.46.204.247</td>
-            <td>dash prefix, sslip.io website mirror (IPv4)</td>
+            <td>dash prefix, nip.io website mirror (IPv4)</td>
           </tr>
           <tr class="even">
-            <td>--1.sslip.io</td>
+            <td>--1.nip.io</td>
             <td>::1</td>
             <td>IPv6 — always use dashes, never dots</td>
           </tr>
           <tr class="odd">
             <td>
-              <a href="https://2a01-4f8-c17-b8f--2.sslip.io">https://2a01-4f8-c17-b8f--2.sslip.io</a>
+              <a href="https://2a01-4f8-c17-b8f--2.sslip.io">https://2a01-4f8-c17-b8f--2.nip.io</a>
             </td>
             <td>2a01:4f8:c17:b8f::2</td>
-            <td>sslip.io website mirror (IPv6)</td>
+            <td>nip.io website mirror (IPv6)</td>
           </tr>
           <tr class="even">
             <td>
               <a href="https://334B3513.nip.io">https://334B3513.nip.io/</a>
             </td>
             <td>51.75.53.19</td>
-            <td>sslip.io website mirror (hexadecimal notation)</td>
+            <td>nip.io website mirror (hexadecimal notation)</td>
           </tr>
         </tbody>
       </table>
       <h3 id="branding">Branding / White Label / Custom Domains</h3>
-      <p>sslip.io can be used to brand your own site (you don’t need to use the sslip.io domain). For example, say you
-        own the domain “example.com”, and you want your subdomain, “xip.example.com” to have xip.io-style features. To
-        accomplish this, set the following three DNS servers as NS records for the subdomain “xip.example.com”</p>
+      <p>nip.io can be used to brand your own site (you don’t need to use the nip.io domain). For example, say you
+        own the domain “example.com”, and you want your subdomain, “nip.example.com” to have nip.io-style features. To
+        accomplish this, set the following three DNS servers as NS records for the subdomain “nip.example.com”</p>
       <table class="table">
         <thead>
           <tr class="header">
@@ -135,7 +135,7 @@ compiled and minified CSS -->
         </tbody>
       </table>
       <p>Let’s test it from the command line using <code>dig</code>:</p>
-      <pre><code>dig @ns-ovh.sslip.io. 169-254-169-254.xip.example.com +short</code></pre>
+      <pre><code>dig @ns-ovh.nip.io. 169-254-169-254.nip.example.com +short</code></pre>
       <p>Yields, hopefully: <sup><a href="#timeout" class="alert-link">[connection timed out]</a></sup></p>
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
@@ -203,9 +203,9 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
         </li>
       </ul>
       <h3 id="about">About</h3>
-      <p><a href="https://github.com/tylerschultz">Tyler Schultz</a>, <a href="https://github.com/APShirley">Alvaro
-          Perez-Shirley</a>, and <a href="https://github.com/cunnie">Brian Cunnie</a> created sslip.io on Tuesday August
-        11, 2015 during a Pivotal Software-sponsored Hack Day. Thanks Pivotal!</p>
+      <p><a href="https://github.com/cunnie">Brian Cunnie</a>, <a href="https://github.com/tylerschultz">Tyler
+          Schultz</a>, and <a href="https://github.com/APShirley">Alvaro Perez-Shirley</a>, and created sslip.io on
+        Tuesday August 11, 2015 during a Pivotal Software-sponsored Hack Day. Thanks Pivotal!</p>
       <p>Brian Cunnie has continued to run sslip.io since then.</p>
       <p>Sam Stephenson, who built xip.io, suggested the name <i>sslip.io</i>.</p>
       <h4 id="experimental"><a href="experimental.html">Experimental Features</a></h4>
@@ -213,8 +213,9 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
       <h4 id="footnotes">Footnotes</h4>
       <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
         more often an indication that when the servers were last checked (currently every six hours), the CI (continuous
-        integration) <a href="https://ci.nono.io/teams/main/pipelines/sslip.io">server</a> had difficulty reaching one
-        of the three sslip.io name servers. That’s normal. <sup><a href="#timeout" class="alert-link">[connection timed
+        integration) <a href="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml">server</a> had
+        difficulty reaching one of the three sslip.io name servers. That’s normal. <sup><a href="#timeout"
+            class="alert-link">[connection timed
             out]</a></sup></p>
       <p><a id="timeout"><sup>[connection timed out]</sup></a></p>
       <p>DNS runs over <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a> which has no guaranteed
