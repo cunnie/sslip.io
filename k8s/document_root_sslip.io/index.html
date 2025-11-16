@@ -25,7 +25,7 @@ compiled and minified CSS -->
       <h3 id="sslip.io">nip.io & sslip.io</h3>
       <p>Operational Status: <a href="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml"><img
             src="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml/badge.svg"
-            alt="GitHub Actions"></a> <sup><a href="#status" class="alert-link">[Status]</a></sup>
+            alt="GitHub Actions"></a>
         <img
           src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunnie/67dc2a78c9ac6032db05027727c63ea1/raw/qps.json"
           alt="Queries / second">
@@ -207,30 +207,13 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
       </ul>
       <h3 id="about">About</h3>
       <p><a href="https://github.com/cunnie">Brian Cunnie</a>, <a href="https://github.com/tylerschultz">Tyler
-          Schultz</a>, and <a href="https://github.com/APShirley">Alvaro Perez-Shirley</a>, and created sslip.io on
-        Tuesday August 11, 2015 during a Pivotal Software-sponsored Hack Day. Thanks Pivotal!</p>
-      <p>Brian Cunnie has continued to run sslip.io since then.</p>
+          Schultz</a>, and <a href="https://github.com/APShirley">Alvaro Perez-Shirley</a> created sslip.io on
+        Tuesday August 11, 2015 during a Pivotal Software–sponsored Hack Day. Thanks Pivotal!</p>
+      <p>Brian Cunnie continues to run sslip.io.</p>
       <p>Sam Stephenson, who built xip.io, suggested the name <i>sslip.io</i>.</p>
       <h4 id="experimental"><a href="experimental.html">Experimental Features</a></h4>
       <hr>
       <h4 id="footnotes">Footnotes</h4>
-      <p><a id="status"><sup>[Status]</sup></a> A status of “build failing” rarely means the system is failing. It’s
-        more often an indication that when the servers were last checked (currently every six hours), the CI (continuous
-        integration) <a href="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml">server</a> had
-        difficulty reaching one of the three sslip.io name servers. That’s normal. <sup><a href="#timeout"
-            class="alert-link">[connection timed
-            out]</a></sup></p>
-      <p><a id="timeout"><sup>[connection timed out]</sup></a></p>
-      <p>DNS runs over <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a> which has no guaranteed
-        delivery, and it’s not uncommon for the packets to get lost in transmission. DNS clients are programmed to
-        seamlessly query a different server when that happens. That’s why DNS, by fiat, requires at least two name
-        servers (for redundancy). From <a href="https://tools.ietf.org/html/rfc1034">IETF (Internet Engineering Task
-          Force) RFC (Request for Comment) 1034</a>:</p>
-      <blockquote>
-        <p>A given zone will be available from several name servers to insure its availability in spite of host or
-          communication link failure. By administrative fiat, we require every zone to be available on at least two
-          servers, and many zones have more redundancy than that.</p>
-      </blockquote>
       <p><a id="fake_news"><sup>[fake news]</sup></a> TLS certificates generated with nip.io/sslip.io and Let's
         Encrypt/ZeroSSL are valid, private, and secure, and can be issued via the HTTP-01 challenge for each individual
         hostname, contrary to what you might find on the Brave browser or Google search, which sometimes mistakenly
