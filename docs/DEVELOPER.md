@@ -1,4 +1,4 @@
-## Release Procedure
+# Release Procedure
 
 These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
