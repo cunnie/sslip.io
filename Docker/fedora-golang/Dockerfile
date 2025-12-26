@@ -1,10 +1,10 @@
-# cunnie/fedora-golang-bosh
+# cunnie/fedora-golang
 
 # To build
 
-# docker buildx build --pull --platform=linux/amd64,linux/arm64 -t cunnie/fedora-golang-bosh . # OR
-# docker build -t cunnie/fedora-golang-bosh .
-# docker push cunnie/fedora-golang-bosh
+# docker buildx build --pull --platform=linux/amd64,linux/arm64 -t cunnie/fedora-golang . # OR
+# docker build -t cunnie/fedora-golang .
+# docker push cunnie/fedora-golang
 
 FROM fedora
 
@@ -53,18 +53,6 @@ RUN dnf install -y dnf-plugins-core; \
   dnf-3 config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo; \
   dnf -y install vault; \
   setcap -r /usr/bin/vault
-
-# amd64, arm64 (so I can run on AWS graviton2, natively on M{1,2,3,4} macs)
-ARG TARGETARCH
-
-RUN curl -L https://github.com/cloudfoundry/bosh-cli/releases/download/v7.9.7/bosh-cli-7.9.7-linux-${TARGETARCH} -o /usr/local/bin/bosh; \
-  chmod +x /usr/local/bin/bosh
-
-# https://packages.cloudfoundry.org/stable?release=redhat64&version=8.7.8&source=github-rel
-# https://packages.cloudfoundry.org/stable?release=redhataarch64&version=8.7.8&source=github-rel
-RUN ARCH=${TARGETARCH/amd64/64}; ARCH=${ARCH/arm64/aarch64} ; \
-  curl -L "https://packages.cloudfoundry.org/stable?release=redhat${ARCH}&version=8.7.8&source=github-rel" -o cli.rpm; \
-  rpm -i cli.rpm
 
 RUN CGO_ENABLED=0 GOBIN=/usr/local/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest
 

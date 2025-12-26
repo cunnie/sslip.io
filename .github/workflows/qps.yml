@@ -14,7 +14,7 @@ jobs:
 
       - name: Calculate QPS
         id: qps
-        uses: docker://cunnie/fedora-golang-bosh
+        uses: docker://cunnie/fedora-golang
         with:
           entrypoint: /bin/bash
           args: |

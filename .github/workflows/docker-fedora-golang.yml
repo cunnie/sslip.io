@@ -1,9 +1,9 @@
-name: Build cunnie/fedora-golang-bosh
+name: Build cunnie/fedora-golang
 
 on:
   push:
     paths:
-      - "Docker/fedora-golang-bosh/Dockerfile"
+      - "Docker/fedora-golang/Dockerfile"
     branches:
       - main
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: Docker/fedora-golang-bosh
+          context: Docker/fedora-golang
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: cunnie/fedora-golang-bosh:latest
+          tags: cunnie/fedora-golang:latest

@@ -10,7 +10,7 @@ jobs:
     # Only run on main repo, not forks
     if: github.repository == 'cunnie/sslip.io'
     runs-on: self-hosted
-    container: cunnie/fedora-golang-bosh
+    container: cunnie/fedora-golang
     steps:
       - uses: actions/checkout@v4
 
