@@ -12,18 +12,16 @@ LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 
 # need ruby to run dns-check.rb & bind-utils for dig & nslookup
 RUN dnf update -y; \
-  dnf groupinstall -y "Development Tools"; \
+  dnf install -y @development-tools; \
   dnf install -y \
   autojump-zsh \
   bind-utils \
-  binutils \
   btrfs-progs \
   cmake \
   direnv \
   etcd \
   fd-find \
   gcc-g++ \
-  git \
   golang \
   htop \
   iproute \
@@ -48,7 +46,6 @@ RUN dnf update -y; \
   wget \
   zlib-devel \
   zsh \
-  zsh-lovers \
   zsh-syntax-highlighting \
   ;
 
