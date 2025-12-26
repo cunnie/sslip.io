@@ -123,11 +123,10 @@ as ARM64 (AWS Graviton, Apple M1/M2).
   example, to run the server on port 9553: `go run main.go -port 9553`. To
   query, `dig @localhost 127.0.0.1.sslip.io -p 9553`
 - `-nameservers` overrides the default NS records `ns-do-sg.sslip.io`,
-  `ns-gce.sslip.io`, `ns-hetzner.sslip.io`, and `ns-ovh.sslip.io`; flag, e.g.
-  `go run main.go -nameservers ns1.example.com,ns2.example.com`). If you're
-  running your own nameservers, you probably want to set this. Don't forget to
-  set address records for the new name servers with the `-addresses` flag (see
-  below).
+  `ns-hetzner.sslip.io`, and `ns-ovh.sslip.io`; flag, e.g. `go run main.go
+  -nameservers ns1.example.com,ns2.example.com`). If you're running your own
+  nameservers, you probably want to set this. Don't forget to set address
+  records for the new name servers with the `-addresses` flag (see below).
 - `-addresses` overrides the default A/AAAA (IPv4/IPv6) address records. For
   example, here's how we set the IPv4 record & IPv6 record for our nameserver
   (in the `-nameservers` example above), ns1.example.com: `-addresses

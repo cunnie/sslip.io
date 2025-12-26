@@ -17,7 +17,7 @@ sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
   Docker/sslip.io-dns-server/Dockerfile
 ```
 
-Optional: Update the version for the ns-gce, ns-hetzner, and ns-ovh install scripts
+Optional: Update the version for the ns-hetzner, and ns-ovh install scripts
 
 ```bash
 pushd ~/bin
@@ -47,7 +47,7 @@ export VERSION=5.0.0
 echo 127.0.0.1 ) | uniq -c
 # NS ordering might be rotated
 ( dig +short ns example.com @$DNS_SERVER_IP
-printf "ns-do-sg.sslip.io.\nns-gce.sslip.io.\nns-hetzner.sslip.io.\nns-ovh.sslip.io.\n" ) | sort | uniq -c
+printf "ns-do-sg.sslip.io.\nns-hetzner.sslip.io.\nns-ovh.sslip.io.\n" ) | sort | uniq -c
 ( dig +short mx sslip.io @$DNS_SERVER_IP
 printf "10 mail.protonmail.ch.\n20 mailsec.protonmail.ch.\n" ) | sort | uniq -c
 ( dig +short txt nip.io @$DNS_SERVER_IP
@@ -88,23 +88,18 @@ git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
 git push
 git push --tags
-for HOST in {ns-do-sg,ns-gce,ns-hetzner,ns-ovh}.sslip.io; do
+for HOST in {ns-do-sg,ns-hetzner,ns-ovh}.sslip.io; do
   ssh $HOST sudo apt-get update
   ssh $HOST sudo apt-get upgrade -y
   ssh $HOST sudo apt-get autoremove -y
 done
 scp bin/sslip.io-dns-server-linux-amd64 ns-do-sg:
-scp bin/sslip.io-dns-server-linux-amd64 ns-gce:
 scp bin/sslip.io-dns-server-linux-amd64 ns-hetzner:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
 ssh ns-do-sg sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-do-sg sudo shutdown -r now
  # check version number:
 sleep 10; while ! dig txt @ns-do-sg.sslip.io version.status.sslip.io +short; do sleep 5; done
-ssh ns-gce sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
-ssh ns-gce sudo shutdown -r now
- # check version number:
-sleep 10; while ! dig txt @ns-gce.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-hetzner
 ssh ns-hetzner sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-hetzner sudo shutdown -r now
  # check version number:
@@ -128,7 +123,7 @@ ssh nono.io
 cd /www/sslip.io/
 git pull -r
 exit
-for HOST in {blocked,ns-do-sg,ns-gce,ns-hetzner,ns-ovh}.sslip.io; do
+for HOST in {blocked,ns-do-sg,ns-hetzner,ns-ovh}.sslip.io; do
   ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
   ssh $HOST curl -L -o /var/nginx/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/experimental.html
 done
