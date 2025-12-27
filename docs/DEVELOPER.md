@@ -4,16 +4,16 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=4.2.3
-export VERSION=5.0.0
+export OLD_VERSION=5.0.0
+export VERSION=5.0.1
 cd ~/workspace/sslip.io
 git pull -r --autostash
-# update the version number for the TXT record for version.status.sslip.io
+# update the hard-coded version numbers
 sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   bin/make_all \
-  spec/check-dns_spec.rb
-# update the download instructions on the website
-sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
+  spec/check-dns_spec.rb \
+  k8s/document_root_sslip.io/experimental.html \
+  k8s/document_root_sslip.io/index.html \
   Docker/sslip.io-dns-server/Dockerfile
 ```
 
@@ -41,7 +41,7 @@ Test from another window:
 
 ```bash
 export DNS_SERVER_IP=127.0.0.1
-export VERSION=5.0.0
+export VERSION=5.0.1
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
 echo 127.0.0.1 ) | uniq -c
@@ -64,7 +64,7 @@ dig +short cname sslip.io @$DNS_SERVER_IP # no records
 echo protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch. ) | uniq -c
 ( dig a _Acme-ChallengE.127-0-0-1.sslip.io @$DNS_SERVER_IP | grep "^127"
 printf "127-0-0-1.sslip.io.\t604800\tIN\tA\t127.0.0.1" ) | uniq -c
-( dig +short sSlIp.Io
+( dig +short sSlIp.Io @$DNS_SERVER_IP
 echo 78.46.204.247 ) | uniq -c
 ( dig @$DNS_SERVER_IP txt ip.sslip.io +short | tr -d '"'
 echo 127.0.0.1 ) | uniq -c
@@ -75,14 +75,14 @@ echo "127-0-0-1.nip.io." ) | uniq -c
 ( dig @$DNS_SERVER_IP 7f000001.nip.io +short
 echo 127.0.0.1 ) | uniq -c
 dig @$DNS_SERVER_IP metrics.status.sslip.io txt +short | grep '"Queries: '
-echo '"Queries: 13 (?.?/s)"'
+echo '"Queries: 16 (?.?/s)"'
 ```
 
 Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: 🐞: IPv4 regex, hex includes dashes"
+GIT_MESSAGE="$VERSION: ns-gce.sslip.io is no more"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
