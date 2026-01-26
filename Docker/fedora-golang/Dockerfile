@@ -54,8 +54,8 @@ RUN dnf install -y dnf-plugins-core; \
   dnf -y install vault; \
   setcap -r /usr/bin/vault
 
-RUN dnf copr enable nucleo/openrdap; \
-  dnf install --refresh -y rdap
+RUN dnf copr enable -y nucleo/openrdap; \
+  dnf install -y rdap
 
 RUN CGO_ENABLED=0 GOBIN=/usr/local/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
