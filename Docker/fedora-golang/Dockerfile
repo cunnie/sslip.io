@@ -54,6 +54,9 @@ RUN dnf install -y dnf-plugins-core; \
   dnf -y install vault; \
   setcap -r /usr/bin/vault
 
+RUN dnf copr enable nucleo/openrdap; \
+  dnf install -y rdap
+
 RUN CGO_ENABLED=0 GOBIN=/usr/local/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
 RUN  echo "" | SHELL=/usr/bin/zsh /usr/bin/zsh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"; \
