@@ -138,7 +138,7 @@ compiled and minified CSS -->
       </table>
       <p>Let’s test it from the command line using <code>dig</code>:</p>
       <pre><code>dig @ns-ovh.nip.io. 169-254-169-254.nip.example.com +short</code></pre>
-      <p>Yields, hopefully: <sup><a href="#timeout" class="alert-link">[connection timed out]</a></sup></p>
+      <p>Yields, hopefully:</p>
       <pre><code>169.254.169.254</code></pre>
       <h3 id="server">But I Want My Own DNS Server!</h3>
       <p>If you want to run your own DNS server, it's simple: you can compile from <a
@@ -163,8 +163,8 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
       <div class="alert alert-success" role="alert">
         <b>Let's Encrypt Rate Limits</b> If your request for a "nip.io" certificate is <a
           href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please open a <a
-          href="https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and we'll request a rate-limit
-        increase.
+          href="https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and include the entire error
+        message. We'll request a rate-limit increase.
       </div>
       <a id="wildcard"></a>
       <div class="alert alert-success" role="alert"> nip.io & sslip.io <b>do not support wildcard</b> certificates.
