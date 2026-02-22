@@ -15,7 +15,7 @@ require 'English'
 require 'json'
 
 def get_rdap_nameservers(domain)
-  rdap_output = `curl -s "https://rdap.namecheap.com/domain/#{domain}"`
+  rdap_output = `curl -s "https://rdap.namecheap.com/domain/#{domain}"`.force_encoding('UTF-8')
   rdap_data = JSON.parse(rdap_output)
   nameservers = rdap_data['nameservers'].map { |ns| ns['ldhName'].downcase }.uniq
   # rdap records don't have trailing '.'; NS records do; add trailing '.'
