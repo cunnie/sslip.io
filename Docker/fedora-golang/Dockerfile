@@ -10,7 +10,7 @@ FROM fedora
 
 LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 
-# need ruby to run dns-check.rb & bind-utils for dig & nslookup
+# need bind-utils for dig & nslookup
 RUN dnf update -y; \
   dnf install -y @development-tools; \
   dnf install -y \
@@ -36,9 +36,6 @@ RUN dnf update -y; \
   python \
   redhat-rpm-config \
   ripgrep \
-  ruby \
-  ruby-devel \
-  rubygems \
   socat \
   strace \
   tcpdump \
@@ -53,9 +50,6 @@ RUN dnf install -y dnf-plugins-core; \
   dnf-3 config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo; \
   dnf -y install vault; \
   setcap -r /usr/bin/vault
-
-RUN dnf copr enable -y nucleo/openrdap; \
-  dnf install -y rdap
 
 RUN CGO_ENABLED=0 GOBIN=/usr/local/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest
 

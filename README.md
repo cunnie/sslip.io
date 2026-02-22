@@ -167,8 +167,7 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 - `spec/` contains the tests for the production nameservers. To run
   the tests locally:
   ```bash
-  bundle
-  DOMAINS=nip.io,sslip.io bundle exec rspec --format documentation --color spec
+  DOMAINS=nip.io,sslip.io ginkgo -r -p spec/
   ```
 - `k8s/document_root_sslip.io/` contains the HTML content of the sslip.io
   website.
@@ -178,4 +177,4 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 - Sam Stephenson (xip.io), the late Roopinder Singh (nip.io), and the other DNS
   developers out there
 - The contributors (@normanr, @jpambrun come to mind) who improved sslip.io
-- Let's Encrypt for bumping our rate limits
+- Let's Encrypt for bumping our rate limits many, many times
