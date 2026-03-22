@@ -34,7 +34,8 @@ dig @localhost 192.168.0.1.sslip.io +short
 ```bash
 go mod tidy
 go generate
-ginkgo -r -p .
+ # exclude subdir "spec/", used for testing sslip.io service not code
+ginkgo -r -p --skip-package=spec .
 ```
 
 ## Running Your Own Nameservers
