@@ -8,8 +8,10 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 	"xip/xip"
 )
 
@@ -63,6 +65,7 @@ func main() {
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response. Use this to avoid Google Cloud charging you $30/month to retain the logs of your GKE-based sslip.io server")
 	var public = flag.Bool("public", true, "allows resolution of public IP addresses. If false, only resolves private IPs including localhost (127/8, ::1), link-local (169.254/16, fe80::/10), CG-NAT (100.64/12), private (10/8, 172.16/12, 192.168/16, fc/7). Set to false if you don't want miscreants impersonating you via public IPs. If unsure, set to false")
 	var ptrDomain = flag.String("ptr-domain", "nip.io.", "the domain to use for PTR records, e.g. if 'nip.io',  127-0-0-1.nip.io.")
+	var dnstapSocket = flag.String("dnstap", "", `enables dnstap logging of queries that return an A or AAAA record; argument is the destination socket, either a Unix socket path (e.g. "/var/run/dnstap.sock") or a TCP address (e.g. "127.0.0.1:5353" or "[::1]:5353")`)
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	log.Printf("blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
@@ -72,6 +75,18 @@ func main() {
 	x.Public = *public
 	for _, logmessage := range logmessages {
 		log.Println(logmessage)
+	}
+
+	var dw *DnstapWriter
+	if *dnstapSocket != "" {
+		var err error
+		dw, err = NewDnstapWriter(*dnstapSocket)
+		if err != nil {
+			log.Printf("dnstap: warning: could not connect to %q: %v", *dnstapSocket, err)
+			dw = nil
+		}
+		log.Printf("dnstap: connected to %q", *dnstapSocket)
+		defer dw.Close()
 	}
 
 	var udpConns []*net.UDPConn
@@ -138,25 +153,27 @@ func main() {
 	// use goroutines to read from all the UDP connections EXCEPT the first; we don't use a goroutine for that
 	// one because we use the first one to keep this program from exiting
 	for _, udpConn := range udpConns[1:] {
-		go readFromUDP(udpConn, x, *quiet)
+		go readFromUDP(udpConn, x, *quiet, dw)
 	}
 	for _, tcpListener := range tcpListeners {
-		go readFromTCP(tcpListener, x, *quiet)
+		go readFromTCP(tcpListener, x, *quiet, dw)
 	}
 	log.Printf("Ready to answer queries")
-	readFromUDP(udpConns[0], x, *quiet) // refrain from exiting; There should always be a udpConns[0], and readFromUDP() _never_ returns
+	readFromUDP(udpConns[0], x, *quiet, dw) // refrain from exiting; There should always be a udpConns[0], and readFromUDP() _never_ returns
 }
 
-func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool) {
+func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 	for {
 		query := make([]byte, 512)
-		_, addr, err := conn.ReadFromUDP(query)
+		n, addr, err := conn.ReadFromUDP(query)
 		if err != nil {
 			log.Println(err.Error())
 			continue
 		}
 		go func() {
+			queryTime := time.Now()
 			response, logMessage, err := x.QueryResponse(query, addr.IP)
+			responseTime := time.Now()
 			if err != nil {
 				log.Println(err.Error())
 				return
@@ -169,12 +186,17 @@ func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool) {
 			if !quiet {
 				log.Printf("%v.%d %s", addr.IP, addr.Port, logMessage)
 			}
+			if dw != nil && ResponseHasAorAAAA(response) {
+				if err := dw.SendDnstap(query[:n], response, addr.IP, addr.Port, true, queryTime, responseTime); err != nil {
+					log.Printf("dnstap send error: %v", err)
+				}
+			}
 			x.Metrics.UDPQueries += 1
 		}()
 	}
 }
 
-func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
+func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 	for {
 		query := make([]byte, 65535) // 2-byte length field means largest size is 65535
 		tcpConn, err := tcpListener.AcceptTCP()
@@ -182,7 +204,7 @@ func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
 			log.Println(err.Error())
 			continue
 		}
-		_, err = tcpConn.Read(query)
+		n, err := tcpConn.Read(query)
 		query = query[2:] // remove the 2-byte length at the beginning of the query
 		if err != nil {
 			log.Println(err.Error())
@@ -199,7 +221,9 @@ func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
 			defer func(tcpConn *net.TCPConn) {
 				_ = tcpConn.Close()
 			}(tcpConn)
+			queryTime := time.Now()
 			response, logMessage, err := x.QueryResponse(query, net.ParseIP(addr))
+			responseTime := time.Now()
 			if err != nil {
 				log.Println(err.Error())
 				return
@@ -216,6 +240,12 @@ func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool) {
 			}
 			if !quiet {
 				log.Printf("%s.%s %s", addr, port, logMessage)
+			}
+			if dw != nil && ResponseHasAorAAAA(response[2:]) {
+				portNum, _ := strconv.Atoi(port)
+				if err := dw.SendDnstap(query[:n-2], response[2:], net.ParseIP(addr), portNum, false, queryTime, responseTime); err != nil {
+					log.Printf("dnstap send error: %v", err)
+				}
 			}
 			x.Metrics.TCPQueries += 1
 		}()

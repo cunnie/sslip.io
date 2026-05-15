@@ -23,7 +23,7 @@ var err error
 var serverCmd *exec.Cmd
 var serverSession *Session
 var port = getFreePort()
-var serverPath, _ = Build("main.go")
+var serverPath, _ = Build("xip")
 
 var _ = BeforeSuite(func() {
 	format.MaxLength = 0 // need more output, 4000 is the default
