@@ -1,0 +1,32 @@
+# Local directory for data separation
+.terraform/
+
+# Hide OpenTofu/Terraform lock files if you want to allow dynamic provider upgrades.
+# NOTE: If you want strict version locking across a team, commit .terraform.lock.hcl instead.
+# For a solo setup, ignoring it or committing it are both fine.
+.terraform.lock.hcl
+
+# Local state files - CRITICAL TO IGNORE
+# These contain plain-text secrets, server IDs, and infrastructure metadata.
+# *.tfstate # we check in our state files
+*.tfstate.backup
+*.tfstate.lock.info
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Override files (local tweaks that shouldn't be committed)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Ignore variables files containing sensitive API keys or tokens
+# (Never commit your DigitalOcean, Vultr, or Hetzner tokens!)
+*.tfvars
+*.tfvars.json
