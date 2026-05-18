@@ -23,10 +23,11 @@ var err error
 var serverCmd *exec.Cmd
 var serverSession *Session
 var port = getFreePort()
-var serverPath, _ = Build("xip")
+var serverPath string
 
 var _ = BeforeSuite(func() {
 	format.MaxLength = 0 // need more output, 4000 is the default
+	serverPath, err = Build("xip")
 	Expect(err).ToNot(HaveOccurred())
 	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist-test.txt")
 	serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
