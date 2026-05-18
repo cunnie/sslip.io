@@ -4,9 +4,10 @@
 
 # docker buildx build --pull --platform=linux/amd64,linux/arm64 -t cunnie/fedora-golang . # OR
 # docker build -t cunnie/fedora-golang .
+# container build -t cunnie/fedora-golang .
 # docker push cunnie/fedora-golang
 
-FROM fedora
+FROM fedora:44
 
 LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 
@@ -32,6 +33,7 @@ RUN dnf update -y; \
   net-tools \
   nmap-ncat \
   npm \
+  openbao \
   openssl-devel \
   python \
   redhat-rpm-config \
@@ -45,11 +47,6 @@ RUN dnf update -y; \
   zsh \
   zsh-syntax-highlighting \
   ;
-
-RUN dnf install -y dnf-plugins-core; \
-  dnf-3 config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo; \
-  dnf -y install vault; \
-  setcap -r /usr/bin/vault
 
 RUN CGO_ENABLED=0 GOBIN=/usr/local/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
