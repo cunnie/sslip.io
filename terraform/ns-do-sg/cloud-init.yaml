@@ -1,0 +1,59 @@
+#cloud-config
+hostname: ns-do-sg
+fqdn: ns-do-sg.sslip.io
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - "@development-tools"
+  - bind-utils
+  - btop
+  - bzip2
+  - curl
+  - file
+  - git-lfs
+  - golang
+  - htop
+  - iputils
+  - jq
+  - neovim
+  - net-tools
+  - netcat
+  - python3
+  - python3-devel
+  - python3-pip
+  - python3-virtualenv
+  - ripgrep
+  - rsync
+  - socat
+  - sudo
+  - tar
+  - tcpdump
+  - tmux
+  - tree
+  - unzip
+  - zsh
+  - zsh-syntax-highlighting
+  - zstd
+
+users:
+  - name: cunnie
+    gecos: Brian Cunnie
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: wheel
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519
+        AAAAC3NzaC1lZDI1NTE5AAAAIKoPHfGEM2RMBpcW2ZzKUmTNbweJbzfz6Y/EZ+WXJDVz
+
+runcmd: []
+
+# Reboot after cloud-init completes to fix
+# "Failed to start systemd-binfmt.service - Set Up Additional Binary Formats."
+power_state:
+  mode: reboot
+  message: |
+    Rebooting to pick up new kernel, if any
+  timeout: 60
+  condition: true

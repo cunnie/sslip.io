@@ -2,7 +2,7 @@ resource "digitalocean_droplet" "nameserver" {
   name       = "ns-do-sg.sslip.io"
   region     = "sgp1"
   size       = "s-2vcpu-4gb"
-  image      = "175306584"
+  image      = "fedora-43-x64"
   monitoring = true
   ipv6       = true
   vpc_uuid   = "6d136c2d-bfff-428b-bfa0-30e2927948f0"
