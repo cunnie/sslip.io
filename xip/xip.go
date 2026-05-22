@@ -186,9 +186,9 @@ var (
 			TXT: func(x *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 				x.Metrics.AnsweredTXTVersionQueries++
 				return []dnsmessage.TXTResource{
-					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
-					{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
-					{TXT: []string{VersionGitHash}},  // e.g. "9339c0d"
+					{TXT: []string{VersionSemantic}}, // e.g. "5.0.1"
+					{TXT: []string{VersionDate}},     // e.g. "2025/12/27-11:42:47-0800"
+					{TXT: []string{VersionGitHash}},  // e.g. "08b4faa"
 				}, nil
 			},
 		},
@@ -196,9 +196,9 @@ var (
 			TXT: func(x *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
 				x.Metrics.AnsweredTXTVersionQueries++
 				return []dnsmessage.TXTResource{
-					{TXT: []string{VersionSemantic}}, // e.g. "2.2.1'
-					{TXT: []string{VersionDate}},     // e.g. "2021/10/03-15:08:54+0100"
-					{TXT: []string{VersionGitHash}},  // e.g. "9339c0d"
+					{TXT: []string{VersionSemantic}}, // e.g. "5.0.1"
+					{TXT: []string{VersionDate}},     // e.g. "2025/12/27-11:42:47-0800"
+					{TXT: []string{VersionGitHash}},  // e.g. "08b4faa"
 				}, nil
 			},
 		},
@@ -983,7 +983,7 @@ func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
 	return dnsmessage.SOAResource{
 		NS:     name,
 		MBox:   mbox,
-		Serial: 20251225,
+		Serial: 20260516,
 		// cribbed the Refresh/Retry/Expire from google.com.
 		// MinTTL was 300, but I dropped to 180 for faster
 		// key-value propagation
