@@ -4,7 +4,7 @@
 #
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd $DIR/..
-ldflags="-X xip/xip.VersionSemantic=5.0.1 \
+ldflags="-X xip/xip.VersionSemantic=5.1.0 \
          -X xip/xip.VersionDate=$(date +%Y/%m/%d-%H:%M:%S%z) \
          -X xip/xip.VersionGitHash=$(git rev-parse --short HEAD)"
 export GOOS GOARCH
@@ -15,9 +15,9 @@ for GOARCH in amd64 arm64; do
     go build \
       -ldflags="$ldflags" \
       -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH \
-      main.go &
+      . &
   done
   GOOS=windows
-  go build -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH.exe main.go &
+  go build -ldflags="$ldflags" -o $DIR/sslip.io-dns-server-$GOOS-$GOARCH.exe . &
 done
 wait

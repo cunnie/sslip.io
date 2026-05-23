@@ -4,14 +4,14 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=5.0.0
-export VERSION=5.0.1
+export OLD_VERSION=5.0.1
+export VERSION=5.1.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
 sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   bin/make_all \
-  spec/check-dns_spec.rb \
+  spec/spec_suite_test.go \
   k8s/document_root_sslip.io/experimental.html \
   k8s/document_root_sslip.io/index.html \
   Docker/sslip.io-dns-server/Dockerfile
@@ -22,7 +22,7 @@ Optional: Update the version for the ns-hetzner, and ns-ovh install scripts
 ```bash
 pushd ~/bin
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
-  ~/bin/install_ns-{gce,hetzner,ovh}.sh ~/bin/install_common.sh
+  ~/bin/install_ns-{hetzner,ovh}.sh ~/bin/install_common.sh
 git add -p
 git ci -m"Update sslip.io DNS server $OLD_VERSION → $VERSION"
 git push
@@ -33,48 +33,48 @@ Build & start the new executables:
 
 ```bash
 bin/make_all
-# Start the server, assuming macOS M1. Adjust path for GOOS, GOARCH. Linux requires `sudo`
-bin/sslip.io-dns-server-darwin-arm64
+bin/sslip.io-dns-server-darwin-arm64 --port 5333
 ```
 
 Test from another window:
 
 ```bash
-export DNS_SERVER_IP=127.0.0.1
-export VERSION=5.0.1
+DNS_SERVER_IP=127.0.0.1
+VERSION=5.1.0
+PORT=5333
 # quick sanity test
-( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP
+( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
 echo 127.0.0.1 ) | uniq -c
 # NS ordering might be rotated
-( dig +short ns example.com @$DNS_SERVER_IP
+( dig +short ns example.com @$DNS_SERVER_IP -p $PORT
 printf "ns-do-sg.sslip.io.\nns-hetzner.sslip.io.\nns-ovh.sslip.io.\n" ) | sort | uniq -c
-( dig +short mx sslip.io @$DNS_SERVER_IP
+( dig +short mx sslip.io @$DNS_SERVER_IP -p $PORT
 printf "10 mail.protonmail.ch.\n20 mailsec.protonmail.ch.\n" ) | sort | uniq -c
-( dig +short txt nip.io @$DNS_SERVER_IP
+( dig +short txt nip.io @$DNS_SERVER_IP -p $PORT
 printf "\"protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313\"\n\"v=spf1 include:_spf.protonmail.ch mx -all\"\n" ) | sort | uniq -c
-( dig +short txt sslip.io @$DNS_SERVER_IP
+( dig +short txt sslip.io @$DNS_SERVER_IP -p $PORT
 printf "\"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26\"\n\"v=spf1 include:_spf.protonmail.ch mx -all\"\n" ) | sort | uniq -c
-( dig +short txt _dmarc.nip.io. @$DNS_SERVER_IP ;
-  dig +short txt _dmarc.sslip.io. @$DNS_SERVER_IP ;
+( dig +short txt _dmarc.nip.io. @$DNS_SERVER_IP -p $PORT ;
+  dig +short txt _dmarc.sslip.io. @$DNS_SERVER_IP -p $PORT ;
   printf "\"v=DMARC1; p=reject\"\n"
   printf "\"v=DMARC1; p=reject\"\n" ; ) | sort | uniq -c
-dig +short txt 127.0.0.1.sslip.io @$DNS_SERVER_IP # no records
-dig +short cname sslip.io @$DNS_SERVER_IP # no records
-( dig +short cname protonmail._domainkey.sslip.io @$DNS_SERVER_IP
+dig +short txt 127.0.0.1.sslip.io @$DNS_SERVER_IP -p $PORT # no records
+dig +short cname sslip.io @$DNS_SERVER_IP -p $PORT # no records
+( dig +short cname protonmail._domainkey.sslip.io @$DNS_SERVER_IP -p $PORT
 echo protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch. ) | uniq -c
-( dig a _Acme-ChallengE.127-0-0-1.sslip.io @$DNS_SERVER_IP | grep "^127"
+( dig a _Acme-ChallengE.127-0-0-1.sslip.io @$DNS_SERVER_IP -p $PORT | grep "^127"
 printf "127-0-0-1.sslip.io.\t604800\tIN\tA\t127.0.0.1" ) | uniq -c
-( dig +short sSlIp.Io @$DNS_SERVER_IP
+( dig +short sSlIp.Io @$DNS_SERVER_IP -p $PORT
 echo 78.46.204.247 ) | uniq -c
-( dig @$DNS_SERVER_IP txt ip.sslip.io +short | tr -d '"'
+( dig +short txt ip.sslip.io @$DNS_SERVER_IP -p $PORT | tr -d '"'
 echo 127.0.0.1 ) | uniq -c
-( dig @$DNS_SERVER_IP txt version.status.sslip.io +short | grep $VERSION
+( dig +short txt version.status.sslip.io @$DNS_SERVER_IP -p $PORT | grep $VERSION
 echo "\"$VERSION\"" ) | uniq -c
-( dig @$DNS_SERVER_IP 1.0.0.127.in-addr.arpa ptr +short
+( dig +short ptr 1.0.0.127.in-addr.arpa @$DNS_SERVER_IP -p $PORT
 echo "127-0-0-1.nip.io." ) | uniq -c
-( dig @$DNS_SERVER_IP 7f000001.nip.io +short
+( dig +short 7f000001.nip.io @$DNS_SERVER_IP -p $PORT
 echo 127.0.0.1 ) | uniq -c
-dig @$DNS_SERVER_IP metrics.status.sslip.io txt +short | grep '"Queries: '
+dig +short txt metrics.status.sslip.io @$DNS_SERVER_IP -p $PORT | grep '"Queries: '
 echo '"Queries: 16 (?.?/s)"'
 ```
 
@@ -82,7 +82,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: ns-gce.sslip.io is no more"
+GIT_MESSAGE="$VERSION: new flag, -dnstap <endpoint>"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
