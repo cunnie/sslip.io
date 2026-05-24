@@ -1,0 +1,13 @@
+[Unit]
+Description=sslip.io DNS server
+Documentation=https://sslip.io/
+
+After=etcd.service
+
+[Service]
+ExecStart=/usr/bin/sslip.io-dns-server
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
