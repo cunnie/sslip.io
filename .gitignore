@@ -5,3 +5,5 @@
 bin/sslip.io-dns-server-*
 # We don't check in VS Code's configuration, either
 .vscode/
+# We don't need OpenTofu's backup files
+terraform.tfstate.*.backup

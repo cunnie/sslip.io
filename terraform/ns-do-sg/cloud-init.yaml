@@ -33,8 +33,6 @@ packages:
   - tmux
   - tree
   - unzip
-  - zsh
-  - zsh-syntax-highlighting
   - zstd
 
 users:
@@ -47,10 +45,37 @@ users:
       - ssh-ed25519
         AAAAC3NzaC1lZDI1NTE5AAAAIKoPHfGEM2RMBpcW2ZzKUmTNbweJbzfz6Y/EZ+WXJDVz
 
-runcmd: []
+write_files:
+  - path: /etc/systemd/system/sslip.io-dns.service
+    content: |
+      [Unit]
+      Description=sslip.io DNS server
+      Documentation=https://sslip.io/
 
-# Reboot after cloud-init completes to fix
-# "Failed to start systemd-binfmt.service - Set Up Additional Binary Formats."
+      # start after agent so public IPs are assigned because
+      # systemd-resolved prevents binding to INADDR_ANY
+      After=droplet-agent.service do-agent.service
+
+      [Service]
+      ExecStart=/usr/bin/sslip.io-dns-server \
+        -addresses=ns-do-sg.sslip.io=167.172.4.236,ns-do-sg.sslip.io=2400:6180:0:d2:0:2:e3e7:0
+      Restart=on-failure
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+    permissions: '0644'
+
+runcmd:
+  - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.0/sslip.io-dns-server-linux-amd64
+  - chmod +x /usr/bin/sslip.io-dns-server
+  # reserved IPv6 won't work until I manually add it to eth0:
+  - nmcli connection modify "cloud-init ens3" +ipv6.addresses "2400:6180:0:d2:0:2:e3e7:0/64"
+  - systemctl daemon-reload
+  - systemctl enable sslip.io-dns.service
+  # Fix "[systemd] Failed Units: 1 systemd-binfmt.service"
+  - systemctl disable systemd-binfmt.service
+
 power_state:
   mode: reboot
   message: |

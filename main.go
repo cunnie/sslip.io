@@ -26,16 +26,16 @@ func main() {
 			"sslip.io=78.46.204.247,"+
 			"nip.io=2a01:4f8:c17:b8f::2,"+
 			"sslip.io=2a01:4f8:c17:b8f::2,"+
-			"ns.nip.io=146.190.110.69,"+
-			"ns.nip.io=2400:6180:0:d2:0:1:da21:d000,"+
+			"ns.nip.io=167.172.4.236,"+
+			"ns.nip.io=2400:6180:0:d2:0:2:e3e7:0,"+
 			"ns.nip.io=104.155.144.4,"+
 			"ns.nip.io=2600:1900:4000:4d12::,"+
 			"ns.nip.io=5.78.115.44,"+
 			"ns.nip.io=2a01:4ff:1f0:c920::,"+
 			"ns.nip.io=51.75.53.19,"+
 			"ns.nip.io=2001:41d0:602:2313::1,"+
-			"ns.sslip.io=146.190.110.69,"+
-			"ns.sslip.io=2400:6180:0:d2:0:1:da21:d000,"+
+			"ns.sslip.io=167.172.4.236,"+
+			"ns.sslip.io=2400:6180:0:d2:0:2:e3e7:0,"+
 			"ns.sslip.io=104.155.144.4,"+
 			"ns.sslip.io=2600:1900:4000:4d12::,"+
 			"ns.sslip.io=5.78.115.44,"+
@@ -44,14 +44,14 @@ func main() {
 			"ns.sslip.io=2001:41d0:602:2313::1,"+
 			"blocked.sslip.io=52.0.56.137,"+
 			"blocked.sslip.io=2600:1f18:aaf:6900::a,"+
-			"ns-do-sg.nip.io=146.190.110.69,"+
-			"ns-do-sg.nip.io=2400:6180:0:d2:0:1:da21:d000,"+
+			"ns-do-sg.nip.io=167.172.4.236,"+
+			"ns-do-sg.nip.io=2400:6180:0:d2:0:2:e3e7:0,"+
 			"ns-hetzner.nip.io=5.78.115.44,"+
 			"ns-hetzner.nip.io=2a01:4ff:1f0:c920::,"+
 			"ns-ovh.nip.io=51.75.53.19,"+
 			"ns-ovh.nip.io=2001:41d0:602:2313::1,"+
-			"ns-do-sg.sslip.io=146.190.110.69,"+
-			"ns-do-sg.sslip.io=2400:6180:0:d2:0:1:da21:d000,"+
+			"ns-do-sg.sslip.io=167.172.4.236,"+
+			"ns-do-sg.sslip.io=2400:6180:0:d2:0:2:e3e7:0,"+
 			"ns-hetzner.sslip.io=5.78.115.44,"+
 			"ns-hetzner.sslip.io=2a01:4ff:1f0:c920::,"+
 			"ns-ovh.sslip.io=51.75.53.19,"+
@@ -65,7 +65,7 @@ func main() {
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response. Use this to avoid Google Cloud charging you $30/month to retain the logs of your GKE-based sslip.io server")
 	var public = flag.Bool("public", true, "allows resolution of public IP addresses. If false, only resolves private IPs including localhost (127/8, ::1), link-local (169.254/16, fe80::/10), CG-NAT (100.64/12), private (10/8, 172.16/12, 192.168/16, fc/7). Set to false if you don't want miscreants impersonating you via public IPs. If unsure, set to false")
 	var ptrDomain = flag.String("ptr-domain", "nip.io.", "the domain to use for PTR records, e.g. if 'nip.io',  127-0-0-1.nip.io.")
-	var dnstapSocket = flag.String("dnstap", "", `enables dnstap logging of queries that return an A or AAAA record; argument is the destination socket, either a Unix socket path (e.g. "/var/run/dnstap.sock") or a TCP address (e.g. "127.0.0.1:5353" or "[::1]:5353")`)
+	var dnstapSocket = flag.String("dnstap", "", `enables dnstap logging of queries that return an A or AAAA record; argument is the destination socket, either a Unix socket path (e.g. "/var/run/dnstap.sock") or a TCP address (e.g. "127.0.0.1:6000" or "[::1]:6000")`)
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	log.Printf("blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
