@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=5.0.1
-export VERSION=5.1.0
+export OLD_VERSION=5.1.0
+export VERSION=5.1.1
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
@@ -14,7 +14,8 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   spec/spec_suite_test.go \
   k8s/document_root_sslip.io/experimental.html \
   k8s/document_root_sslip.io/index.html \
-  Docker/sslip.io-dns-server/Dockerfile
+  Docker/sslip.io-dns-server/Dockerfile \
+  terraform/ns-do-sg/cloud-init.yaml
 ```
 
 Optional: Update the version for the ns-hetzner, and ns-ovh install scripts
@@ -40,7 +41,7 @@ Test from another window:
 
 ```bash
 DNS_SERVER_IP=127.0.0.1
-VERSION=5.1.0
+VERSION=5.1.1
 PORT=5333
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
@@ -82,7 +83,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: new flag, -dnstap <endpoint>"
+GIT_MESSAGE="$VERSION: ns-do-sg has new IPs"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
