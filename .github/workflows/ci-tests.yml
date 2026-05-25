@@ -15,4 +15,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Test
+        env:
+          GOFLAGS: -buildvcs=false
         run: HOME=/root ginkgo -r -p --skip-package=spec .
