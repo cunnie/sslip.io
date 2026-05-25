@@ -89,7 +89,10 @@ git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
 git push
 git push --tags
-for HOST in {ns-do-sg,ns-hetzner,ns-ovh}.sslip.io; do
+for HOST in ns-do-sg; do
+  ssh $HOST sudo dnf upgrade -y
+done
+for HOST in {ns-hetzner,ns-ovh}.sslip.io ; do
   ssh $HOST sudo apt-get update
   ssh $HOST sudo apt-get upgrade -y
   ssh $HOST sudo apt-get autoremove -y

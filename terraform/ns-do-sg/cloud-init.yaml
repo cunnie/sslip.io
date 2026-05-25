@@ -64,7 +64,7 @@ write_files:
 
       [Install]
       WantedBy=multi-user.target
-    permissions: '0644'
+    permissions: "0644"
 
 runcmd:
   - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.1/sslip.io-dns-server-linux-amd64
