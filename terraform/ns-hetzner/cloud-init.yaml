@@ -1,6 +1,6 @@
 #cloud-config
-hostname: ns-do-sg
-fqdn: ns-do-sg.sslip.io
+hostname: ns-hetzner
+fqdn: ns-hetzner.sslip.io
 
 package_update: true
 package_upgrade: true
@@ -42,19 +42,37 @@ users:
     groups: wheel
     shell: /bin/bash
     ssh_authorized_keys:
-      - ssh-ed25519
-        AAAAC3NzaC1lZDI1NTE5AAAAIKoPHfGEM2RMBpcW2ZzKUmTNbweJbzfz6Y/EZ+WXJDVz
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIWiAzxc4uovfaphO0QVC2w00YmzrogUpjAzvuqaQ9tD
 
 write_files:
+  - path: /etc/systemd/system/floating-ips.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Assign floating IPs to eth0
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/sbin/ip addr add 5.78.28.211/32 dev eth0
+      ExecStart=/sbin/ip -6 addr add 2a01:4ff:1f2:10d::/64 dev eth0
+      # one second isn't enough, two is, three to be safe
+      ExecStart=/usr/bin/sleep 3
+
+      [Install]
+      WantedBy=multi-user.target
+
   - path: /etc/systemd/system/sslip.io-dns.service
+    permissions: "0644"
     content: |
       [Unit]
       Description=sslip.io DNS server
       Documentation=https://sslip.io/
-
-      # start after agent so public IPs are assigned because
-      # systemd-resolved prevents binding to INADDR_ANY
-      After=droplet-agent.service do-agent.service
+      After=network-online.target qemu-guest-agent floating-ips.service
+      Wants=network-online.target
+      Requires=floating-ips.service
 
       [Service]
       ExecStart=/usr/bin/sslip.io-dns-server
@@ -63,21 +81,18 @@ write_files:
 
       [Install]
       WantedBy=multi-user.target
-    permissions: "0644"
 
 runcmd:
-  # reserved IPv6 won't work until I manually add it to eth0:
-  - nmcli connection modify "cloud-init ens3" +ipv6.addresses "2400:6180:0:d2:0:2:e3e7:0/64"
   - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.1/sslip.io-dns-server-linux-amd64
   - chmod +x /usr/bin/sslip.io-dns-server
   - systemctl daemon-reload
+  - systemctl enable floating-ips.service
   - systemctl enable sslip.io-dns.service
-  # Fix "[systemd] Failed Units: 1 systemd-binfmt.service"
+  # ignore "The unit files have no installation config..." in cloud-init-output.log
   - systemctl disable systemd-binfmt.service
 
 power_state:
   mode: reboot
-  message: |
-    Rebooting to pick up new kernel, if any
+  message: Rebooting to pick up new kernel, if any
   timeout: 60
   condition: true
