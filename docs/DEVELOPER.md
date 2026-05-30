@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=5.1.0
-export VERSION=5.1.1
+export OLD_VERSION=5.1.1
+export VERSION=5.1.2
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
@@ -15,7 +15,8 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   k8s/document_root_sslip.io/experimental.html \
   k8s/document_root_sslip.io/index.html \
   Docker/sslip.io-dns-server/Dockerfile \
-  terraform/ns-do-sg/cloud-init.yaml
+  terraform/ns-do-sg/cloud-init.yaml \
+  terraform/ns-hetzner/cloud-init.yaml
 ```
 
 Optional: Update the version for the ns-hetzner, and ns-ovh install scripts
@@ -23,7 +24,7 @@ Optional: Update the version for the ns-hetzner, and ns-ovh install scripts
 ```bash
 pushd ~/bin
 sed -i '' "s~/$OLD_VERSION/~/$VERSION/~g" \
-  ~/bin/install_ns-{hetzner,ovh}.sh ~/bin/install_common.sh
+  ~/bin/install_common.sh
 git add -p
 git ci -m"Update sslip.io DNS server $OLD_VERSION → $VERSION"
 git push
@@ -41,7 +42,7 @@ Test from another window:
 
 ```bash
 DNS_SERVER_IP=127.0.0.1
-VERSION=5.1.1
+VERSION=5.1.2
 PORT=5333
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
@@ -83,7 +84,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: ns-do-sg has new IPs"
+GIT_MESSAGE="$VERSION: ns-hetzner has new IPs"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
