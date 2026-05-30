@@ -110,6 +110,9 @@ compiled and minified CSS -->
       <p>nip.io can be used to brand your own site (you don’t need to use the nip.io domain). For example, say you own
         the domain “example.com”, and you want your subdomain, “nip.example.com” to have nip.io-style features. To
         accomplish this, set the following three DNS servers as NS records for the subdomain “nip.example.com”</p>
+      <div class="alert alert-success" role="alert" style="margin-top: 20px; margin-bottom: 10px; text-align: center;">
+        <strong>Update your nameservers!</strong> ns-do-sg and ns-hetzner have new addresses. (2026-06-01)
+      </div>
       <table class="table">
         <thead>
           <tr class="header">
@@ -162,9 +165,10 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
         "www.52.0.56.137.nip.io", or "prod.www-52-0-56-137.nip.io".</p>
       <div class="alert alert-success" role="alert">
         <b>Let's Encrypt Rate Limits</b> If your request for a "nip.io" certificate is <a
-          href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please open a <a
-          href="https://github.com/cunnie/sslip.io/issues/new/choose">GitHub issue</a> and include the entire error
-        message. We'll request a rate-limit increase.
+          href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please try the other domain (if sslip.io,
+        try nip.io). If that doesn't work, try one of <a href="#related">related</a> services below.<br /><br />Let's
+        Encrypt has graciously bumped our limit from 50 to 250,000 certificates over the years, but turned down our
+        request for 500,000, saying, "This is too large for us to support"
       </div>
       <a id="wildcard"></a>
       <div class="alert alert-success" role="alert"> nip.io & sslip.io <b>do not support wildcard</b> certificates.
