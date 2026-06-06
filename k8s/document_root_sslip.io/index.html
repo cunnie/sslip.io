@@ -21,6 +21,11 @@ compiled and minified CSS -->
     <div class="alert alert-info" role="alert" style="margin-top: 20px; margin-bottom: 10px; text-align: center;">
       <strong>This service is dedicated to the late, great Roopinder Singh, who created & ran nip.io</strong>
     </div>
+    <div class="alert alert-info" role="alert" style="margin-top: 20px; margin-bottom: 10px; text-align: center;">
+      2026-06-06 Attention white label users: <strong>Update your nameservers</strong> lest you receive <a
+        href="https://github.com/cunnie/sslip.io/issues/111">SERVFAIL</a> responses The hostnames and IP addresses of
+      two the nameservers have changed. See <a href="#branding">below</a>
+    </div>
     <div style="padding-top: 10px;">
       <h3 id="sslip.io">nip.io & sslip.io</h3>
       <p>Operational Status: <a href="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml"><img
@@ -110,9 +115,6 @@ compiled and minified CSS -->
       <p>nip.io can be used to brand your own site (you don’t need to use the nip.io domain). For example, say you own
         the domain “example.com”, and you want your subdomain, “nip.example.com” to have nip.io-style features. To
         accomplish this, set the following three DNS servers as NS records for the subdomain “nip.example.com”</p>
-      <div class="alert alert-success" role="alert" style="margin-top: 20px; margin-bottom: 10px; text-align: center;">
-        <strong>Update your nameservers!</strong> ns-do-sg and ns-hetzner have new addresses. (2026-06-01)
-      </div>
       <table class="table">
         <thead>
           <tr class="header">
@@ -123,18 +125,18 @@ compiled and minified CSS -->
         </thead>
         <tbody>
           <tr class="odd">
-            <td><code>ns-do-sg.sslip.io.</code></td>
-            <td>167.172.4.236<br> 2400:6180:0:d2:0:2:e3e7:0</td>
+            <td><code>ns-00.nip.io.</code></td>
+            <td>167.172.4.236<br>2400:6180:0:d2:0:2:e3e7:0</td>
             <td>Singapore</td>
           </tr>
           <tr class="even">
-            <td><code>ns-hetzner.sslip.io.</code></td>
-            <td>5.78.28.211<br> 2a01:4ff:1f2:10d::</td>
+            <td><code>ns-01.nip.io.</code></td>
+            <td>5.78.28.211<br>2a01:4ff:1f2:10d::</td>
             <td>USA</td>
           </tr>
           <tr class="odd">
             <td><code>ns-ovh.sslip.io.</code></td>
-            <td>51.75.53.19<br> 2001:41d0:602:2313::1</td>
+            <td>51.75.53.19<br>2001:41d0:602:2313::1</td>
             <td>Poland</td>
           </tr>
         </tbody>
