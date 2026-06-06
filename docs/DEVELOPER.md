@@ -104,7 +104,7 @@ git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
 git push
 git push --tags
-for HOST in ns-do-sg ns-hetzner; do
+for HOST in ns-00.nip.io ns-01.nip.io; do
   ssh $HOST sudo dnf upgrade -y
 done
 for HOST in 5.78.115.44 ns-ovh.sslip.io ; do
@@ -112,16 +112,16 @@ for HOST in 5.78.115.44 ns-ovh.sslip.io ; do
   ssh $HOST sudo apt-get upgrade -y
   ssh $HOST sudo apt-get autoremove -y
 done
-scp bin/sslip.io-dns-server-linux-amd64 ns-do-sg:
-scp bin/sslip.io-dns-server-linux-amd64 ns-hetzner:
+scp bin/sslip.io-dns-server-linux-amd64 ns-00:
+scp bin/sslip.io-dns-server-linux-amd64 ns-01:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
 scp bin/sslip.io-dns-server-linux-amd64 5.78.115.44:
-ssh ns-do-sg sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
-ssh ns-do-sg sudo shutdown -r now
+ssh ns-00 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
+ssh ns-00 sudo shutdown -r now
  # check version number:
 sleep 10; while ! dig txt @ns-00.nip.io version.status.sslip.io +short; do sleep 5; done
-ssh ns-hetzner sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
-ssh ns-hetzner sudo shutdown -r now
+ssh ns-01 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
+ssh ns-01 sudo shutdown -r now
  # check version number:
 sleep 10; while ! dig txt @ns-01.nip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
 ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
