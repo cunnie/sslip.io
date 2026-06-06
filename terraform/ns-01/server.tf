@@ -19,7 +19,7 @@ resource "hcloud_floating_ip" "nameserver_ipv6" {
 }
 
 resource "hcloud_server" "nameserver" {
-  name        = "ns-hetzner"
+  name        = "ns-00"
   server_type = "cpx31"
   image       = "fedora-44"
   location    = "hil"
@@ -41,7 +41,7 @@ resource "hcloud_floating_ip_assignment" "nameserver_ipv6" {
 }
 
 resource "hcloud_firewall" "nameserver" {
-  name = "ns-hetzner-firewall"
+  name = "ns-00-firewall"
 
   rule {
     direction  = "in"

@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=5.1.1
-export VERSION=5.1.2
+export OLD_VERSION=5.1.2
+export VERSION=5.1.3
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
@@ -15,11 +15,9 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   k8s/document_root_sslip.io/experimental.html \
   k8s/document_root_sslip.io/index.html \
   Docker/sslip.io-dns-server/Dockerfile \
-  terraform/ns-do-sg/cloud-init.yaml \
-  terraform/ns-hetzner/cloud-init.yaml
+  terraform/ns-00/cloud-init.yaml \
+  terraform/ns-01/cloud-init.yaml
 ```
-
-Optional: Update the version for the ns-hetzner, and ns-ovh install scripts
 
 ```bash
 pushd ~/bin
@@ -42,7 +40,7 @@ Test from another window:
 
 ```bash
 DNS_SERVER_IP=127.0.0.1
-VERSION=5.1.2
+VERSION=5.1.3
 PORT=5333
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
@@ -74,17 +72,33 @@ echo 127.0.0.1 ) | uniq -c
 echo "\"$VERSION\"" ) | uniq -c
 ( dig +short ptr 1.0.0.127.in-addr.arpa @$DNS_SERVER_IP -p $PORT
 echo "127-0-0-1.nip.io." ) | uniq -c
+( dig +short ns-00.nip.io @$DNS_SERVER_IP -p $PORT
+dig +short ns-do-sg.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+( dig +short aaaa ns-00.nip.io @$DNS_SERVER_IP -p $PORT
+dig +short aaaa ns-do-sg.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+( dig +short ns-01.nip.io @$DNS_SERVER_IP -p $PORT
+dig +short ns-hetzner.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+( dig +short aaaa ns-01.nip.io @$DNS_SERVER_IP -p $PORT
+dig +short aaaa ns-hetzner.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+( dig +short ns-00.nip.io @$DNS_SERVER_IP -p $PORT
+dig +short ns-do-sg.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+( dig +short aaaa ns-00.nip.io @$DNS_SERVER_IP -p $PORT
+dig +short aaaa ns-do-sg.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+( dig +short ns-01.nip.io @$DNS_SERVER_IP -p $PORT
+dig +short ns-hetzner.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+( dig +short aaaa ns-01.nip.io @$DNS_SERVER_IP -p $PORT
+dig +short aaaa ns-hetzner.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short 7f000001.nip.io @$DNS_SERVER_IP -p $PORT
 echo 127.0.0.1 ) | uniq -c
 dig +short txt metrics.status.sslip.io @$DNS_SERVER_IP -p $PORT | grep '"Queries: '
-echo '"Queries: 16 (?.?/s)"'
+echo '"Queries: 24 (?.?/s)"'
 ```
 
 Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: ns-hetzner has new IPs"
+GIT_MESSAGE="$VERSION: new NS records: ns-0{0,1}.nip.io"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION

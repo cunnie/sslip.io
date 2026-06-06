@@ -44,10 +44,14 @@ func main() {
 			"ns.sslip.io=2001:41d0:602:2313::1,"+
 			"blocked.sslip.io=52.0.56.137,"+
 			"blocked.sslip.io=2600:1f18:aaf:6900::a,"+
+			"ns-00.nip.io=167.172.4.236,"+
+			"ns-00.nip.io=2400:6180:0:d2:0:2:e3e7:0,"+
 			"ns-do-sg.nip.io=167.172.4.236,"+
 			"ns-do-sg.nip.io=2400:6180:0:d2:0:2:e3e7:0,"+
 			"ns-hetzner.nip.io=5.78.28.211,"+
 			"ns-hetzner.nip.io=2a01:4ff:1f2:10d::,"+
+			"ns-01.nip.io=5.78.28.211,"+
+			"ns-01.nip.io=2a01:4ff:1f2:10d::,"+
 			"ns-ovh.nip.io=51.75.53.19,"+
 			"ns-ovh.nip.io=2001:41d0:602:2313::1,"+
 			"ns-do-sg.sslip.io=167.172.4.236,"+

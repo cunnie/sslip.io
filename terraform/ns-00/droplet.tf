@@ -19,7 +19,7 @@ resource "digitalocean_reserved_ipv6" "nameserver_ipv6" {
 }
 
 resource "digitalocean_droplet" "nameserver" {
-  name       = "ns-do-sg.sslip.io"
+  name       = "ns-00.nip.io"
   region     = "sgp1"
   size       = "s-2vcpu-4gb"
   image      = "fedora-43-x64"
@@ -43,7 +43,7 @@ resource "digitalocean_reserved_ipv6_assignment" "nameserver_ipv6_assign" {
 }
 
 resource "digitalocean_firewall" "nameserver" {
-  name = "ns-do-sg-firewall"
+  name = "ns-00-firewall"
 
   droplet_ids = [digitalocean_droplet.nameserver.id]
 
