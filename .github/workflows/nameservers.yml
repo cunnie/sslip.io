@@ -10,12 +10,11 @@ jobs:
     runs-on: self-hosted
     container:
       image: cunnie/fedora-golang
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Run DNS check
-        run: ginkgo -r -p spec/
+        run: HOME=/root ginkgo -r -p spec/
         env:
           DOMAINS: nip.io,sslip.io # You can set your domain here if needed
