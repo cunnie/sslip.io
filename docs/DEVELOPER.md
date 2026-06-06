@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=5.1.2
-export VERSION=5.1.3
+export OLD_VERSION=5.1.3
+export VERSION=5.1.4
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
@@ -40,14 +40,14 @@ Test from another window:
 
 ```bash
 DNS_SERVER_IP=127.0.0.1
-VERSION=5.1.3
+VERSION=5.1.4
 PORT=5333
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
 echo 127.0.0.1 ) | uniq -c
 # NS ordering might be rotated
 ( dig +short ns example.com @$DNS_SERVER_IP -p $PORT
-printf "ns-do-sg.sslip.io.\nns-hetzner.sslip.io.\nns-ovh.sslip.io.\n" ) | sort | uniq -c
+printf "ns-00.nip.io.\nns-01.nip.io.\nns-ovh.sslip.io.\n" ) | sort | uniq -c
 ( dig +short mx sslip.io @$DNS_SERVER_IP -p $PORT
 printf "10 mail.protonmail.ch.\n20 mailsec.protonmail.ch.\n" ) | sort | uniq -c
 ( dig +short txt nip.io @$DNS_SERVER_IP -p $PORT
@@ -73,25 +73,25 @@ echo "\"$VERSION\"" ) | uniq -c
 ( dig +short ptr 1.0.0.127.in-addr.arpa @$DNS_SERVER_IP -p $PORT
 echo "127-0-0-1.nip.io." ) | uniq -c
 ( dig +short ns-00.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short ns-do-sg.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+dig +short ns-do-sg.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short aaaa ns-00.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short aaaa ns-do-sg.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+dig +short aaaa ns-do-sg.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short ns-01.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short ns-hetzner.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+dig +short ns-hetzner.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short aaaa ns-01.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short aaaa ns-hetzner.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+dig +short aaaa ns-hetzner.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short ns-00.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short ns-do-sg.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+dig +short ns-do-sg.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short aaaa ns-00.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short aaaa ns-do-sg.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+dig +short aaaa ns-do-sg.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short ns-01.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short ns-hetzner.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+dig +short ns-hetzner.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short aaaa ns-01.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short aaaa ns-hetzner.nip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
+dig +short aaaa ns-hetzner.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short 7f000001.nip.io @$DNS_SERVER_IP -p $PORT
 echo 127.0.0.1 ) | uniq -c
 dig +short txt metrics.status.sslip.io @$DNS_SERVER_IP -p $PORT | grep '"Queries: '
-echo '"Queries: 24 (?.?/s)"'
+echo '"Queries: 32 (?.?/s)"'
 ```
 
 Review the output then close the second window. Stop the server in the
@@ -119,11 +119,11 @@ scp bin/sslip.io-dns-server-linux-amd64 5.78.115.44:
 ssh ns-do-sg sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-do-sg sudo shutdown -r now
  # check version number:
-sleep 10; while ! dig txt @ns-do-sg.sslip.io version.status.sslip.io +short; do sleep 5; done
+sleep 10; while ! dig txt @ns-00.nip.io version.status.sslip.io +short; do sleep 5; done
 ssh ns-hetzner sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-hetzner sudo shutdown -r now
  # check version number:
-sleep 10; while ! dig txt @ns-hetzner.sslip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
+sleep 10; while ! dig txt @ns-01.nip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
 ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-ovh sudo shutdown -r now
  # check version number:
