@@ -129,6 +129,30 @@ var _ = Describe("Nameserver Tests", func() {
 					Expect(output).NotTo(Equal(""))
 				})
 
+				It(fmt.Sprintf("nameserver %s can be queried over IPv4", rdapNameserver), func() {
+					args := append(digArgs, fmt.Sprintf("@%s", rdapNameserver), "a", domain, "+short", "-4")
+					output := execDigShort(args...)
+					Expect(output).NotTo(Equal(""))
+				})
+
+				It(fmt.Sprintf("nameserver %s can be queried over IPv6", rdapNameserver), func() {
+					args := append(digArgs, fmt.Sprintf("@%s", rdapNameserver), "a", domain, "+short", "-6")
+					output := execDigShort(args...)
+					Expect(output).NotTo(Equal(""))
+				})
+
+				It(fmt.Sprintf("nameserver %s can be queried over IPv4 using TCP", rdapNameserver), func() {
+					args := append(digArgs, fmt.Sprintf("@%s", rdapNameserver), "a", domain, "+short", "-4", "+vc")
+					output := execDigShort(args...)
+					Expect(output).NotTo(Equal(""))
+				})
+
+				It(fmt.Sprintf("nameserver %s can be queried over IPv6 using TCP", rdapNameserver), func() {
+					args := append(digArgs, fmt.Sprintf("@%s", rdapNameserver), "a", domain, "+short", "-6", "+vc")
+					output := execDigShort(args...)
+					Expect(output).NotTo(Equal(""))
+				})
+
 				It(fmt.Sprintf("resolves random IP with dots for nameserver %s", rdapNameserver), func() {
 					a := []int{rand.Intn(256), rand.Intn(256), rand.Intn(256), rand.Intn(256)}
 					ipAddr := fmt.Sprintf("%d.%d.%d.%d", a[0], a[1], a[2], a[3])
