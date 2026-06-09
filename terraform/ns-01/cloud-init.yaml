@@ -1,6 +1,6 @@
 #cloud-config
-hostname: ns-00
-fqdn: ns-00.nip.io
+hostname: ns-01
+fqdn: ns-01.nip.io
 
 package_update: true
 package_upgrade: true

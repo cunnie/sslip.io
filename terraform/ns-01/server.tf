@@ -19,7 +19,7 @@ resource "hcloud_floating_ip" "nameserver_ipv6" {
 }
 
 resource "hcloud_server" "nameserver" {
-  name        = "ns-00"
+  name        = "ns-01"
   server_type = "cpx31"
   image       = "fedora-44"
   location    = "hil"
@@ -41,7 +41,7 @@ resource "hcloud_floating_ip_assignment" "nameserver_ipv6" {
 }
 
 resource "hcloud_firewall" "nameserver" {
-  name = "ns-00-firewall"
+  name = "ns-01-firewall"
 
   rule {
     direction  = "in"
@@ -53,7 +53,7 @@ resource "hcloud_firewall" "nameserver" {
     direction  = "in"
     protocol   = "tcp"
     port       = "22"
-    source_ips = ["73.189.219.4/32", "99.123.0.161/32", "::/0"]
+    source_ips = ["73.231.94.127/32", "99.123.0.161/32", "::/0"]
   }
 
   rule {
