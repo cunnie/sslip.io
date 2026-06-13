@@ -57,7 +57,7 @@ resource "digitalocean_firewall" "nameserver" {
   inbound_rule {
     protocol         = "tcp"
     port_range       = "22"
-    source_addresses = ["73.231.94.127/32", "2601:645:8185:5830::/60", "99.123.0.161/32", "2600:1700:486:a840::/60"] # Me, Sha, all of IPv6
+    source_addresses = ["73.231.94.127/32", "2601:645:8103:e3a0::/60", "99.123.0.161/32", "2600:1700:486:a840::/60"] # Me, Sha, all of IPv6
   }
 
   # Inbound DNS (TCP 53)
