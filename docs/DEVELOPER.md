@@ -72,26 +72,10 @@ echo 127.0.0.1 ) | uniq -c
 echo "\"$VERSION\"" ) | uniq -c
 ( dig +short ptr 1.0.0.127.in-addr.arpa @$DNS_SERVER_IP -p $PORT
 echo "127-0-0-1.nip.io." ) | uniq -c
-( dig +short ns-00.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short ns-do-sg.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
-( dig +short aaaa ns-00.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short aaaa ns-do-sg.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
-( dig +short ns-01.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short ns-hetzner.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
-( dig +short aaaa ns-01.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short aaaa ns-hetzner.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
-( dig +short ns-00.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short ns-do-sg.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
-( dig +short aaaa ns-00.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short aaaa ns-do-sg.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
-( dig +short ns-01.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short ns-hetzner.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
-( dig +short aaaa ns-01.nip.io @$DNS_SERVER_IP -p $PORT
-dig +short aaaa ns-hetzner.sslip.io @$DNS_SERVER_IP -p $PORT ) | uniq -c
 ( dig +short 7f000001.nip.io @$DNS_SERVER_IP -p $PORT
 echo 127.0.0.1 ) | uniq -c
 dig +short txt metrics.status.sslip.io @$DNS_SERVER_IP -p $PORT | grep '"Queries: '
-echo '"Queries: 32 (?.?/s)"'
+echo '"Queries: 24 (?.?/s)"'
 ```
 
 Review the output then close the second window. Stop the server in the

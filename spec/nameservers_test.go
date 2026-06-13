@@ -78,7 +78,7 @@ var _ = Describe("Nameserver Tests", func() {
 		rdapNameservers = getRdapNameservers(domain)
 
 		Describe(domain, func() {
-			// I don't want a spurious failure, esp. ns-do-sg.sslip.io
+			// I don't want a spurious failure, esp. ns-00.nip.io
 			// default is 3 tries, 5 seconds timeout
 			var digArgs []string
 
@@ -90,7 +90,7 @@ var _ = Describe("Nameserver Tests", func() {
 				Expect(len(rdapNameservers)).To(BeNumerically(">", 1))
 			})
 
-			// Exclude the Singapore nameserver "ns-do-sg."
+			// Exclude the Singapore nameserver "ns-00."
 			// because it triggers so many false positives
 			nameserversWithoutSingapore := filterNameservers(rdapNameservers)
 
@@ -268,7 +268,7 @@ func getDomains() []string {
 func filterNameservers(nameservers []string) []string {
 	var filtered []string
 	for _, ns := range nameservers {
-		if !strings.HasPrefix(ns, "ns-do-sg.") {
+		if !strings.HasPrefix(ns, "ns-00.") {
 			filtered = append(filtered, ns)
 		}
 	}

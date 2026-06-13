@@ -44,10 +44,6 @@ func main() {
 			"ns-00.nip.io=2400:6180:0:d2:0:2:e3e7:0,"+
 			"ns-01.nip.io=5.78.28.211,"+
 			"ns-01.nip.io=2a01:4ff:1f2:10d::,"+
-			"ns-do-sg.sslip.io=167.172.4.236,"+
-			"ns-do-sg.sslip.io=2400:6180:0:d2:0:2:e3e7:0,"+
-			"ns-hetzner.sslip.io=5.78.28.211,"+
-			"ns-hetzner.sslip.io=2a01:4ff:1f2:10d::,"+
 			"ns-ovh.sslip.io=51.75.53.19,"+
 			"ns-ovh.sslip.io=2001:41d0:602:2313::1",
 		"comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If you're running your own sslip.io nameservers, add their hostnames and addresses here. If unsure, add to the list rather than replace")
