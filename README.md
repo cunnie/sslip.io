@@ -85,8 +85,8 @@ If we see the error, "`Error starting userland proxy: listen udp4 0.0.0.0:53:
 bind: address already in use.`", we turn off the systemd resolver: `sudo
 systemctl stop systemd-resolved`
 
-Let's try a more complicated setup: we're on our workstation, noble.nono.io,
-whose IP addresses are 10.9.9.114 and 2601:646:0100:69f0:0:ff:fe00:72. We'd like
+Let's try a more complicated setup: we're on our workstation, melkor.nono.io,
+whose IP addresses are 10.9.9.30 and 2601:645:8103:e3a0:1cc4:a4c5:33cb:d068. We'd like
 our workstation to be the DNS server:
 
 ```bash
@@ -95,22 +95,22 @@ docker run \
   --rm \
   -p 53:53/udp \
   cunnie/sslip.io-dns-server \
-    -nameservers noble.nono.io \
-    -addresses noble.nono.io=10.9.9.114,noble.nono.io=2601:646:100:69f0:0:ff:fe00:72
+    -nameservers melkor.nono.io \
+    -addresses melkor.nono.io=10.9.9.30,melkor.nono.io=2601:645:8103:e3a0:1cc4:a4c5:33cb:d068
 ```
 
 From another machine, we look up the DNS NS record for "127.0.0.1.com", and we
 see the expected reply:
 
 ```bash
-dig ns 127.0.0.1.com @noble.nono.io +short
+dig ns 127.0.0.1.com @melkor.nono.io +short
 ...
   ;; ANSWER SECTION:
-  127.0.0.1.com.		604800	IN	NS	noble.nono.io.
+  127.0.0.1.com.		604800	IN	NS	melkor.nono.io.
 
   ;; ADDITIONAL SECTION:
-  noble.nono.io.		604800	IN	A	10.9.9.114
-  noble.nono.io.		604800	IN	AAAA	2601:646:100:69f0:0:ff:fe00:72
+  melkor.nono.io.		604800	IN	A	10.9.9.30
+  melkor.nono.io.		604800	IN	AAAA	2601:645:8103:e3a0:1cc4:a4c5:33cb:d068
 ```
 
 The Docker image is multi-platform, supporting both x86_64 architecture as well

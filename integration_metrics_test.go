@@ -162,7 +162,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredPTRQueriesIPv6++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			actualMetrics = digAndGetMetrics("@localhost 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa ptr +short -p "+strconv.Itoa(port), port)
+			actualMetrics = digAndGetMetrics("@localhost 2.a.b.b.4.0.2.9.a.e.e.6.e.c.4.1.0.a.3.e.3.0.1.8.5.4.6.0.1.0.6.2.ip6.arpa ptr +short -p "+strconv.Itoa(port), port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 
 			// TXT DNS-01 challenge record updates .Queries, .AnsweredNSDNS01ChallengeQueries

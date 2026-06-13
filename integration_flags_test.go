@@ -332,14 +332,14 @@ var _ = Describe("flags", func() {
 				flags = []string{}
 			})
 			It("should return the PTR record with the 'nip.io.' domain", func() {
-				digArgs := "@localhost -x 2601:646:100:69f0:8ab:8f21:27de:5375 -p " + strconv.Itoa(port)
+				digArgs := "@localhost -x 2601:645:8103:e3a0:8ab:8f21:27de:5375 -p " + strconv.Itoa(port)
 				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
-				Eventually(digSession).Should(Say(`5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. 604800 IN PTR	2601-646-100-69f0-8ab-8f21-27de-5375.nip.io.\n`))
+				Eventually(digSession).Should(Say(`5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.a.3.e.3.0.1.8.5.4.6.0.1.0.6.2.ip6.arpa. 604800 IN PTR	2601-645-8103-e3a0-8ab-8f21-27de-5375.nip.io.\n`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? 2601-646-100-69f0-8ab-8f21-27de-5375.nip.io.\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.a.3.e.3.0.1.8.5.4.6.0.1.0.6.2.ip6.arpa. \? 2601-645-8103-e3a0-8ab-8f21-27de-5375.nip.io.\n`))
 			})
 		})
 		When("the PTR domain is set and the PTR record queried is IPv6", func() {
@@ -347,14 +347,14 @@ var _ = Describe("flags", func() {
 				flags = []string{"-ptr-domain=att.com"}
 			})
 			It("should return the PTR record with the 'nip.io.' domain", func() {
-				digArgs := "@localhost -x 2601:646:100:69f0:8ab:8f21:27de:5375 -p " + strconv.Itoa(port)
+				digArgs := "@localhost -x 2601:645:8103:e3a0:8ab:8f21:27de:5375 -p " + strconv.Itoa(port)
 				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
 				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).ToNot(HaveOccurred())
 				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0`))
-				Eventually(digSession).Should(Say(`5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. 604800 IN PTR	2601-646-100-69f0-8ab-8f21-27de-5375.att.com.\n`))
+				Eventually(digSession).Should(Say(`5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.a.3.e.3.0.1.8.5.4.6.0.1.0.6.2.ip6.arpa. 604800 IN PTR	2601-645-8103-e3a0-8ab-8f21-27de-5375.att.com.\n`))
 				Eventually(digSession, 1).Should(Exit(0))
-				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.f.9.6.0.0.1.0.6.4.6.0.1.0.6.2.ip6.arpa. \? 2601-646-100-69f0-8ab-8f21-27de-5375.att.com.\n`))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`TypePTR 5.7.3.5.e.d.7.2.1.2.f.8.b.a.8.0.0.a.3.e.3.0.1.8.5.4.6.0.1.0.6.2.ip6.arpa. \? 2601-645-8103-e3a0-8ab-8f21-27de-5375.att.com.\n`))
 			})
 		})
 	})

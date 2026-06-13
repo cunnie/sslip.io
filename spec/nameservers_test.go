@@ -212,11 +212,11 @@ var _ = Describe("Nameserver Tests", func() {
 					Expect(output).To(Equal("2001:4860:4860::8888"))
 				})
 
-				It(fmt.Sprintf("resolves 2601-646-100-69f0--24.%s to 2601:646:100:69f0::24 for nameserver %s", domain, rdapNameserver), func() {
-					query := fmt.Sprintf("2601-646-100-69f0--24.%s", domain)
+				It(fmt.Sprintf("resolves 2601-645-8103-e3a0--24.%s to 2601:645:8103:e3a0::24 for nameserver %s", domain, rdapNameserver), func() {
+					query := fmt.Sprintf("2601-645-8103-e3a0--24.%s", domain)
 					args := append(digArgs, fmt.Sprintf("@%s", rdapNameserver), "AAAA", query, "+short")
 					output := execDigShort(args...)
-					Expect(output).To(Equal("2601:646:100:69f0::24"))
+					Expect(output).To(Equal("2601:645:8103:e3a0::24"))
 				})
 
 				It(fmt.Sprintf("gets the expected version number, %s for nameserver %s", sslipVersion, rdapNameserver), func() {
