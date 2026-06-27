@@ -10,7 +10,7 @@
 curl -s -X POST https://api.us.ovhcloud.com/1.0/auth/credential \
   -H "Content-Type: application/json" \
   -H "X-Ovh-Application: dmUzEgjQwBIfJbUf" \
-  -d '{"accessRules":[{"method":"GET","path":"/*"},{"method":"PUT","path":"/*"}]}' \
+  -d '{"accessRules":[{"method":"GET","path":"/*"},{"method":"PUT","path":"/*"},{"method":"POST","path":"/*"},{"method":"DELETE","path":"/*"}]}' \
   | jq .
 ```
 

@@ -1,6 +1,6 @@
 #cloud-config
 hostname: ns-00
-fqdn: ns-00.sslip.io
+fqdn: ns-00.nip.io
 
 package_update: true
 package_upgrade: true

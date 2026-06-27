@@ -1,12 +1,30 @@
+data "ovh_dedicated_installation_template" "template" {
+  template_name = "fedora43_64"
+}
+
 resource "ovh_dedicated_server" "nameserver" {
   service_name    = "ns3133463.ip-51-75-53.eu"
   display_name    = "ns-ovh.sslip.io"
-  os              = "ubuntu2404-server_64"
+  os              = data.ovh_dedicated_installation_template.template.template_name
   boot_id         = 1
   monitoring      = false
   no_intervention = false
 
   lifecycle {
     prevent_destroy = true
+  }
+}
+
+resource "ovh_dedicated_server_reinstall_task" "server_reinstall" {
+  service_name = ovh_dedicated_server.nameserver.service_name
+  os           = data.ovh_dedicated_installation_template.template.template_name
+
+  customizations {
+    post_installation_script           = "https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/terraform/ns-ovh/cloud-init.sh"
+    post_installation_script_extension = ".sh"
+  }
+
+  lifecycle {
+    ignore_changes = all
   }
 }
