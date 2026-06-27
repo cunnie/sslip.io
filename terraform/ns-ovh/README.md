@@ -24,6 +24,13 @@ export TF_VAR_ovh_application_secret=YOUR_APPLICATION_SECRET
 export TF_VAR_ovh_consumer_key=YOUR_CONSUMER_KEY
 ```
 
+## Forcing a Reinstall
+
+```bash
+tofu taint ovh_dedicated_server_reinstall_task.server_reinstall
+tofu apply
+```
+
 ## Misc
 
 Find out which IP addresses are available:

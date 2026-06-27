@@ -20,8 +20,7 @@ resource "ovh_dedicated_server_reinstall_task" "server_reinstall" {
   os           = data.ovh_dedicated_installation_template.template.template_name
 
   customizations {
-    post_installation_script           = "https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/terraform/ns-ovh/cloud-init.sh"
-    post_installation_script_extension = ".sh"
+    post_installation_script = file("${path.module}/cloud-init.sh")
   }
 
   lifecycle {

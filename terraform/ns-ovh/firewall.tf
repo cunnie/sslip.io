@@ -68,6 +68,15 @@ resource "ovh_ip_firewall_rule" "https" {
   destination_port = 443
 }
 
+resource "ovh_ip_firewall_rule" "established" {
+  ip             = ovh_ip_firewall.nameserver.ip
+  ip_on_firewall = ovh_ip_firewall.nameserver.ip_on_firewall
+  sequence       = 7
+  action         = "permit"
+  protocol       = "tcp"
+  tcp_option     = "established"
+}
+
 resource "ovh_ip_firewall_rule" "deny_all" {
   ip             = ovh_ip_firewall.nameserver.ip
   ip_on_firewall = ovh_ip_firewall.nameserver.ip_on_firewall

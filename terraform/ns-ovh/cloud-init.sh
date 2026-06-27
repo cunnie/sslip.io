@@ -47,6 +47,8 @@ cat > /etc/systemd/system/sslip.io-dns.service <<'EOF'
 [Unit]
 Description=sslip.io DNS server
 Documentation=https://sslip.io/
+After=network-online.target
+Requires=network-online.target
 
 [Service]
 ExecStart=/usr/bin/sslip.io-dns-server
@@ -64,6 +66,7 @@ chmod +x /usr/bin/sslip.io-dns-server
 
 systemctl daemon-reload
 systemctl enable sslip.io-dns.service
-systemctl disable systemd-binfmt.service
+rm -fr ~fedora
+userdel fedora
 
 reboot
