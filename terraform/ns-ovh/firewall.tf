@@ -41,13 +41,12 @@ resource "ovh_ip_firewall_rule" "dns_tcp" {
   destination_port = 53
 }
 
-resource "ovh_ip_firewall_rule" "dns_udp" {
-  ip               = ovh_ip_firewall.nameserver.ip
-  ip_on_firewall   = ovh_ip_firewall.nameserver.ip_on_firewall
-  sequence         = 4
-  action           = "permit"
-  protocol         = "udp"
-  destination_port = 53
+resource "ovh_ip_firewall_rule" "all_udp" {
+  ip             = ovh_ip_firewall.nameserver.ip
+  ip_on_firewall = ovh_ip_firewall.nameserver.ip_on_firewall
+  sequence       = 4
+  action         = "permit"
+  protocol       = "udp"
 }
 
 resource "ovh_ip_firewall_rule" "http" {
