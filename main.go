@@ -38,8 +38,8 @@ func main() {
 			"ns.sslip.io=2a01:4ff:1f2:10d::,"+
 			"ns.sslip.io=51.75.53.19,"+
 			"ns.sslip.io=2001:41d0:602:2313::1,"+
-			"blocked.sslip.io=52.0.56.137,"+
-			"blocked.sslip.io=2600:1f18:aaf:6900::a,"+
+			"blocked.nip.io=64.176.22.9,"+
+			"blocked.nip.io=2001:19f0:c800:2315::,"+
 			"ns-00.nip.io=167.172.4.236,"+
 			"ns-00.nip.io=2400:6180:0:d2:0:2:e3e7:0,"+
 			"ns-01.nip.io=5.78.28.211,"+

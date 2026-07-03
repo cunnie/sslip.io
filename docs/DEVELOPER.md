@@ -131,7 +131,7 @@ ssh nono.io
 cd /www/sslip.io/
 git pull -r
 exit
-for HOST in blocked.sslip.io; do
+for HOST in blocked.nip.io; do
   ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
   ssh $HOST curl -L -o /var/nginx/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/experimental.html
 done

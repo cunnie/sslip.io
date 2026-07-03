@@ -621,7 +621,7 @@ var _ = Describe("Xip", func() {
 			func(fqdn string, expectedPublic net.IP) {
 				Expect(xip.String2IPv4(fqdn)).To(Equal(expectedPublic))
 			},
-			Entry("ubuntu20.04.52.0.56.137-notify.sslip.io.", "ubuntu20.04.52.0.56.137.181-notify.sslip.io.", net.ParseIP("52.0.56.137")),
+			Entry("ubuntu20.04.64.176.22.9-notify.sslip.io.", "ubuntu20.04.64.176.22.9.181-notify.sslip.io.", net.ParseIP("64.176.22.9")),
 			Entry("funprdmongo30-03.10.1.4.133.nip.io.", "funprdmongo30-03.10.1.4.133.nip.io.", net.ParseIP("10.1.4.133")),
 			Entry("olvm-engine-01.132.145.157.105.nip.io.", "olvm-engine-01.132.145.157.105.nip.io.", net.ParseIP("132.145.157.105")),
 			Entry("wt32-ETh01-03.172.26.131.29.NIp.IO.", "wt32-ETh01-03.172.26.131.29.NIp.IO.", net.ParseIP("172.26.131.29")),

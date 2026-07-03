@@ -1298,13 +1298,13 @@ func (x *Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, log
 					Class:  dnsmessage.ClassINET,
 					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 					Length: 0,
-				}, Customizations["blocked.sslip.io."].A[0])
+				}, Customizations["blocked.nip.io."].A[0])
 				if err != nil {
 					return err
 				}
 				return nil
 			})
-		return response, logMessage + net.IP(Customizations["blocked.sslip.io."].A[0].A[:]).String(), nil
+		return response, logMessage + net.IP(Customizations["blocked.nip.io."].A[0].A[:]).String(), nil
 	}
 	x.Metrics.AnsweredQueries++
 	x.Metrics.AnsweredAQueries++
@@ -1409,13 +1409,13 @@ func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, 
 					Class:  dnsmessage.ClassINET,
 					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 					Length: 0,
-				}, Customizations["blocked.sslip.io."].AAAA[0])
+				}, Customizations["blocked.nip.io."].AAAA[0])
 				if err != nil {
 					return err
 				}
 				return nil
 			})
-		return response, logMessage + net.IP(Customizations["blocked.sslip.io."].AAAA[0].AAAA[:]).String(), nil
+		return response, logMessage + net.IP(Customizations["blocked.nip.io."].AAAA[0].AAAA[:]).String(), nil
 	}
 	x.Metrics.AnsweredQueries++
 	x.Metrics.AnsweredAAAAQueries++
