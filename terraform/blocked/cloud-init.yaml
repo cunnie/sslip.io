@@ -1,0 +1,139 @@
+#cloud-config
+hostname: blocked
+fqdn: blocked.nip.io
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - "@development-tools"
+  - bind-utils
+  - btop
+  - bzip2
+  - curl
+  - file
+  - git-lfs
+  - golang
+  - htop
+  - iputils
+  - jq
+  - neovim
+  - net-tools
+  - netcat
+  - nginx
+  - python3
+  - python3-devel
+  - python3-pip
+  - python3-virtualenv
+  - ripgrep
+  - rsync
+  - socat
+  - sudo
+  - tar
+  - tcpdump
+  - tmux
+  - tree
+  - unzip
+  - zstd
+
+users:
+  - name: cunnie
+    gecos: Brian Cunnie
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: wheel
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIWiAzxc4uovfaphO0QVC2w00YmzrogUpjAzvuqaQ9tD
+
+write_files:
+  # disable selinux to avoid 403 forbidden on the nginx webserver
+  - path: /etc/selinux/config
+    permissions: "0644"
+    content: |
+      SELINUX=disabled
+      SELINUXTYPE=targeted
+
+  - path: /etc/nginx/nginx.conf
+    permissions: "0644"
+    content: |
+      user nginx;
+      worker_processes auto;
+      error_log /var/log/nginx/error.log notice;
+      pid /run/nginx.pid;
+
+      include /usr/share/nginx/modules/*.conf;
+
+      events {
+          worker_connections 1024;
+      }
+
+      http {
+          log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                            '$status $body_bytes_sent "$http_referer" '
+                            '"$http_user_agent" "$http_x_forwarded_for"';
+
+          access_log  /var/log/nginx/access.log  main;
+
+          sendfile            on;
+          tcp_nopush          on;
+          keepalive_timeout   65;
+          types_hash_max_size 4096;
+
+          include             /etc/nginx/mime.types;
+          default_type        application/octet-stream;
+
+          include /etc/nginx/conf.d/*.conf;
+      }
+
+  - path: /etc/nginx/conf.d/blocked.conf
+    permissions: "0644"
+    content: |
+      server {
+          listen 80 default_server;
+          listen [::]:80 default_server;
+          listen 443 ssl default_server;
+          listen [::]:443 ssl default_server;
+          server_name _;
+          root /var/www/blocked;
+          index index.html;
+          ssl_certificate     /etc/nginx/ssl/blocked.crt;
+          ssl_certificate_key /etc/nginx/ssl/blocked.key;
+      }
+
+  - path: /etc/systemd/system/sslip.io-dns.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=sslip.io DNS server
+      Documentation=https://sslip.io/
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      ExecStart=/usr/bin/sslip.io-dns-server
+      Restart=on-failure
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - mkdir -p /etc/nginx/ssl /var/www/blocked
+  - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_blocked.nip.io/index.html
+  - openssl req -x509 -newkey ed25519 -keyout /etc/nginx/ssl/blocked.key -out /etc/nginx/ssl/blocked.crt -days 3650 -nodes -subj "/CN=blocked.nip.io"
+  - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.4/sslip.io-dns-server-linux-amd64
+  - chmod +x /usr/bin/sslip.io-dns-server
+  - systemctl daemon-reload
+  - systemctl enable sslip.io-dns.service
+  - systemctl enable nginx
+  - firewall-cmd --permanent --add-service=dns
+  - firewall-cmd --permanent --add-service=http
+  - firewall-cmd --permanent --add-service=https
+  - firewall-cmd --reload
+
+
+power_state:
+  mode: reboot
+  message: Rebooting to pick up new kernel, if any
+  timeout: 60
+  condition: true

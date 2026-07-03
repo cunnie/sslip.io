@@ -1,0 +1,4 @@
+# terraform.tfstate contain secrets such as the root password
+# and an unauthenticated URL to the kvm, so unlike the other
+# instances, we don't check in this .tfstate file
+terraform.tfstate
