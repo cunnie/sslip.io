@@ -68,7 +68,7 @@ compiled and minified CSS -->
           </tr>
           <tr class="even">
             <td>
-              <a href="https://52-0-56-137.nip.io">https://52-0-56-137.nip.io</a>
+              <a href="https://64-176-22-9.nip.io">https://64-176-22-9.nip.io</a>
             </td>
             <td>64.176.22.9</td>
             <td>dash separators, nip.io website mirror (IPv4)</td>
@@ -164,13 +164,14 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
           challenge</a>. It requires, at a minimum, a web server running on your machine. The <a
           href="https://caddyserver.com/">Caddy</a> web server is one of the most popular examples. For example, if you
         had a webserver with the IP address 64.176.22.9, you could obtain a TLS certificate for "64.176.22.9.nip.io", or
-        "www.64.176.22.9.nip.io", or "prod.www-52-0-56-137.nip.io".</p>
+        "www.64.176.22.9.nip.io", or "prod.www-64-176-22-9.nip.io".</p>
       <div class="alert alert-success" role="alert">
         <b>Let's Encrypt Rate Limits</b> If your request for a "nip.io" certificate is <a
-          href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please try the other domain (if sslip.io,
-        try nip.io). If that doesn't work, try one of <a href="#related">related</a> services below.<br /><br />Let's
-        Encrypt has graciously bumped our limit from 50 to 250,000 certificates over the years, but turned down our
-        request for 500,000, saying, "This is too large for us to support"
+          href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please try using an <a
+          href="https://letsencrypt.org/2026/01/15/6day-and-ip-general-availability">IP address certificate</a>, or a
+        certificate with the other domain (if nip.io, try sslip.io), or one of <a href="#related">related</a> services
+        below.<br /><br />Let's Encrypt has graciously bumped our limit from 50 to 250,000 certificates over the years,
+        but turned down our request for 500,000, saying, "This is too large for us to support"
       </div>
       <a id="wildcard"></a>
       <div class="alert alert-success" role="alert"> nip.io & sslip.io <b>do not support wildcard</b> certificates.
@@ -202,7 +203,7 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
           sslip.io. The backend was written in the tightest bash code I've ever seen. No longer in service. </li>
         <li>
           <a href="https://letsencrypt.org/">Let's Encrypt</a>: A Certificate Authority providing TLS certificates; they
-          have never failed to increase our rate limits when asked. If you can, <a
+          almost always have increase our rate limits when asked. If you can, <a
             href="https://www.abetterinternet.org/donate/">donate</a>.
         </li>
       </ul>

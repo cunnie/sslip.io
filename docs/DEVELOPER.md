@@ -94,13 +94,13 @@ git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
 git push
 git push --tags
-for HOST in ns-00.nip.io ns-01.nip.io ns-ovh.sslip.io 64.176.22.9; do
+for HOST in ns-00 ns-01 ns-ovh blocked; do
   ssh $HOST sudo dnf upgrade -y
 done
 scp bin/sslip.io-dns-server-linux-amd64 ns-00:
 scp bin/sslip.io-dns-server-linux-amd64 ns-01:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
-scp bin/sslip.io-dns-server-linux-amd64 64.176.22.9:
+scp bin/sslip.io-dns-server-linux-amd64 blocked:
 ssh ns-00 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-00 sudo shutdown -r now
  # check version number:
@@ -113,10 +113,10 @@ ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-se
 ssh ns-ovh sudo shutdown -r now
  # check version number:
 sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done
-ssh 64.176.22.9 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
-ssh 64.176.22.9 sudo shutdown -r now
+ssh blocked sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
+ssh blocked sudo shutdown -r now
  # check version number:
-sleep 10; while ! dig txt @64.176.22.9 version.status.sslip.io +short; do sleep 5; done
+sleep 10; while ! dig txt @blocked.nip.io version.status.sslip.io +short; do sleep 5; done
 ```
 
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
@@ -131,11 +131,10 @@ Update the webservers with the HTML with new versions:
 ssh nono.io
 cd /www/sslip.io/
 git pull -r
-exit
-for HOST in blocked.nip.io; do
-  ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
-  ssh $HOST curl -L -o /var/nginx/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/experimental.html
-done
+HOST=blocked
+ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
+ssh $HOST curl -L -o /var/nginx/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/experimental.html
+ssh $HOST curl -L -o /var/nginx/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/experimental.html
 ```
 
 Browse to <https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml>, trigger the workflow, and check that everything is green.

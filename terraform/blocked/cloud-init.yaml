@@ -10,6 +10,7 @@ packages:
   - bind-utils
   - btop
   - bzip2
+  - certbot
   - curl
   - file
   - git-lfs
@@ -68,7 +69,7 @@ write_files:
       }
 
       http {
-          log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+          log_format  main  '$host $remote_addr - $remote_user [$time_local] "$request" '
                             '$status $body_bytes_sent "$http_referer" '
                             '"$http_user_agent" "$http_x_forwarded_for"';
 
@@ -96,9 +97,29 @@ write_files:
           server_name _;
           root /var/www/blocked;
           index index.html;
-          ssl_certificate     /etc/nginx/ssl/blocked.crt;
-          ssl_certificate_key /etc/nginx/ssl/blocked.key;
+          ssl_certificate     /etc/letsencrypt/live/blocked.nip.io/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/blocked.nip.io/privkey.pem;
+          access_log /var/log/nginx/phishing-access.log main;
+          error_log  /var/log/nginx/phishing-error.log;
       }
+
+      server {
+          listen 80;
+          listen [::]:80;
+          listen 443 ssl;
+          listen [::]:443 ssl;
+          server_name 64-176-22-9.nip.io 64.176.22.9.nip.io;
+          root /var/www/sslip.io;
+          index index.html;
+          ssl_certificate     /etc/letsencrypt/live/blocked.nip.io/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/blocked.nip.io/privkey.pem;
+      }
+
+  - path: /etc/letsencrypt/renewal-hooks/deploy/nginx-reload.sh
+    permissions: "0755"
+    content: |
+      #!/bin/sh
+      systemctl reload nginx
 
   - path: /etc/systemd/system/sslip.io-dns.service
     permissions: "0644"
@@ -118,18 +139,31 @@ write_files:
       WantedBy=multi-user.target
 
 runcmd:
-  - mkdir -p /etc/nginx/ssl /var/www/blocked
-  - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_blocked.nip.io/index.html
-  - openssl req -x509 -newkey ed25519 -keyout /etc/nginx/ssl/blocked.key -out /etc/nginx/ssl/blocked.crt -days 3650 -nodes -subj "/CN=blocked.nip.io"
+  # /etc/selinux/config (written above) only takes effect on next boot;
+  # disable enforcement now too, so certbot's webroot challenge isn't
+  # 403'd by SELinux before the end-of-run reboot picks up the config file.
+  - setenforce 0
+  - mkdir -p /var/www/blocked /var/www/sslip.io /etc/letsencrypt/live/blocked.nip.io
+  - curl -L -o /var/www/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_sslip.io/index.html
+  - curl -L -o /var/www/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_sslip.io/experimental.html
+  - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_sslip.io/phishing.html
   - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.5/sslip.io-dns-server-linux-amd64
   - chmod +x /usr/bin/sslip.io-dns-server
+  # nginx.conf hardcodes the Let's Encrypt cert path, so seed a throwaway
+  # cert there just so nginx can pass config-check and start; deleted below
+  # once nginx has it open, freeing the path for certbot's webroot challenge.
+  - openssl req -x509 -newkey ed25519 -keyout /etc/letsencrypt/live/blocked.nip.io/privkey.pem -out /etc/letsencrypt/live/blocked.nip.io/fullchain.pem -days 1 -nodes -subj "/CN=localhost"
   - systemctl daemon-reload
   - systemctl enable sslip.io-dns.service
-  - systemctl enable nginx
   - firewall-cmd --permanent --add-service=dns
   - firewall-cmd --permanent --add-service=http
   - firewall-cmd --permanent --add-service=https
   - firewall-cmd --reload
+  - systemctl enable --now nginx
+  - rm -rf /etc/letsencrypt/live/blocked.nip.io
+  - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io --non-interactive --agree-tos --email cunnie@majestic-labs.ai
+  - systemctl reload nginx
+  - systemctl enable --now certbot-renew.timer
 
 
 power_state:
