@@ -132,9 +132,9 @@ ssh nono.io
 cd /www/sslip.io/
 git pull -r
 HOST=blocked
-ssh $HOST curl -L -o /var/nginx/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
-ssh $HOST curl -L -o /var/nginx/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/experimental.html
-ssh $HOST curl -L -o /var/nginx/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/experimental.html
+ssh $HOST sudo curl -L -o /var/www/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/index.html
+ssh $HOST sudo curl -L -o /var/www/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/experimental.html
+ssh $HOST sudo curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_sslip.io/phishing.html
 ```
 
 Browse to <https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml>, trigger the workflow, and check that everything is green.

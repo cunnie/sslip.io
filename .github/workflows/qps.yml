@@ -19,7 +19,7 @@ jobs:
           entrypoint: /bin/bash
           args: |
             -c "
-              for NS in ns-{do-sg,gce,hetzner,ovh}.sslip.io; do
+              for NS in ns-{00,01}.nip.io ns-ovh.sslip.io; do
                 dig TXT metrics.status.sslip.io @$NS +short |
                 rg \"Queries:\" |
                 sed 's/\"Queries.*[(]//; s~/.*$~~g'
