@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=5.1.3
-export VERSION=5.1.4
+export OLD_VERSION=5.1.4
+export VERSION=5.1.5
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
@@ -16,7 +16,9 @@ sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   k8s/document_root_sslip.io/index.html \
   Docker/sslip.io-dns-server/Dockerfile \
   terraform/ns-00/cloud-init.yaml \
-  terraform/ns-01/cloud-init.yaml
+  terraform/ns-01/cloud-init.yaml \
+  terraform/ns-ovh/cloud-init.sh \
+  terraform/blocked/cloud-init.yaml
 ```
 
 ```bash
@@ -40,7 +42,7 @@ Test from another window:
 
 ```bash
 DNS_SERVER_IP=127.0.0.1
-VERSION=5.1.4
+VERSION=5.1.5
 PORT=5333
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
@@ -74,32 +76,31 @@ echo "\"$VERSION\"" ) | uniq -c
 echo "127-0-0-1.nip.io." ) | uniq -c
 ( dig +short 7f000001.nip.io @$DNS_SERVER_IP -p $PORT
 echo 127.0.0.1 ) | uniq -c
+( dig +short blocked.nip.io @$DNS_SERVER_IP -p $PORT
+echo 64.176.22.9 ) | uniq -c
+( dig +short AAAA blocked.nip.io @$DNS_SERVER_IP -p $PORT
+echo 2001:19f0:c800:2315:: ) | uniq -c
 dig +short txt metrics.status.sslip.io @$DNS_SERVER_IP -p $PORT | grep '"Queries: '
-echo '"Queries: 24 (?.?/s)"'
+echo '"Queries: 18 (?.?/s)"'
 ```
 
 Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: new NS records: ns-0{0,1}.nip.io"
+GIT_MESSAGE="$VERSION: new \"blocked\" webserver: blocked.nip.io"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
 git push
 git push --tags
-for HOST in ns-00.nip.io ns-01.nip.io; do
+for HOST in ns-00.nip.io ns-01.nip.io ns-ovh.sslip.io 64.176.22.9; do
   ssh $HOST sudo dnf upgrade -y
-done
-for HOST in 5.78.115.44 ns-ovh.sslip.io ; do
-  ssh $HOST sudo apt-get update
-  ssh $HOST sudo apt-get upgrade -y
-  ssh $HOST sudo apt-get autoremove -y
 done
 scp bin/sslip.io-dns-server-linux-amd64 ns-00:
 scp bin/sslip.io-dns-server-linux-amd64 ns-01:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
-scp bin/sslip.io-dns-server-linux-amd64 5.78.115.44:
+scp bin/sslip.io-dns-server-linux-amd64 64.176.22.9:
 ssh ns-00 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-00 sudo shutdown -r now
  # check version number:
@@ -112,10 +113,10 @@ ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-se
 ssh ns-ovh sudo shutdown -r now
  # check version number:
 sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done
-ssh 5.78.115.44 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
-ssh 5.78.115.44 sudo shutdown -r now
+ssh 64.176.22.9 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
+ssh 64.176.22.9 sudo shutdown -r now
  # check version number:
-sleep 10; while ! dig txt @5.78.115.44 version.status.sslip.io +short; do sleep 5; done
+sleep 10; while ! dig txt @64.176.22.9 version.status.sslip.io +short; do sleep 5; done
 ```
 
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release

@@ -61,7 +61,7 @@ EOF
 chmod 644 /etc/systemd/system/sslip.io-dns.service
 
 curl -L -o /usr/bin/sslip.io-dns-server \
-  https://github.com/cunnie/sslip.io/releases/download/5.1.4/sslip.io-dns-server-linux-amd64
+  https://github.com/cunnie/sslip.io/releases/download/5.1.5/sslip.io-dns-server-linux-amd64
 chmod +x /usr/bin/sslip.io-dns-server
 
 systemctl daemon-reload

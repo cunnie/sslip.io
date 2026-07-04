@@ -121,7 +121,7 @@ runcmd:
   - mkdir -p /etc/nginx/ssl /var/www/blocked
   - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_blocked.nip.io/index.html
   - openssl req -x509 -newkey ed25519 -keyout /etc/nginx/ssl/blocked.key -out /etc/nginx/ssl/blocked.crt -days 3650 -nodes -subj "/CN=blocked.nip.io"
-  - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.4/sslip.io-dns-server-linux-amd64
+  - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.5/sslip.io-dns-server-linux-amd64
   - chmod +x /usr/bin/sslip.io-dns-server
   - systemctl daemon-reload
   - systemctl enable sslip.io-dns.service
