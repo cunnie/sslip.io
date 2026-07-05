@@ -108,7 +108,7 @@ write_files:
           listen [::]:80;
           listen 443 ssl;
           listen [::]:443 ssl;
-          server_name 64-176-22-9.nip.io 64.176.22.9.nip.io;
+          server_name 64-176-22-9.nip.io 64.176.22.9.nip.io 40B01609.nip.io;
           root /var/www/sslip.io;
           index index.html;
           ssl_certificate     /etc/letsencrypt/live/blocked.nip.io/fullchain.pem;
@@ -161,7 +161,7 @@ runcmd:
   - firewall-cmd --reload
   - systemctl enable --now nginx
   - rm -rf /etc/letsencrypt/live/blocked.nip.io
-  - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io --non-interactive --agree-tos --email cunnie@majestic-labs.ai
+  - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io -d 40B01609.nip.io --non-interactive --agree-tos --email cunnie@majestic-labs.ai
   - systemctl reload nginx
   - systemctl enable --now certbot-renew.timer
 
