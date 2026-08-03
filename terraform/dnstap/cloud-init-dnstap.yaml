@@ -1,0 +1,58 @@
+#cloud-config
+
+hostname: dnstap
+fqdn: dnstap.nono.io
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - "@development-tools"
+  - autojump
+  - curl
+  - golang
+  - jq
+  - neovim
+  - netcat
+  - python
+  - python-devel
+  - python3-pip
+  - ripgrep
+  - tmux
+  - wget
+  - zsh
+  - zsh-autosuggestions
+
+write_files:
+  - path: /tmp/cunnie-zshrc
+    content: |
+      # zsh-autosuggestions setup
+      source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+      # autojump setup
+      source /usr/share/autojump/autojump.zsh
+    permissions: "0644"
+
+users:
+  - name: cunnie
+    gecos: Brian Cunnie
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: wheel
+    shell: /usr/bin/zsh
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIWiAzxc4uovfaphO0QVC2w00YmzrogUpjAzvuqaQ9tD cunnie@nono.io
+
+runcmd:
+  - curl -fsSL https://raw.githubusercontent.com/wting/autojump/refs/heads/master/bin/autojump.zsh -o /usr/share/autojump/autojump.zsh
+  - cp /tmp/cunnie-zshrc /home/cunnie/.zshrc
+  - chown cunnie:cunnie /home/cunnie/.zshrc
+
+final_message: |
+  dnstap.nono.io installation completed!
+
+# Reboot after cloud-init completes to fix
+# "Failed to start systemd-binfmt.service - Set Up Additional Binary Formats."
+power_state:
+  mode: reboot
+  message: "Rebooting after cloud-init completion"
+  timeout: 60
+  condition: true
