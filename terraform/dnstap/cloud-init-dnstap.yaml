@@ -31,6 +31,19 @@ write_files:
       # autojump setup
       source /usr/share/autojump/autojump.zsh
     permissions: "0644"
+  - path: /etc/sysconfig/nftables.conf
+    content: |
+      table inet filter {
+        chain input {
+          type filter hook input priority filter; policy drop;
+          iifname "lo" accept
+          ct state established,related accept
+          meta l4proto { icmp, ipv6-icmp } accept
+          tcp dport 22 accept
+          ip6 saddr 2001:41d0:602:2313::1 tcp dport 6000 accept
+        }
+      }
+    permissions: "0644"
 
 users:
   - name: cunnie
@@ -38,6 +51,8 @@ users:
     sudo: ["ALL=(ALL) NOPASSWD:ALL"]
     groups: wheel
     shell: /usr/bin/zsh
+    passwd: $y$j9T$4zoCOdI.4FH44kvX0/ICE.$.T.49R0ucCTvwMbpRIVQJK0GkSN7rMpQ3psAMQUFqM5
+    lock_passwd: false
     ssh_authorized_keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIWiAzxc4uovfaphO0QVC2w00YmzrogUpjAzvuqaQ9tD cunnie@nono.io
 
@@ -45,6 +60,7 @@ runcmd:
   - curl -fsSL https://raw.githubusercontent.com/wting/autojump/refs/heads/master/bin/autojump.zsh -o /usr/share/autojump/autojump.zsh
   - cp /tmp/cunnie-zshrc /home/cunnie/.zshrc
   - chown cunnie:cunnie /home/cunnie/.zshrc
+  - systemctl enable nftables
 
 final_message: |
   dnstap.nono.io installation completed!
