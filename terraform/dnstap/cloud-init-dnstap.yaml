@@ -10,6 +10,7 @@ packages:
   - "@development-tools"
   - autojump
   - curl
+  - dnf-plugins-core
   - golang
   - jq
   - neovim
@@ -40,9 +41,62 @@ write_files:
           ct state established,related accept
           meta l4proto { icmp, ipv6-icmp } accept
           tcp dport 22 accept
-          ip6 saddr 2001:41d0:602:2313::1 tcp dport 6000 accept
+          # CIDR for ns-00 because outbound IPv6 originates from _other_ addr
+          ip6 saddr 2400:6180:0:d2::/64   tcp dport 6000 accept # ns-00
+          ip6 saddr 2a01:4ff:1f2:10d::    tcp dport 6000 accept # ns-01
+          ip6 saddr 2001:41d0:602:2313::1 tcp dport 6000 accept # ns-ovh
         }
       }
+    permissions: "0644"
+  - path: /etc/clickhouse-server/config.d/data-path.xml
+    content: |
+      <clickhouse>
+          <path>/mnt/tap/</path>
+          <tmp_path>/mnt/tap/tmp/</tmp_path>
+          <user_files_path>/mnt/tap/user_files/</user_files_path>
+          <format_schema_path>/mnt/tap/format_schemas/</format_schema_path>
+          <access_control_path>/mnt/tap/access/</access_control_path>
+      </clickhouse>
+    permissions: "0644"
+  - path: /etc/dnscollector/config.yml
+    content: |
+      global:
+        server-identity: "dnstap.nono.io"
+        telemetry:
+          enabled: false
+
+      pipelines:
+        - name: tap
+          dnstap:
+            listen-ip: 0.0.0.0
+            listen-port: 6000
+          routing-policy:
+            forward: [ clickhouse ]
+            dropped: [ ]
+
+        - name: clickhouse
+          clickhouse:
+            url: "http://127.0.0.1:8123"
+            user: "default"
+            password: ""
+            database: "dnscollector"
+            table: "records"
+    permissions: "0644"
+  - path: /etc/systemd/system/dnscollector.service
+    content: |
+      [Unit]
+      Description=DNS-collector (go-dnscollector) dnstap receiver -> ClickHouse
+      Documentation=https://github.com/dmachard/DNS-collector
+      After=network-online.target clickhouse-server.service
+      Wants=network-online.target
+
+      [Service]
+      ExecStart=/usr/bin/dnscollector -config /etc/dnscollector/config.yml
+      Restart=on-failure
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
     permissions: "0644"
 
 users:
@@ -61,6 +115,21 @@ runcmd:
   - cp /tmp/cunnie-zshrc /home/cunnie/.zshrc
   - chown cunnie:cunnie /home/cunnie/.zshrc
   - systemctl enable nftables
+  - dnf install -y https://zfsonlinux.org/fedora/zfs-release-3-1.fc44.noarch.rpm
+  - dnf install -y zfs
+  - dnf config-manager addrepo --from-repofile=https://packages.clickhouse.com/rpm/clickhouse.repo
+  - dnf install -y clickhouse-server clickhouse-client
+  - chown clickhouse:clickhouse /mnt/tap
+  - systemctl enable --now clickhouse-server
+  - for i in $(seq 1 30); do clickhouse-client --query "SELECT 1" >/dev/null 2>&1 && break; sleep 1; done
+  - clickhouse-client --query "CREATE DATABASE IF NOT EXISTS dnscollector"
+  - clickhouse-client --query "CREATE TABLE IF NOT EXISTS dnscollector.records (identity String, queryip String, qname String, operation String, family String, protocol String, qtype String, rcode String, timensec String, timestamp String) ENGINE = MergeTree ORDER BY (timestamp)"
+  - curl -L -o /tmp/dnscollector.tar.gz https://github.com/dmachard/DNS-collector/releases/download/v2.5.0/DNS-collector_2.5.0_linux_amd64.tar.gz
+  - tar -xzf /tmp/dnscollector.tar.gz -C /usr/bin dnscollector
+  - chmod +x /usr/bin/dnscollector
+  - /usr/bin/dnscollector -test-config -config /etc/dnscollector/config.yml
+  - systemctl daemon-reload
+  - systemctl enable dnscollector.service
 
 final_message: |
   dnstap.nono.io installation completed!
