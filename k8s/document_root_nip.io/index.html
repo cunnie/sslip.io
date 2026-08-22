@@ -1,157 +1,248 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<html lang="en">
 
 <head>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-25250258-6"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-        gtag('config', 'UA-25250258-6');
-    </script>
-
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-    <title>nip.io - wildcard DNS for any IP Address</title>
-
-    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css"
-        integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous" />
-    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
-    <link rel="shortcut icon" type="image/x-icon" href="https://sslip.io/img/favicon.ico">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The above 3 meta tags *must* come first in the head; any
+other head content must come *after* these tags -->
+  <title>Welcome to nip.io / sslip.io</title>
+  <meta name="description" content="nip.io / sslip.io">
+  <meta name="author" content="Brian Cunnie"><!-- cute Green Lock icon -->
+  <link rel="shortcut icon" type="image/x-icon" href="https://sslip.io/img/favicon.ico"><!-- Latest
+compiled and minified CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
 </head>
 
 <body>
-    <div class="memorial-banner"
-        style="background-color: #f0f8ff; border: 2px solid #4682b4; margin: 10px; padding: 15px; text-align: center; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <p style="margin: 0; font-size: 16px; color: #2c3e50; line-height: 1.4;">
-            <strong>nip.io is now hosted by <a href="https://sslip.io">sslip.io</a>.</strong> This page, the original
-            nip.io page, is kept as a memorial to the late, great Roopinder Singh, who created & ran nip.io.
-        </p>
+  <div class="container">
+    <div class="alert alert-info" role="alert" style="margin-top: 20px; margin-bottom: 10px; text-align: center;">
+      <strong>This service is dedicated to the late, great Roopinder Singh, who created & ran nip.io</strong>
     </div>
-    <div class="pure-g">
-        <div class="pure-u-1-5"></div>
-        <div class="pure-u-3-5">
-            <header>
-                <h1 class="header">nip.io</h1>
-            </header>
-
-            <article>
-                <h2>Dead simple wildcard DNS for any IP Address</h2>
-
-                <p>
-                    Stop editing your <code>etc/hosts</code> file with custom hostname and IP address mappings.
-                </p>
-
-                <p>
-                    <a href="/">nip.io</a> allows you to do that by mapping any IP
-                    Address to a hostname using the following formats:
-                </p>
-
-                <p>Without a name:</p>
-
-                <ul>
-                    <li><code>10.0.0.1.nip.io</code> maps to <code>10.0.0.1</code></li>
-                    <li><code>192-168-1-250.nip.io</code> maps to <code>192.168.1.250</code></li>
-                    <li><code>0a000803.nip.io</code> maps to <code>10.0.8.3</code></li>
-                </ul>
-
-                <p>With a name:</p>
-
-                <ul>
-                    <li><code>app.10.8.0.1.nip.io</code> maps to <code>10.8.0.1</code></li>
-                    <li><code>app-116-203-255-68.nip.io</code> maps to <code>116.203.255.68</code></li>
-                    <li><code>app-c0a801fc.nip.io</code> maps to <code>192.168.1.252</code></li>
-                    <li><code>customer1.app.10.0.0.1.nip.io</code> maps to <code>10.0.0.1</code></li>
-                    <li><code>customer2-app-127-0-0-1.nip.io</code> maps to <code>127.0.0.1</code></li>
-                    <li><code>customer3-app-7f000101.nip.io</code> maps to <code>127.0.1.1</code></li>
-                </ul>
-
-                <p>
-                    <a href="/">nip.io</a> maps <code>&lt;anything&gt;[.-]&lt;IP Address&gt;.nip.io</code> in
-                    <strong>&quot;dot&quot;</strong>, <strong>&quot;dash&quot;</strong> or
-                    <strong>&quot;hexadecimal&quot;</strong> notation to the corresponding
-                    <code>&lt;IP Address&gt;</code>:
-                </p>
-
-                <ul>
-                    <li>dot notation: <code>magic.127.0.0.1.nip.io</code></li>
-                    <li>dash notation: <code>magic-127-0-0-1.nip.io</code></li>
-                    <li>hexadecimal notation: <code>magic-7f000001.nip.io</code></li>
-                </ul>
-
-                <p>
-                    The &quot;dash&quot; and &quot;hexadecimal&quot; notation is especially useful when using services
-                    like
-                    <a href="https://letsencrypt.org/" target="_blank">LetsEncrypt</a> as it's just a regular sub-domain
-                    of <a href="/">nip.io</a>
-                </p>
-
-                <h2>About this service</h2>
-
-                <p>
-                    <a href="/">nip.io</a> is powered by <a href="http://www.powerdns.com/" target="_blank">PowerDNS</a>
-                    with a simple,
-                    custom
-                    <a href="https://doc.powerdns.com/authoritative/backends/pipe.html" target="_blank">PipeBackend</a>
-                    written in Python:
-                    <a href="https://github.com/exentriquesolutions/nip.io/blob/master/nipio/backend.py" target="_blank"
-                        rel="nofollow">backend.py</a>
-                </p>
-
-                <p>
-                    It's open source, licensed under Apache 2.0:
-                    <a href="https://github.com/exentriquesolutions/nip.io" target="_blank"
-                        rel="nofollow">https://github.com/exentriquesolutions/nip.io</a>
-                    &#8212; pull requests are welcome.
-                </p>
-
-                <p>
-                    This is a free service provided by
-                    <a href="http://exentriquesolutions.com" target="_blank">Exentrique Solutions</a>
-                    (the same people who run <a href="https://xp-dev.com" target="_blank">XP-Dev.com</a> which offer
-                    <a href="https://xp-dev.com" target="_blank">Git, Mercurial and Subversion hosting</a>).
-                </p>
-
-                <p>
-                    Feedback is appreciated, just
-                    <a href="https://github.com/exentriquesolutions/nip.io/issues" target="_blank" rel="nofollow">
-                        raise an issue in GitHub
-                    </a>.
-                </p>
-
-                <h2>Troubleshooting</h2>
-
-                <h3>DNS Rebinding Protection</h3>
-
-                <p>
-                    Some DNS resolvers, forwarders and routers have
-                    <a href="https://en.wikipedia.org/wiki/DNS_rebinding" target="_blank">DNS rebinding protection</a>
-                    which may result in failure to resolve local and private IP addresses.
-                    This service won't work in those situations.
-                </p>
-
-                <h2>Related Services</h2>
-                <ul>
-                    <li>
-                        <a href="https://github.com/Corollarium/localtls" target="_blank">localtls</a>:
-                        A DNS server in Python3 to provide TLS to webservices on local addresses.
-                        It resolves addresses such as '192-168-0-1.yourdomain.net' to 192.168.0.1 and has a valid TLS
-                        certificate for them.
-                    </li>
-                    <li>
-                        <a href="https://sslip.io/" target="_blank">sslip.io</a>: Alternative to this service, supports
-                        IPv6 and custom domains.
-                    </li>
-                    <li>
-                        <a href="https://local.gd/" target="_blank">local.gd</a>: Alternative to this service, where
-                        everything is mapped to localhost/127.0.0.1.
-                    </li>
-                </ul>
-            </article>
-        </div>
-        <div class="pure-u-1-5"></div>
+    <div class="alert alert-info" role="alert" style="margin-top: 20px; margin-bottom: 10px; text-align: center;">
+      2026-06-06 Attention white label users: <strong>Update your nameservers</strong> lest you receive <a
+        href="https://github.com/cunnie/sslip.io/issues/111">SERVFAIL</a> responses. The hostnames and IP addresses of
+      two the nameservers have changed. See <a href="#branding">below</a>
     </div>
+    <div style="padding-top: 10px;">
+      <h3 id="sslip.io">nip.io & sslip.io</h3>
+      <p>Operational Status: <a href="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml"><img
+            src="https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml/badge.svg"
+            alt="GitHub Actions"></a>
+        <img
+          src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/cunnie/67dc2a78c9ac6032db05027727c63ea1/raw/qps.json"
+          alt="Queries / second">
+      </p>
+      <p><em>nip.io</em> and <em>sslip.io</em> are a DNS (<a
+          href="https://en.wikipedia.org/wiki/Domain_Name_System">Domain Name System</a>) service that, when queried
+        with a hostname with an embedded IP address, returns that IP address.</p>
+      <p><em>nip.io</em> and <em>sslip.io</em> have been in operation for over ten years. We have become so popular that
+        our servers receive over 20k queries <em>every second</em>, so mainstream that <a
+          href="https://docs.cloud.google.com/kubernetes-engine/enterprise/knative-serving/docs/default-domain">Google
+          Cloud Platform</a>, <a
+          href="https://aws.amazon.com/blogs/opensource/authenticating-eks-github-credentials-teleport/">Amazon AWS</a>,
+        <a
+          href="https://techcommunity.microsoft.com/blog/azureinfrastructureblog/autoscaling-aks-microservices-with-knative-http-workload-optimization-in-action/4415455">Microsoft
+          Azure</a>, <a href="https://www.redbooks.ibm.com/redbooks/pdfs/sg248551.pdf">IBM</a>, <a
+          href="https://enterprise-ai.docs.amd.com/en/latest/platform-infrastructure/on-premises-installation.html">AMD</a>,
+        and many more refer to us!</p>
+      <p><em>[We take abuse reports very seriously. To report a site, email the offending URL to <a
+            href="mailto:abuse@nip.io">abuse@nip.io</a>. We respond to all abuse reports within 24 hours]</em></p>
+      <p>Here are some examples (the domains nip.io and sslip.io are interchangeable):</p>
+      <table class="table">
+        <thead>
+          <tr class="header">
+            <th>Hostname / URL</th>
+            <th>IP Address</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="odd">
+            <td>
+              <a href="https://64.176.22.9.nip.io">https://64.176.22.9.nip.io</a>
+            </td>
+            <td>64.176.22.9</td>
+            <td>dot separators, nip.io website mirror (IPv4)</td>
+          </tr>
+          <tr class="even">
+            <td>
+              <a href="https://64-176-22-9.nip.io">https://64-176-22-9.nip.io</a>
+            </td>
+            <td>64.176.22.9</td>
+            <td>dash separators, nip.io website mirror (IPv4)</td>
+          </tr>
+          <tr class="odd">
+            <td>www.192.168.0.1.nip.io</td>
+            <td>192.168.0.1</td>
+            <td>subdomain</td>
+          </tr>
+          <tr class="even">
+            <td>www.192-168-0-1.nip.io</td>
+            <td>192.168.0.1</td>
+            <td>subdomain + dashes</td>
+          </tr>
+          <tr class="odd">
+            <td>
+              <a href="https://www-78-46-204-247.sslip.io">https://www-78-46-204-247.nip.io</a>
+            </td>
+            <td>78.46.204.247</td>
+            <td>dash prefix, nip.io website mirror (IPv4)</td>
+          </tr>
+          <tr class="even">
+            <td>--1.nip.io</td>
+            <td>::1</td>
+            <td>IPv6 — always use dashes, never dots</td>
+          </tr>
+          <tr class="odd">
+            <td>
+              <a href="https://2a01-4f8-c17-b8f--2.sslip.io">https://2a01-4f8-c17-b8f--2.nip.io</a>
+            </td>
+            <td>2a01:4f8:c17:b8f::2</td>
+            <td>nip.io website mirror (IPv6)</td>
+          </tr>
+          <tr class="even">
+            <td>
+              <a href="https://40B01609.nip.io">https://40B01609.nip.io/</a>
+            </td>
+            <td>64.176.22.9</td>
+            <td>nip.io website mirror (hexadecimal notation)</td>
+          </tr>
+        </tbody>
+      </table>
+      <h3 id="branding">Branding / White Label / Custom Domains</h3>
+      <p>nip.io can be used to brand your own site (you don’t need to use the nip.io domain). For example, say you own
+        the domain “example.com”, and you want your subdomain, “nip.example.com” to have nip.io-style features. To
+        accomplish this, set the following three DNS servers as NS records for the subdomain “nip.example.com”</p>
+      <table class="table">
+        <thead>
+          <tr class="header">
+            <th>hostname</th>
+            <th>IP address</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="odd">
+            <td><code>ns-00.nip.io.</code></td>
+            <td>167.172.4.236<br>2400:6180:0:d2:0:2:e3e7:0</td>
+            <td>Singapore</td>
+          </tr>
+          <tr class="even">
+            <td><code>ns-01.nip.io.</code></td>
+            <td>5.78.28.211<br>2a01:4ff:1f2:10d::</td>
+            <td>USA</td>
+          </tr>
+          <tr class="odd">
+            <td><code>ns-ovh.sslip.io.</code></td>
+            <td>51.75.53.19<br>2001:41d0:602:2313::1</td>
+            <td>Poland</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Let’s test it from the command line using <code>dig</code>:</p>
+      <pre><code>dig @ns-ovh.nip.io. 169-254-169-254.nip.example.com +short</code></pre>
+      <p>Yields, hopefully:</p>
+      <pre><code>169.254.169.254</code></pre>
+      <h3 id="server">But I Want My Own DNS Server!</h3>
+      <p>If you want to run your own DNS server, it's simple: you can compile from <a
+          href="https://github.com/cunnie/sslip.io">source</a> or you can use one of our <a
+          href="https://github.com/cunnie/sslip.io/releases">pre-built binaries</a>. In the following example, we
+        install & run our server within a docker container:</p>
+      <pre>
+docker run -it --rm fedora
+curl -L https://github.com/cunnie/sslip.io/releases/download/5.1.5/sslip.io-dns-server-linux-amd64 -o dns-server
+chmod +x dns-server
+./dns-server 2&gt; dns-server.log &
+dnf install -y bind-utils
+dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
+      <h3 id="tls">TLS</h3>
+      <p>You can acquire TLS certificates for your externally-accessible hosts from certificate authorities (CAs) such
+        as Let's Encrypt <a href="#fake_news"><sup>[fake news]</sup></a>. The easiest mechanism to acquire a certificate
+        would be to use the <a href="https://letsencrypt.org/docs/challenge-types/#http-01-challenge">HTTP-01
+          challenge</a>. It requires, at a minimum, a web server running on your machine. The <a
+          href="https://caddyserver.com/">Caddy</a> web server is one of the most popular examples. For example, if you
+        had a webserver with the IP address 64.176.22.9, you could obtain a TLS certificate for "64.176.22.9.nip.io", or
+        "www.64.176.22.9.nip.io", or "prod.www-64-176-22-9.nip.io".</p>
+      <div class="alert alert-success" role="alert">
+        <b>Let's Encrypt Rate Limits</b> If your request for a "nip.io" certificate is <a
+          href="https://letsencrypt.org/docs/rate-limits/">rate-limited</a>, please try using an <a
+          href="https://letsencrypt.org/2026/01/15/6day-and-ip-general-availability">IP address certificate</a>, or a
+        certificate with the other domain (if nip.io, try sslip.io), or one of <a href="#related">related</a> services
+        below.<br /><br />Let's Encrypt has graciously bumped our limit from 50 to 250,000 certificates over the years,
+        but turned down our request for 500,000, saying, "This is too large for us to support"
+      </div>
+      <a id="wildcard"></a>
+      <div class="alert alert-success" role="alert"> nip.io & sslip.io <b>do not support wildcard</b> certificates.
+      </div>
+      <h3 id="related">Related Services</h3>
+      <ul>
+        <li>
+          <a href="http://traefik.me/">traefik.me</a>: Also an excellent service maintained by Michael Hurni "<a
+            href="https://github.com/pyrou">pyrou</a>" using the original nip.io PowerDNS + Python backend.
+        </li>
+        <li>
+          <a href="http://backname.io/">backname.io</a>&trade;: An excellent service maintained by <a
+            href="https://github.com/Twixes">Michael Matloka</a> using Golang + Miek Gieben's awesome DNS library.
+        </li>
+        <li>
+          <a href="https://freedns.afraid.org">afraid.org</a>: Josh Anderson has taken DNS hosting to a whole new level:
+          "Free DNS Hosting, Dynamic DNS Hosting, Static DNS Hosting, subdomain and domain hosting". You don't need to
+          embed your IP address in the hostname!
+        </li>
+        <li>
+          <a href="https://ipq.co/">ipq.co</a>: John Leach also has taken DNS hosting to a whole new level: "It’s the
+          tinyurl of the DNS world". You don't need to embed your IP address in the hostname!
+        </li>
+        <li>
+          <a href="http://nip.io">nip.io</a>: formerly a separate service, but now incorporated into sslip.io. The
+          service previously used PowerDNS combined with a backend written in elegant Python.
+        </li>
+        <li> xip.io: written by <a href="https://sls.name/">Sam Stephenson</a>, this was the original inspiration for
+          sslip.io. The backend was written in the tightest bash code I've ever seen. No longer in service. </li>
+        <li>
+          <a href="https://letsencrypt.org/">Let's Encrypt</a>: A Certificate Authority providing TLS certificates; they
+          almost always have increase our rate limits when asked. If you can, <a
+            href="https://www.abetterinternet.org/donate/">donate</a>.
+        </li>
+      </ul>
+      <h3 id="about">About</h3>
+      <p><a href="https://github.com/cunnie">Brian Cunnie</a>, <a href="https://github.com/tylerschultz">Tyler
+          Schultz</a>, and <a href="https://github.com/APShirley">Alvaro Perez-Shirley</a> created sslip.io on Tuesday
+        August 11, 2015 during a Pivotal Software-sponsored Hack Day. Thanks Pivotal!</p>
+      <p>Brian Cunnie and <a href="https://github.com/kennethlakin">Kenneth Lakin</a> continue to run sslip.io.</p>
+      <p>Sam Stephenson, who built xip.io, suggested the name <i>sslip.io</i>.</p>
+      <h4 id="experimental"><a href="experimental.html">Experimental Features</a></h4>
+      <hr>
+      <h4 id="footnotes">Footnotes</h4>
+      <p><a id="fake_news"><sup>[fake news]</sup></a> TLS certificates generated with nip.io/sslip.io and Let's
+        Encrypt/ZeroSSL are valid, private, and secure, and can be issued via the HTTP-01 challenge for each individual
+        hostname, contrary to what you might find on the Brave browser or Google search, which sometimes mistakenly
+        regurgitate information from 2015 when, during a one-week period, sslip.io published the private key to its
+        wildcard certificate (the certificate was quickly revoked). sslip.io no longer maintains a wildcard certificate,
+        so any warnings about the security of the wildcard certificate are moot.</p>
+    </div>
+  </div><!-- /.container -->
+  <!--
+Bootstrap core JavaScript ================================================== -->
+  <!--
+Placed at the end of the document so the pages load faster -->
+  <!-- jQuery
+(necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <!-- Google Analytics -->
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M32C798MGY"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-M32C798MGY');
+  </script>
 </body>
 
 </html>
