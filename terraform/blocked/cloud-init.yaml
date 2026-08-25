@@ -101,6 +101,10 @@ write_files:
           ssl_certificate_key /etc/letsencrypt/live/blocked.nip.io/privkey.pem;
           access_log /var/log/nginx/phishing-access.log main;
           error_log  /var/log/nginx/phishing-error.log;
+
+          location / {
+              try_files /index.html =404;
+          }
       }
 
       server {
@@ -113,6 +117,10 @@ write_files:
           index index.html;
           ssl_certificate     /etc/letsencrypt/live/blocked.nip.io/fullchain.pem;
           ssl_certificate_key /etc/letsencrypt/live/blocked.nip.io/privkey.pem;
+
+          location / {
+              try_files /index.html =404;
+          }
       }
 
   - path: /etc/letsencrypt/renewal-hooks/deploy/nginx-reload.sh
