@@ -87,7 +87,7 @@ compiled and minified CSS -->
             <td>dash prefix, nip.io website mirror (IPv4)</td>
           </tr>
           <tr class="even">
-            <td>--1.nip.io</td>
+            <td>--1.nip.io <a href="#dig"><sup>[dig]</sup></a></td>
             <td>::1</td>
             <td>IPv6 — always use dashes, never dots</td>
           </tr>
@@ -225,6 +225,10 @@ dig @localhost 127-0-0-1.nip.io +short # returns "127.0.0.1"</pre>
       <h4 id="experimental"><a href="experimental.html">Experimental Features</a></h4>
       <hr>
       <h4 id="footnotes">Footnotes</h4>
+      <p><a id="dig"><sup>[dig]</sup></a> The leading hyphens in <code>--1.nip.io</code> confuse <code>dig</code>, which
+        mistakes it for a flag. To work around that, precede the hostname with <code>-q</code>, i.e.
+        <code>dig +noidnout +noidnin -q --1.nip.io aaaa</code>. For versions of <code>dig</code> without IDN support,
+        <code>dig -q --1.nip.io aaaa</code>.</p>
       <p><a id="fake_news"><sup>[fake news]</sup></a> TLS certificates generated with nip.io/sslip.io and Let's
         Encrypt/ZeroSSL are valid, private, and secure, and can be issued via the HTTP-01 challenge for each individual
         hostname, contrary to what you might find on the Brave browser or Google search, which sometimes mistakenly
