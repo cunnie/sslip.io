@@ -19,33 +19,9 @@ func main() {
 	var blocklistURL = flag.String("blocklistURL",
 		"https://raw.githubusercontent.com/cunnie/sslip.io-blocklist/main/blocklist.txt",
 		`URL containing a list of non-resolvable IPs/names/CIDRs, usually phishing or scamming sites. Example "file://etc/blocklist.txt"`)
-	var nameservers = flag.String("nameservers", "ns-00.nip.io.,ns-01.nip.io.,ns-ovh.sslip.io.",
+	var nameservers = flag.String("nameservers", "",
 		"comma-separated list of FQDNs of nameservers. If you're running your own sslip.io nameservers, set them here")
-	var addresses = flag.String("addresses",
-		"nip.io=78.46.204.247,"+
-			"sslip.io=78.46.204.247,"+
-			"nip.io=2a01:4f8:c17:b8f::2,"+
-			"sslip.io=2a01:4f8:c17:b8f::2,"+
-			"ns.nip.io=167.172.4.236,"+
-			"ns.nip.io=2400:6180:0:d2:0:2:e3e7:0,"+
-			"ns.nip.io=5.78.28.211,"+
-			"ns.nip.io=2a01:4ff:1f2:10d::,"+
-			"ns.nip.io=51.75.53.19,"+
-			"ns.nip.io=2001:41d0:602:2313::1,"+
-			"ns.sslip.io=167.172.4.236,"+
-			"ns.sslip.io=2400:6180:0:d2:0:2:e3e7:0,"+
-			"ns.sslip.io=5.78.28.211,"+
-			"ns.sslip.io=2a01:4ff:1f2:10d::,"+
-			"ns.sslip.io=51.75.53.19,"+
-			"ns.sslip.io=2001:41d0:602:2313::1,"+
-			"blocked.nip.io=64.176.22.9,"+
-			"blocked.nip.io=2001:19f0:c800:2315::,"+
-			"ns-00.nip.io=167.172.4.236,"+
-			"ns-00.nip.io=2400:6180:0:d2:0:2:e3e7:0,"+
-			"ns-01.nip.io=5.78.28.211,"+
-			"ns-01.nip.io=2a01:4ff:1f2:10d::,"+
-			"ns-ovh.sslip.io=51.75.53.19,"+
-			"ns-ovh.sslip.io=2001:41d0:602:2313::1",
+	var addresses = flag.String("addresses", "",
 		"comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If you're running your own sslip.io nameservers, add their hostnames and addresses here. If unsure, add to the list rather than replace")
 	var delegates = flag.String("delegates", "", "comma-separated list of domains you own "+
 		"and nameservers you control to which to delegate, often used to acquire wildcard certificates from "+
