@@ -6,10 +6,10 @@
 
 _sslip.io_ is a DNS server that maps specially-crafted DNS A records to IP
 addresses (e.g. "127-0-0-1.sslip.io" maps to 127.0.0.1). It is similar to, and
-inspired by, [xip.io](http://xip.io/).
+inspired by the now-defunct xip.io.
 
 If you'd like to use sslip.io _as a service_, refer to the website
-([sslip.io](https://sslip.io)) for more information. This README targets
+([nip.io](https://nip.io)) for more information. This README targets
 developers; the website targets users.
 
 ## Quick Start
@@ -18,8 +18,8 @@ developers; the website targets users.
 git clone https://github.com/cunnie/sslip.io.git
 cd sslip.io
 go mod tidy
-sudo go run main.go
- # sudo is required on Linux, but not on macOS, to bind to privileged port 53
+sudo go run .
+ # sudo is required to bind to privileged port 53
 ```
 
 In another window:
@@ -34,8 +34,10 @@ dig @localhost 192.168.0.1.sslip.io +short
 ```bash
 go mod tidy
 go generate
+go install github.com/onsi/ginkgo/v2/ginkgo
+go get github.com/onsi/gomega/...
  # exclude subdir "spec/", used for testing sslip.io service not code
-ginkgo -r -p --skip-package=spec .
+~/go/bin/ginkgo -r -p --skip-package=spec .
 ```
 
 ## Running Your Own Nameservers
@@ -65,52 +67,39 @@ go run main.go \
 
 **Note: These nameservers are not general-purpose nameservers; for example,
 they won't look up google.com. They are not recursive.** Don't ever configure a
-machine to point to these nameservers.
+client to use these nameservers.
 
 ### Running with Docker
 
 Probably the easiest way to run the nameserver is with the official Docker
 image,
-[cunnie/sslip.io-dns-server](https://hub.docker.com/r/cunnie/sslip.io-dns-server):
+[cunnie/sslip.io-dns-server](https://hub.docker.com/r/cunnie/sslip.io-dns-server).
+Using our DNS servers from the previous example, we run the following, setting our port to 5553 so we can run unprivileged:
 
 ```bash
 docker run \
   -it \
   --rm \
-  -p 53:53/udp \
-  cunnie/sslip.io-dns-server
-```
-
-If we see the error, "`Error starting userland proxy: listen udp4 0.0.0.0:53:
-bind: address already in use.`", we turn off the systemd resolver: `sudo
-systemctl stop systemd-resolved`
-
-Let's try a more complicated setup: we're on our workstation, melkor.nono.io,
-whose IP addresses are 10.9.9.30 and 2601:645:8103:e3a0:1cc4:a4c5:33cb:d068. We'd like
-our workstation to be the DNS server:
-
-```bash
-docker run \
-  -it \
-  --rm \
-  -p 53:53/udp \
+  -p 5553:53/udp \
   cunnie/sslip.io-dns-server \
-    -nameservers melkor.nono.io \
-    -addresses melkor.nono.io=10.9.9.30,melkor.nono.io=2601:645:8103:e3a0:1cc4:a4c5:33cb:d068
+    -nameservers=ns-ip-0.pivotal.io,ns-ip-1.pivotal.io \
+    -addresses ns-ip-0.pivotal.io=10.8.8.8,ns-ip-1.pivotal.io=fc88:: \
+    -ptr-domain=xip.pivotal.io   
 ```
 
-From another machine, we look up the DNS NS record for "127.0.0.1.com", and we
+From our machine, we look up the DNS NS records for "127.0.0.1.com", and we
 see the expected reply:
 
 ```bash
-dig ns 127.0.0.1.com @melkor.nono.io +short
+dig ns 127.0.0.1.com @localhost -p 5553
 ...
   ;; ANSWER SECTION:
-  127.0.0.1.com.		604800	IN	NS	melkor.nono.io.
+  127.0.0.1.com.  604800 IN NS ns-ip-1.pivotal.io.
+  127.0.0.1.com.  604800 IN NS ns-ip-0.pivotal.io.
 
   ;; ADDITIONAL SECTION:
-  melkor.nono.io.		604800	IN	A	10.9.9.30
-  melkor.nono.io.		604800	IN	AAAA	2601:645:8103:e3a0:1cc4:a4c5:33cb:d068
+  ns-ip-0.pivotal.io. 604800 IN A 10.8.8.8
+  ns-ip-1.pivotal.io. 604800 IN AAAA fc88::
 ```
 
 The Docker image is multi-platform, supporting both x86_64 architecture as well
@@ -167,15 +156,17 @@ as ARM64 (AWS Graviton, Apple M1/M2).
 
 - `spec/` contains the tests for the production nameservers. To run
   the tests locally:
+
   ```bash
   DOMAINS=nip.io,sslip.io ginkgo -r -p spec/
   ```
-- `k8s/document_root_sslip.io/` contains the HTML content of the sslip.io
+
+- `k8s/document_root_nip.io/` contains the HTML content of the nip.io
   website.
 
 ### Acknowledgements
 
-- Sam Stephenson (xip.io), the late Roopinder Singh (nip.io), and the other DNS
-  developers out there
+- The late, great Roopinder Singh (nip.io), Sam Stephenson (xip.io), and the
+  other DNS developers out there
 - The contributors (@normanr, @jpambrun come to mind) who improved sslip.io
 - Let's Encrypt for bumping our rate limits many, many times
