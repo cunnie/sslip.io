@@ -110,6 +110,83 @@ var _ = Describe("flags", func() {
 				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-addresses: arguments should be in the format "host=ip", not "a.b.c"`))
 			})
 		})
+		When("a value has a TXT: prefix", func() {
+			BeforeEach(func() {
+				flags = []string{"-addresses=txt.b.c=TXT:hello world,txt.b.c=TXT:second value"}
+			})
+			It("returns both TXT records when queried, and doesn't touch A/AAAA", func() {
+				digArgs := "@localhost txt.b.c TXT -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`flags: qr aa rd; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0`))
+				Eventually(digSession).Should(Say(`"hello world"`))
+				Eventually(digSession).Should(Say(`"second value"`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding record "txt\.b\.c\.=TXT:hello world"\n`))
+
+				digArgs = "@localhost txt.b.c A -p " + strconv.Itoa(port)
+				digCmd = exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err = Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`ANSWER: 0`))
+				Eventually(digSession, 1).Should(Exit(0))
+			})
+		})
+		When("a value has a CNAME: prefix", func() {
+			BeforeEach(func() {
+				flags = []string{"-addresses=alias.b.c=CNAME:target.example.com"}
+			})
+			It("returns the CNAME when queried", func() {
+				digArgs := "@localhost alias.b.c CNAME -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
+				Eventually(digSession).Should(Say(`target\.example\.com\.\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding record "alias\.b\.c\.=CNAME:target\.example\.com"\n`))
+			})
+			When("the target is not a valid DNS name (over 255 bytes)", func() {
+				BeforeEach(func() {
+					flags = []string{"-addresses=alias.b.c=CNAME:" + strings.Repeat("a", 300)}
+				})
+				It("should message that it's skipping that address and continue", func() {
+					Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`-addresses: ".*" is not a valid CNAME target`))
+				})
+			})
+		})
+		When("a value has an MX: prefix", func() {
+			BeforeEach(func() {
+				flags = []string{"-addresses=b.c=MX:10:mail.example.com"}
+			})
+			It("returns the MX record, with preference, when queried", func() {
+				digArgs := "@localhost b.c MX -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`;; ANSWER SECTION:`))
+				Eventually(digSession).Should(Say(`10 mail\.example\.com\.\n`))
+				Eventually(digSession, 1).Should(Exit(0))
+				Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`Adding record "b\.c\.=MX:10:mail\.example\.com"\n`))
+			})
+			When("the preference isn't a number", func() {
+				BeforeEach(func() {
+					flags = []string{"-addresses=b.c=MX:ten:mail.example.com"}
+				})
+				It("should message that it's skipping that address and continue", func() {
+					Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`-addresses: ".*" has an invalid MX preference "ten"`))
+				})
+			})
+			When("there's no target, just a preference", func() {
+				BeforeEach(func() {
+					flags = []string{"-addresses=b.c=MX:10"}
+				})
+				It("should message the expected format and continue", func() {
+					Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`-addresses: ".*" should be in the format "host=MX:preference:target"`))
+				})
+			})
+		})
 	})
 	When("-quiet is set", func() {
 		BeforeEach(func() {

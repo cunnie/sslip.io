@@ -122,7 +122,15 @@ as ARM64 (AWS Graviton, Apple M1/M2).
   (in the `-nameservers` example above), ns1.example.com: `-addresses
   ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note that you can set
   many addresses for a single host, e.g.
-  `ns1.example.com=1.1.1.1,ns1.example.com=8.8.8.8,ns1.example.com=9.9.9.9`
+  `ns1.example.com=1.1.1.1,ns1.example.com=8.8.8.8,ns1.example.com=9.9.9.9`.
+  The value can also be prefixed with a record type to set a TXT, CNAME, or MX
+  record instead of A/AAAA (useful if you're pointing a whole domain, not just
+  IP-derived hostnames, at your own sslip.io server) — a plain IP address
+  still means A/AAAA, so existing `-addresses` flags keep working unchanged:
+  - `host=TXT:some text` — adds a TXT record; repeat for multiple TXT records
+    on the same host
+  - `host=CNAME:target.example.com` — adds a CNAME record
+  - `host=MX:10:mail.example.com` — adds an MX record with preference `10`
 - `-blocklistURL` overrides the default block list,
   (<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
   The blocklist is not a show-stopper: if the DNS server can't download the

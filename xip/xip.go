@@ -260,6 +260,7 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 		logmessages = append(logmessages, fmt.Sprintf(`Adding nameserver "%s"`, ns))
 	}
 	// Parse and set our addresses
+	txtByHost := map[string][]string{} // accumulates "-addresses host=TXT:..." values; DomainCustomization.TXT is a func, not a slice
 	for _, address := range addresses {
 		hostAddr := strings.Split(address, "=")
 		if len(hostAddr) != 2 {
@@ -267,11 +268,68 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 			continue
 		}
 		host := hostAddr[0]
-		ip := net.ParseIP(hostAddr[1])
+		value := hostAddr[1]
 		// all hosts must be absolute (end in ".")
 		if host[len(host)-1] != '.' {
 			host += "."
 		}
+		// Optional record type prefix so -addresses can also set TXT/CNAME/MX records,
+		// not just A/AAAA. None of these prefixes collide with a valid IPv4/IPv6 literal
+		// (an IPv6 hextet can't contain the letters T, N, or the sequence "MX"), so
+		// "host=1.2.3.4" and "host=2600::" keep parsing exactly as before.
+		switch {
+		case strings.HasPrefix(strings.ToUpper(value), "TXT:"):
+			txtByHost[host] = append(txtByHost[host], value[len("TXT:"):])
+			logmessages = append(logmessages, fmt.Sprintf(`Adding record "%s=%s"`, host, value))
+			continue
+		case strings.HasPrefix(strings.ToUpper(value), "CNAME:"):
+			target := value[len("CNAME:"):]
+			if target != "" && target[len(target)-1] != '.' {
+				target += "."
+			}
+			cname, err := dnsmessage.NewName(target)
+			if err != nil {
+				logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" is not a valid CNAME target`, hostAddr))
+				continue
+			}
+			var hostEntry = DomainCustomization{}
+			if _, ok := Customizations[host]; ok {
+				hostEntry = Customizations[host]
+			}
+			hostEntry.CNAME = dnsmessage.CNAMEResource{CNAME: cname}
+			Customizations[host] = hostEntry
+			logmessages = append(logmessages, fmt.Sprintf(`Adding record "%s=%s"`, host, value))
+			continue
+		case strings.HasPrefix(strings.ToUpper(value), "MX:"):
+			prefAndTarget := strings.SplitN(value[len("MX:"):], ":", 2)
+			if len(prefAndTarget) != 2 {
+				logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" should be in the format "host=MX:preference:target", not "%s"`, hostAddr, value))
+				continue
+			}
+			pref, err := strconv.ParseUint(prefAndTarget[0], 10, 16)
+			if err != nil {
+				logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" has an invalid MX preference "%s"`, hostAddr, prefAndTarget[0]))
+				continue
+			}
+			target := prefAndTarget[1]
+			if target != "" && target[len(target)-1] != '.' {
+				target += "."
+			}
+			mx, err := dnsmessage.NewName(target)
+			if err != nil {
+				logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" is not a valid MX target`, hostAddr))
+				continue
+			}
+			var hostEntry = DomainCustomization{}
+			if _, ok := Customizations[host]; ok {
+				hostEntry = Customizations[host]
+			}
+			hostEntry.MX = append(hostEntry.MX, dnsmessage.MXResource{Pref: uint16(pref), MX: mx})
+			Customizations[host] = hostEntry
+			logmessages = append(logmessages, fmt.Sprintf(`Adding record "%s=%s"`, host, value))
+			continue
+		}
+		ip := net.ParseIP(value)
 		if ip == nil { // bad IP delegate
 			logmessages = append(logmessages, fmt.Sprintf(`-addresses: "%s" is not assigned a valid IP`, hostAddr))
 			continue
@@ -305,6 +363,23 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 		}
 		// print out the added records in a manner similar to the way they're set on the cmdline
 		logmessages = append(logmessages, fmt.Sprintf(`Adding record "%s=%s"`, host, ip))
+	}
+	// DomainCustomization.TXT is a func (not a slice, unlike A/MX), so the values collected
+	// above via "-addresses host=TXT:..." get turned into one closure per host here.
+	for host, values := range txtByHost {
+		txtValues := values // capture for the closure below
+		var hostEntry = DomainCustomization{}
+		if _, ok := Customizations[host]; ok {
+			hostEntry = Customizations[host]
+		}
+		hostEntry.TXT = func(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
+			resources := make([]dnsmessage.TXTResource, len(txtValues))
+			for i, v := range txtValues {
+				resources[i] = dnsmessage.TXTResource{TXT: []string{v}}
+			}
+			return resources, nil
+		}
+		Customizations[host] = hostEntry
 	}
 	// Parse and set the nameservers of our delegated domains
 	for _, delegate := range delegates {
