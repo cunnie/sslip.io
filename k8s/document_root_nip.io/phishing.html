@@ -3,6 +3,67 @@
 
 <head>
   <title>Blocked Site!</title>
+  <style>
+    body {
+      max-width: 40rem;
+      margin: 4rem auto;
+      padding: 0 1.5rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    #url {
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    .sponsors {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #ddd;
+      text-align: center;
+    }
+
+    .sponsors h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #888;
+      margin-bottom: 1.5rem;
+    }
+
+    .sponsors ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+      margin: 0;
+      padding: 0;
+    }
+
+    .sponsors li {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      color: #666;
+    }
+
+    .sponsors svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    .sponsors span {
+      font-size: 0.75rem;
+    }
+  </style>
 </head>
 
 <body>
@@ -11,6 +72,33 @@
     of an existing site, or a site with known vulnerabilities. We've received a takedown notice, and blocked it.</p>
   <p>If you're the site owner and are confident the site is clean, then register your own domain instead of using a
     nip.io / sslip.io domain.</p>
+
+  <div class="sponsors">
+    <h2>Sponsors</h2>
+    <ul>
+      <li>
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M24 4 L44 24 L24 44 L4 24 Z" />
+          <circle cx="24" cy="24" r="7" />
+        </svg>
+        <span>Tyrell Corporation</span>
+      </li>
+      <li>
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="24" cy="24" r="19" />
+          <path d="M8 24 H40 M24 5 C32 13 32 35 24 43 C16 35 16 13 24 5 Z" />
+        </svg>
+        <span>Weyland-Yutani</span>
+      </li>
+      <li>
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M24 4 L30 18 L44 18 L32 27 L37 42 L24 33 L11 42 L16 27 L4 18 L18 18 Z" stroke-linejoin="round" />
+        </svg>
+        <span>Yoyodyne Propulsion</span>
+      </li>
+    </ul>
+  </div>
+
   <script>
     function displayURL() {
       var urlSpan = document.getElementById('url');
