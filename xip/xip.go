@@ -262,7 +262,10 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 	// Parse and set our addresses
 	txtByHost := map[string][]string{} // accumulates "-addresses host=TXT:..." values; DomainCustomization.TXT is a func, not a slice
 	for _, address := range addresses {
-		hostAddr := strings.Split(address, "=")
+		// SplitN, not Split: a TXT value routinely contains "=" itself ("v=spf1 -all",
+		// "v=DMARC1; p=none"), and splitting on every "=" would reject exactly the
+		// records this flag exists to set.
+		hostAddr := strings.SplitN(address, "=", 2)
 		if len(hostAddr) != 2 {
 			logmessages = append(logmessages, fmt.Sprintf(`-addresses: arguments should be in the format "host=ip", not "%s"`, address))
 			continue

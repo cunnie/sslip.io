@@ -133,6 +133,20 @@ var _ = Describe("flags", func() {
 				Eventually(digSession, 1).Should(Exit(0))
 			})
 		})
+		When("a TXT value contains an \"=\"", func() {
+			BeforeEach(func() {
+				flags = []string{`-addresses=spf.b.c=TXT:v=spf1 -all`}
+			})
+			It("keeps the whole value, splitting only on the first \"=\"", func() {
+				digArgs := "@localhost spf.b.c TXT -p " + strconv.Itoa(port)
+				digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession).Should(Say(`ANSWER: 1`))
+				Eventually(digSession).Should(Say(`"v=spf1 -all"`))
+				Eventually(digSession, 1).Should(Exit(0))
+			})
+		})
 		When("a value has a CNAME: prefix", func() {
 			BeforeEach(func() {
 				flags = []string{"-addresses=alias.b.c=CNAME:target.example.com"}
