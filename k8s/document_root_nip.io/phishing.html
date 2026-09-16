@@ -2,6 +2,8 @@
 <html>
 
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blocked Site!</title>
   <style>
     body {
@@ -63,6 +65,25 @@
     .sponsors span {
       font-size: 0.75rem;
     }
+
+    @media (max-width: 480px) {
+      body {
+        margin: 2rem auto;
+      }
+
+      .sponsors {
+        margin-top: 2.5rem;
+      }
+
+      .sponsors ul {
+        gap: 1.25rem 2rem;
+      }
+
+      .sponsors svg {
+        width: 40px;
+        height: 40px;
+      }
+    }
   </style>
 </head>
 
@@ -72,16 +93,14 @@
     of an existing site, or a site with known vulnerabilities. We've received a takedown notice, and blocked it.</p>
   <p>If you're the site owner and are confident the site is clean, then register your own domain instead of using a
     nip.io / sslip.io domain.</p>
-
   <div class="sponsors">
     <h2>Sponsors</h2>
     <ul>
       <li>
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M24 4 L44 24 L24 44 L4 24 Z" />
-          <circle cx="24" cy="24" r="7" />
+          <path d="M24 4 L30 18 L44 18 L32 27 L37 42 L24 33 L11 42 L16 27 L4 18 L18 18 Z" stroke-linejoin="round" />
         </svg>
-        <span>Tyrell Corporation</span>
+        <span>Yoyodyne Propulsion</span>
       </li>
       <li>
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -90,15 +109,8 @@
         </svg>
         <span>Weyland-Yutani</span>
       </li>
-      <li>
-        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M24 4 L30 18 L44 18 L32 27 L37 42 L24 33 L11 42 L16 27 L4 18 L18 18 Z" stroke-linejoin="round" />
-        </svg>
-        <span>Yoyodyne Propulsion</span>
-      </li>
     </ul>
   </div>
-
   <script>
     function displayURL() {
       var urlSpan = document.getElementById('url');
