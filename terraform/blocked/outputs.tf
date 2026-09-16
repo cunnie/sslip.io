@@ -12,3 +12,8 @@ output "instance_id" {
   description = "Instance ID"
   value       = vultr_instance.blocked.id
 }
+
+output "nginx_log_block_storage_id" {
+  description = "Block storage volume ID for /var/log/nginx"
+  value       = vultr_block_storage.blocked_nginx_log.id
+}

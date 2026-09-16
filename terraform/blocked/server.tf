@@ -163,7 +163,7 @@ resource "vultr_instance" "blocked" {
   hostname          = "blocked.nip.io"
   label             = "blocked"
   region            = "scl"
-  plan              = "vc2-1c-2gb"
+  plan              = "vhp-1c-2gb"
   os_id             = data.vultr_os.fedora44.id
   enable_ipv6       = true
   firewall_group_id = vultr_firewall_group.blocked.id
@@ -176,4 +176,12 @@ resource "vultr_instance" "blocked" {
   lifecycle {
     ignore_changes = [user_data]
   }
+}
+
+resource "vultr_block_storage" "blocked_nginx_log" {
+  region               = "scl"
+  size_gb              = 100
+  label                = "blocked-nginx-log"
+  block_type           = "storage_opt" # HDD, cheaper than the "high_perf" NVMe tier
+  attached_to_instance = vultr_instance.blocked.id
 }

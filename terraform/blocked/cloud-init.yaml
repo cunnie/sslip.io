@@ -129,6 +129,37 @@ write_files:
       #!/bin/sh
       systemctl reload nginx
 
+  - path: /usr/local/sbin/mount-nginx-log-volume.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      # Formats (if needed) and mounts the block-storage volume that backs
+      # /var/log/nginx. Runs before nginx starts so logs always land on it.
+      set -euo pipefail
+
+      device=/dev/vdb
+
+      for _ in $(seq 1 60); do
+        [ -b "$device" ] && break
+        sleep 5
+      done
+      if [ ! -b "$device" ]; then
+        echo "mount-nginx-log-volume: $device never appeared" >&2
+        exit 1
+      fi
+
+      if ! blkid "$device" >/dev/null 2>&1; then
+        mkfs.ext4 -F "$device"
+      fi
+
+      uuid=$(blkid -s UUID -o value "$device")
+      grep -q "$uuid" /etc/fstab || echo "UUID=$uuid /var/log/nginx ext4 defaults,nofail 0 2" >>/etc/fstab
+
+      mkdir -p /var/log/nginx
+      mountpoint -q /var/log/nginx || mount /var/log/nginx
+      chown nginx:nginx /var/log/nginx
+      chmod 750 /var/log/nginx
+
   - path: /etc/systemd/system/sslip.io-dns.service
     permissions: "0644"
     content: |
@@ -152,9 +183,9 @@ runcmd:
   # 403'd by SELinux before the end-of-run reboot picks up the config file.
   - setenforce 0
   - mkdir -p /var/www/blocked /var/www/sslip.io /etc/letsencrypt/live/blocked.nip.io
-  - curl -L -o /var/www/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_sslip.io/index.html
-  - curl -L -o /var/www/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_sslip.io/experimental.html
-  - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_sslip.io/phishing.html
+  - curl -L -o /var/www/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/index.html
+  - curl -L -o /var/www/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/experimental.html
+  - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/phishing.html
   - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.5/sslip.io-dns-server-linux-amd64
   - chmod +x /usr/bin/sslip.io-dns-server
   # nginx.conf hardcodes the Let's Encrypt cert path, so seed a throwaway
@@ -167,6 +198,7 @@ runcmd:
   - firewall-cmd --permanent --add-service=http
   - firewall-cmd --permanent --add-service=https
   - firewall-cmd --reload
+  - /usr/local/sbin/mount-nginx-log-volume.sh
   - systemctl enable --now nginx
   - rm -rf /etc/letsencrypt/live/blocked.nip.io
   - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io -d 40B01609.nip.io --non-interactive --agree-tos --email cunnie@majestic-labs.ai
