@@ -22,7 +22,7 @@ resource "digitalocean_droplet" "nameserver" {
   name       = "ns-00.nip.io"
   region     = "sgp1"
   size       = "s-2vcpu-4gb"
-  image      = "fedora-43-x64"
+  image      = "fedora-44-x64"
   monitoring = true
   ipv6       = true
   ssh_keys   = [digitalocean_ssh_key.cunnie.fingerprint]
