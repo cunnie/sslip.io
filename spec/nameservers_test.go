@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -74,8 +75,8 @@ func execDigShort(args ...string) string {
 var _ = Describe("Nameserver Tests", func() {
 	domains = getDomains()
 	for _, d := range domains {
-		domain := d // capture range variable
-		rdapNameservers = getRdapNameservers(domain)
+		domain := d                                   // capture range variable
+		rdapNameservers := getRdapNameservers(domain) // local copy; each domain's closures need their own list
 
 		Describe(domain, func() {
 			// I don't want a spurious failure, esp. ns-00.nip.io
@@ -93,6 +94,35 @@ var _ = Describe("Nameserver Tests", func() {
 			// Exclude the Singapore nameserver "ns-00."
 			// because it triggers so many false positives
 			nameserversWithoutSingapore := filterNameservers(rdapNameservers)
+
+			// Every nameserver should return identical A & AAAA records for every
+			// nameserver in the rdap list (e.g. ns-00.nip.io's A record should
+			// be the same whether we ask ns-{00,01}.nip.io. or ns-ovh.sslip.io).
+			for _, targetNameserver := range rdapNameservers {
+				targetNameserver := targetNameserver // capture range variable
+				for _, recordType := range []string{"a", "aaaa"} {
+					recordType := recordType // capture range variable
+
+					It(fmt.Sprintf("all nameservers %v return the same %s records for %s",
+						nameserversWithoutSingapore, strings.ToUpper(recordType), targetNameserver), func() {
+						var referenceNameserver string
+						var referenceRecords []string
+						for _, queriedNameserver := range nameserversWithoutSingapore {
+							args := append(digArgs, fmt.Sprintf("@%s", queriedNameserver), recordType, targetNameserver, "+short")
+							records := sortedLines(execDigShort(args...))
+							Expect(records).NotTo(BeEmpty(),
+								fmt.Sprintf("`dig @%s %s %s +short` returned no records", queriedNameserver, recordType, targetNameserver))
+							if referenceRecords == nil {
+								referenceNameserver, referenceRecords = queriedNameserver, records
+								continue
+							}
+							Expect(records).To(Equal(referenceRecords),
+								fmt.Sprintf("%s's %s records for %s don't match %s's",
+									queriedNameserver, strings.ToUpper(recordType), targetNameserver, referenceNameserver))
+						}
+					})
+				}
+			}
 
 			for _, rdapNameserver := range nameserversWithoutSingapore {
 				rdapNameserver := rdapNameserver // capture range variable
@@ -273,6 +303,17 @@ func filterNameservers(nameservers []string) []string {
 		}
 	}
 	return filtered
+}
+
+// sortedLines splits dig's "+short" output into lines & sorts them so that
+// round-robin ordering of multiple records doesn't cause spurious mismatches
+func sortedLines(output string) []string {
+	if output == "" {
+		return []string{}
+	}
+	lines := strings.Split(output, "\n")
+	sort.Strings(lines)
+	return lines
 }
 
 func randomAlphanumeric(length int) string {

@@ -13,5 +13,4 @@ func TestSpec(t *testing.T) {
 }
 
 var domains []string
-var rdapNameservers []string
 var sslipVersion = "5.1.5"
