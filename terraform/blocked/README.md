@@ -2,7 +2,7 @@
 
 To redeploy:
 
-```
+```bash
 tofu taint vultr_instance.blocked
 tofu apply
 ```

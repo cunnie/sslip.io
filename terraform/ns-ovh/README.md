@@ -19,9 +19,9 @@ Visit the `validationUrl` from the response to authorize the key, then save the 
 ## Initial Setup
 
 ```bash
-export TF_VAR_ovh_application_key=dmUzEgjQwBIfJbUf
-export TF_VAR_ovh_application_secret=YOUR_APPLICATION_SECRET
-export TF_VAR_ovh_consumer_key=YOUR_CONSUMER_KEY
+export TF_VAR_ovh_application_key=4916ae137bb48560
+export TF_VAR_ovh_application_secret=d28d7cb4886e5xxxxxxxxxxxxxxx
+export TF_VAR_ovh_consumer_key=afc0a59afa50xxxxxxxxxxxx
 ```
 
 ## Forcing a Reinstall

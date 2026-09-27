@@ -1,5 +1,5 @@
 data "ovh_dedicated_installation_template" "template" {
-  template_name = "fedora43_64"
+  template_name = "fedora44_64"
 }
 
 resource "ovh_dedicated_server" "nameserver" {
