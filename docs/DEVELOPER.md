@@ -104,15 +104,15 @@ scp bin/sslip.io-dns-server-linux-amd64 ns-01:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
 ssh ns-00 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-00 sudo shutdown -r now
- # check version number:
+ # check version number; wait until it is back up before rebooting ns-01
 sleep 10; while ! dig txt @ns-00.nip.io version.status.sslip.io +short; do sleep 5; done
 ssh ns-01 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-01 sudo shutdown -r now
- # check version number:
-sleep 10; while ! dig txt @ns-01.nip.io version.status.sslip.io +short; do sleep 5; done # wait until it's back up before rebooting ns-ovh
+ # check version number; wait until it is back up before rebooting ns-ovh
+sleep 10; while ! dig txt @ns-01.nip.io version.status.sslip.io +short; do sleep 5; done
 ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-ovh sudo shutdown -r now
- # check version number:
+ # check version number; wait until it is back up before rebooting blocked
 sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done
  # reboot blocked in case it has a new kernel
 ssh blocked sudo shutdown -r now
