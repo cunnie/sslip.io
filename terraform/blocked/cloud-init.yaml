@@ -160,23 +160,6 @@ write_files:
       chown nginx:nginx /var/log/nginx
       chmod 750 /var/log/nginx
 
-  - path: /etc/systemd/system/sslip.io-dns.service
-    permissions: "0644"
-    content: |
-      [Unit]
-      Description=sslip.io DNS server
-      Documentation=https://sslip.io/
-      After=network-online.target
-      Wants=network-online.target
-
-      [Service]
-      ExecStart=/usr/bin/sslip.io-dns-server
-      Restart=on-failure
-      RestartSec=5
-
-      [Install]
-      WantedBy=multi-user.target
-
 runcmd:
   # /etc/selinux/config (written above) only takes effect on next boot;
   # disable enforcement now too, so certbot's webroot challenge isn't
@@ -186,15 +169,12 @@ runcmd:
   - curl -L -o /var/www/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/index.html
   - curl -L -o /var/www/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/experimental.html
   - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/phishing.html
-  - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/5.1.5/sslip.io-dns-server-linux-amd64
-  - chmod +x /usr/bin/sslip.io-dns-server
   # nginx.conf hardcodes the Let's Encrypt cert path, so seed a throwaway
   # cert there just so nginx can pass config-check and start; deleted below
   # once nginx has it open, freeing the path for certbot's webroot challenge.
   - openssl req -x509 -newkey ed25519 -keyout /etc/letsencrypt/live/blocked.nip.io/privkey.pem -out /etc/letsencrypt/live/blocked.nip.io/fullchain.pem -days 1 -nodes -subj "/CN=localhost"
   - systemctl daemon-reload
   - systemctl enable sslip.io-dns.service
-  - firewall-cmd --permanent --add-service=dns
   - firewall-cmd --permanent --add-service=http
   - firewall-cmd --permanent --add-service=https
   - firewall-cmd --reload
@@ -204,7 +184,6 @@ runcmd:
   - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io -d 40B01609.nip.io --non-interactive --agree-tos --email cunnie@majestic-labs.ai
   - systemctl reload nginx
   - systemctl enable --now certbot-renew.timer
-
 
 power_state:
   mode: reboot

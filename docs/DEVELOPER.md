@@ -4,21 +4,20 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=5.1.4
-export VERSION=5.1.5
+export OLD_VERSION=5.1.5
+export VERSION=6.0.0
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
 sed -i '' "s/$OLD_VERSION/$VERSION/g" \
   bin/make_all \
   spec/spec_suite_test.go \
-  k8s/document_root_sslip.io/experimental.html \
-  k8s/document_root_sslip.io/index.html \
+  k8s/document_root_nip.io/experimental.html \
+  k8s/document_root_nip.io/index.html \
   Docker/sslip.io-dns-server/Dockerfile \
   terraform/ns-00/cloud-init.yaml \
   terraform/ns-01/cloud-init.yaml \
-  terraform/ns-ovh/cloud-init.sh \
-  terraform/blocked/cloud-init.yaml
+  terraform/ns-ovh/cloud-init.sh
 ```
 
 ```bash
@@ -35,14 +34,16 @@ Build & start the new executables:
 
 ```bash
 bin/make_all
-bin/sslip.io-dns-server-darwin-arm64 --port 5333
+bin/sslip.io-dns-server-darwin-arm64 --port 5333 \
+-nameservers=ns-00.nip.io.,ns-01.nip.io.,ns-ovh.sslip.io. \
+-addresses=nip.io=78.46.204.247,sslip.io=78.46.204.247,nip.io=2a01:4f8:c17:b8f::2,sslip.io=2a01:4f8:c17:b8f::2,ns.nip.io=167.172.4.236,ns.nip.io=2400:6180:0:d2:0:2:e3e7:0,ns.nip.io=5.78.28.211,ns.nip.io=2a01:4ff:1f2:10d::,ns.nip.io=51.75.53.19,ns.nip.io=2001:41d0:602:2313::1,ns.sslip.io=167.172.4.236,ns.sslip.io=2400:6180:0:d2:0:2:e3e7:0,ns.sslip.io=5.78.28.211,ns.sslip.io=2a01:4ff:1f2:10d::,ns.sslip.io=51.75.53.19,ns.sslip.io=2001:41d0:602:2313::1,blocked.nip.io=64.176.22.9,blocked.nip.io=2001:19f0:c800:2315::,ns-00.nip.io=167.172.4.236,ns-00.nip.io=2400:6180:0:d2:0:2:e3e7:0,ns-01.nip.io=5.78.28.211,ns-01.nip.io=2a01:4ff:1f2:10d::,ns-ovh.sslip.io=51.75.53.19,ns-ovh.sslip.io=2001:41d0:602:2313::1
 ```
 
 Test from another window:
 
 ```bash
 DNS_SERVER_IP=127.0.0.1
-VERSION=5.1.5
+VERSION=6.0.0
 PORT=5333
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
@@ -60,8 +61,9 @@ printf "\"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26\"\n\"
   dig +short txt _dmarc.sslip.io. @$DNS_SERVER_IP -p $PORT ;
   printf "\"v=DMARC1; p=reject\"\n"
   printf "\"v=DMARC1; p=reject\"\n" ; ) | sort | uniq -c
-dig +short txt 127.0.0.1.sslip.io @$DNS_SERVER_IP -p $PORT # no records
-dig +short cname sslip.io @$DNS_SERVER_IP -p $PORT # no records
+ # no records
+dig +short txt 127.0.0.1.sslip.io @$DNS_SERVER_IP -p $PORT
+dig +short cname sslip.io @$DNS_SERVER_IP -p $PORT
 ( dig +short cname protonmail._domainkey.sslip.io @$DNS_SERVER_IP -p $PORT
 echo protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch. ) | uniq -c
 ( dig a _Acme-ChallengE.127-0-0-1.sslip.io @$DNS_SERVER_IP -p $PORT | grep "^127"
@@ -88,7 +90,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: new \"blocked\" webserver: blocked.nip.io"
+GIT_MESSAGE="$VERSION: No hard-coded nameservers, addresses"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
@@ -100,7 +102,6 @@ done
 scp bin/sslip.io-dns-server-linux-amd64 ns-00:
 scp bin/sslip.io-dns-server-linux-amd64 ns-01:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
-scp bin/sslip.io-dns-server-linux-amd64 blocked:
 ssh ns-00 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-00 sudo shutdown -r now
  # check version number:
@@ -113,10 +114,9 @@ ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-se
 ssh ns-ovh sudo shutdown -r now
  # check version number:
 sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done
-ssh blocked sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
+ # reboot blocked in case it has a new kernel
 ssh blocked sudo shutdown -r now
- # check version number:
-sleep 10; while ! dig txt @blocked.nip.io version.status.sslip.io +short; do sleep 5; done
+sleep 10; while ! curl -sfI blocked.nip.io >/dev/null; do sleep 5; done
 ```
 
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release

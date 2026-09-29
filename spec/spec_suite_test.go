@@ -13,4 +13,4 @@ func TestSpec(t *testing.T) {
 }
 
 var domains []string
-var sslipVersion = "5.1.5"
+var sslipVersion = "6.0.0"
