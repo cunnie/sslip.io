@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"flag"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -139,7 +140,6 @@ func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 		go func() {
 			queryTime := time.Now()
 			response, logMessage, err := x.QueryResponse(query, addr.IP)
-			responseTime := time.Now()
 			if err != nil {
 				log.Println(err.Error())
 				return
@@ -153,6 +153,7 @@ func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 				log.Printf("%v.%d %s", addr.IP, addr.Port, logMessage)
 			}
 			if dw != nil && ResponseHasAorAAAA(response) {
+				responseTime := time.Now()
 				if err := dw.SendDnstap(query[:n], response, addr.IP, addr.Port, true, queryTime, responseTime); err != nil {
 					log.Printf("dnstap send error: %v", err)
 				}
@@ -162,59 +163,77 @@ func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 	}
 }
 
+// RFC 7766 §6.2.3 suggests an idle timeout of "a few seconds"; we choose 10
+const tcpIdleTimeout = 10 * time.Second
+
 func readFromTCP(tcpListener *net.TCPListener, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 	for {
-		query := make([]byte, 65535) // 2-byte length field means largest size is 65535
 		tcpConn, err := tcpListener.AcceptTCP()
 		if err != nil {
 			log.Println(err.Error())
 			continue
 		}
-		n, err := tcpConn.Read(query)
-		query = query[2:] // remove the 2-byte length at the beginning of the query
-		if err != nil {
-			log.Println(err.Error())
-			continue
-		}
-		remoteAddrPort := tcpConn.RemoteAddr().String()
-		addr, port, err := net.SplitHostPort(remoteAddrPort)
-		if err != nil {
-			log.Println(err.Error())
-			continue
-		}
+		// hand off immediately: a slow or silent client must never block the accept loop
+		go handleTCPConn(tcpConn, x, quiet, dw)
+	}
+}
 
-		go func() {
-			defer func(tcpConn *net.TCPConn) {
-				_ = tcpConn.Close()
-			}(tcpConn)
-			queryTime := time.Now()
-			response, logMessage, err := x.QueryResponse(query, net.ParseIP(addr))
+func handleTCPConn(tcpConn *net.TCPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {
+	defer func() {
+		// a panic in one connection's goroutine would otherwise crash the entire server
+		if r := recover(); r != nil {
+			log.Printf("recovered from panic handling TCP connection from %s: %v", tcpConn.RemoteAddr(), r)
+		}
+	}()
+	defer func(tcpConn *net.TCPConn) {
+		_ = tcpConn.Close()
+	}(tcpConn)
+	remoteAddrPort := tcpConn.RemoteAddr().String()
+	addr, port, err := net.SplitHostPort(remoteAddrPort)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	lengthPrefix := make([]byte, 2)
+	for { // RFC 7766: support multiple queries per connection
+		_ = tcpConn.SetDeadline(time.Now().Add(tcpIdleTimeout))
+		if _, err = io.ReadFull(tcpConn, lengthPrefix); err != nil {
+			return // EOF or idle timeout: the normal end of a connection
+		}
+		queryLength := binary.BigEndian.Uint16(lengthPrefix)
+		if queryLength == 0 {
+			return
+		}
+		query := make([]byte, queryLength)
+		if _, err = io.ReadFull(tcpConn, query); err != nil {
+			log.Println(err.Error())
+			return
+		}
+		queryTime := time.Now()
+		response, logMessage, err := x.QueryResponse(query, net.ParseIP(addr))
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		// insert the 2-byte length to the beginning of the response
+		framedResponse := make([]byte, 2, 2+len(response))
+		binary.BigEndian.PutUint16(framedResponse, uint16(len(response)))
+		framedResponse = append(framedResponse, response...)
+		if _, err = tcpConn.Write(framedResponse); err != nil {
+			log.Println(err.Error())
+			return
+		}
+		if !quiet {
+			log.Printf("%s.%s %s", addr, port, logMessage)
+		}
+		if dw != nil && ResponseHasAorAAAA(response) {
+			portNum, _ := strconv.Atoi(port)
 			responseTime := time.Now()
-			if err != nil {
-				log.Println(err.Error())
-				return
+			if err := dw.SendDnstap(query, response, net.ParseIP(addr), portNum, false, queryTime, responseTime); err != nil {
+				log.Printf("dnstap send error: %v", err)
 			}
-			// insert the 2-byte length to the beginning of the response
-			responseSize := uint16(len(response))
-			responseSizeBigEndianBytes := make([]byte, 2)
-			binary.BigEndian.PutUint16(responseSizeBigEndianBytes, responseSize)
-			response = append(responseSizeBigEndianBytes, response...)
-			_, err = tcpConn.Write(response)
-			if err != nil {
-				log.Println(err.Error())
-				return
-			}
-			if !quiet {
-				log.Printf("%s.%s %s", addr, port, logMessage)
-			}
-			if dw != nil && ResponseHasAorAAAA(response[2:]) {
-				portNum, _ := strconv.Atoi(port)
-				if err := dw.SendDnstap(query[:n-2], response[2:], net.ParseIP(addr), portNum, false, queryTime, responseTime); err != nil {
-					log.Printf("dnstap send error: %v", err)
-				}
-			}
-			x.Metrics.TCPQueries += 1
-		}()
+		}
+		x.Metrics.TCPQueries += 1
 	}
 }
 
