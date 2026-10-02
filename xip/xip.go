@@ -710,9 +710,13 @@ func (x *Xip) NSResponse(name dnsmessage.Name, response Response, logMessage str
 	if response.Header.Authoritative {
 		// we're authoritative, so we reply with the answers
 		// but we rotate the nameservers every second so one server doesn't bear the brunt of the traffic
-		epoch := time.Now().UTC().Unix()
-		index := int(epoch) % len(x.NameServers)
-		rotatedNameservers := append(x.NameServers[index:], x.NameServers[0:index]...)
+		var rotatedNameservers []dnsmessage.NSResource
+		if len(x.NameServers) > 0 { // no "-nameservers"? Then no NS records, and no divide-by-zero
+			epoch := time.Now().UTC().Unix()
+			index := int(epoch) % len(x.NameServers)
+			// copy into a fresh slice: appending to x.NameServers[index:] could scribble on x.NameServers's backing array
+			rotatedNameservers = append(append([]dnsmessage.NSResource{}, x.NameServers[index:]...), x.NameServers[0:index]...)
+		}
 		response.Answers = append(response.Answers,
 			func(b *dnsmessage.Builder) error {
 				return buildNSRecords(b, name, rotatedNameservers)
@@ -1272,23 +1276,28 @@ func (x *Xip) blocklist(hostname string) bool {
 	return false
 }
 
+// soaAuthorityResponse is the reply when we have no answers: no Answers, only 1 Authorities (SOA)
+func soaAuthorityResponse(name dnsmessage.Name, response Response, logMessage string) (Response, string, error) {
+	soaHeader, soaResource := SOAAuthority(name)
+	response.Authorities = append(response.Authorities,
+		func(b *dnsmessage.Builder) error {
+			return b.SOAResource(soaHeader, soaResource)
+		})
+	return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+}
+
 func (x *Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
 	nameToAs := NameToA(q.Name.String(), x.Public)
 	if len(nameToAs) == 0 {
-		// No Answers, only 1 Authorities
-		soaHeader, soaResource := SOAAuthority(q.Name)
-		response.Authorities = append(response.Authorities,
-			func(b *dnsmessage.Builder) error {
-				if err = b.SOAResource(soaHeader, soaResource); err != nil {
-					return err
-				}
-				return nil
-			})
-		return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+		return soaAuthorityResponse(q.Name, response, logMessage)
 	}
 	if x.blocklist(q.Name.String()) {
 		x.Metrics.AnsweredQueries++
 		x.Metrics.AnsweredBlockedQueries++
+		if len(Customizations["blocked.nip.io."].A) == 0 {
+			// no "-addresses=blocked.nip.io=..." to redirect to, so don't resolve it at all
+			return soaAuthorityResponse(q.Name, response, logMessage)
+		}
 		response.Answers = append(response.Answers,
 			// 1 or more A records; A records > 1 only available via Customizations
 			func(b *dnsmessage.Builder) error {
@@ -1386,26 +1395,21 @@ func IsPublic(ip net.IP) (isPublic bool) {
 func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, logMessage string) (_ Response, _ string, err error) {
 	nameToAAAAs := NameToAAAA(q.Name.String(), x.Public)
 	if len(nameToAAAAs) == 0 {
-		// No Answers, only 1 Authorities
-		soaHeader, soaResource := SOAAuthority(q.Name)
-		response.Authorities = append(response.Authorities,
-			func(b *dnsmessage.Builder) error {
-				if err = b.SOAResource(soaHeader, soaResource); err != nil {
-					return err
-				}
-				return nil
-			})
-		return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+		return soaAuthorityResponse(q.Name, response, logMessage)
 	}
 	if x.blocklist(q.Name.String()) {
 		x.Metrics.AnsweredQueries++
 		x.Metrics.AnsweredBlockedQueries++
+		if len(Customizations["blocked.nip.io."].AAAA) == 0 {
+			// no "-addresses=blocked.nip.io=..." to redirect to, so don't resolve it at all
+			return soaAuthorityResponse(q.Name, response, logMessage)
+		}
 		response.Answers = append(response.Answers,
-			// 1 or more A records; A records > 1 only available via Customizations
+			// 1 or more AAAA records; AAAA records > 1 only available via Customizations
 			func(b *dnsmessage.Builder) error {
 				err = b.AAAAResource(dnsmessage.ResourceHeader{
 					Name:   q.Name,
-					Type:   dnsmessage.TypeA,
+					Type:   dnsmessage.TypeAAAA,
 					Class:  dnsmessage.ClassINET,
 					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
 					Length: 0,

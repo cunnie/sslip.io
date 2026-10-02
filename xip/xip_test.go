@@ -151,6 +151,63 @@ var _ = Describe("Xip", func() {
 		})
 	})
 
+	Describe("QueryResponse()", func() {
+		// query sends a DNS query to x and parses the reply
+		query := func(x *xip.Xip, name string, qType dnsmessage.Type) dnsmessage.Message {
+			b := dnsmessage.NewBuilder(nil, dnsmessage.Header{ID: 1})
+			Expect(b.StartQuestions()).To(Succeed())
+			Expect(b.Question(dnsmessage.Question{Name: dnsmessage.MustNewName(name), Type: qType, Class: dnsmessage.ClassINET})).To(Succeed())
+			queryBytes, err := b.Finish()
+			Expect(err).ToNot(HaveOccurred())
+			responseBytes, _, err := x.QueryResponse(queryBytes, net.ParseIP("127.0.0.1"))
+			Expect(err).ToNot(HaveOccurred())
+			var reply dnsmessage.Message
+			Expect(reply.Unpack(responseBytes)).To(Succeed())
+			return reply
+		}
+
+		When("no nameservers are configured", func() {
+			It("doesn't panic on NS queries, and returns no NS records", func() {
+				x, _ := xip.NewXip("file:///", []string{}, []string{}, []string{}, "")
+				reply := query(x, testhelper.Random8ByteString()+".com.", dnsmessage.TypeNS)
+				Expect(reply.Answers).To(BeEmpty())
+			})
+		})
+
+		When(`the blocked IP's redirect "blocked.nip.io." has no addresses`, func() {
+			var (
+				x                  *xip.Xip
+				savedBlocked       xip.DomainCustomization
+				savedBlockedExists bool
+			)
+			BeforeEach(func() {
+				savedBlocked, savedBlockedExists = xip.Customizations["blocked.nip.io."]
+				delete(xip.Customizations, "blocked.nip.io.")
+				x, _ = xip.NewXip("file://../etc/blocklist-test.txt", []string{"ns-01.nip.io."}, []string{}, []string{}, "")
+				x.Public = true
+			})
+			AfterEach(func() {
+				if savedBlockedExists {
+					xip.Customizations["blocked.nip.io."] = savedBlocked
+				}
+			})
+			It("doesn't panic on A queries, and returns no answer, only the SOA", func() {
+				reply := query(x, "23.45.67.89.sslip.io.", dnsmessage.TypeA)
+				Expect(reply.Answers).To(BeEmpty())
+				Expect(reply.Authorities).To(HaveLen(1))
+				Expect(reply.Authorities[0].Header.Type).To(Equal(dnsmessage.TypeSOA))
+				Expect(x.Metrics.AnsweredBlockedQueries).To(Equal(1))
+			})
+			It("doesn't panic on AAAA queries, and returns no answer, only the SOA", func() {
+				reply := query(x, "1234--1.sslip.io.", dnsmessage.TypeAAAA)
+				Expect(reply.Answers).To(BeEmpty())
+				Expect(reply.Authorities).To(HaveLen(1))
+				Expect(reply.Authorities[0].Header.Type).To(Equal(dnsmessage.TypeSOA))
+				Expect(x.Metrics.AnsweredBlockedQueries).To(Equal(1))
+			})
+		})
+	})
+
 	Describe("SOAResource()", func() {
 		It("returns the SOA resource for the domain in question", func() {
 			randomDomain := testhelper.Random8ByteString() + ".com."

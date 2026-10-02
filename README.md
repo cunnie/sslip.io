@@ -58,10 +58,11 @@ First, we delegate the subdomain "xip.pivotal.io" to our two nameservers, and
 then we run the following command run on each of the two servers:
 
 ```bash
-# after we've cloned our repo & cd'ed into it
-go run main.go \
+ # after we've cloned our repo & cd'ed into it
+go run . \
   -nameservers=ns-ip-0.pivotal.io,ns-ip-1.pivotal.io \
-  -addresses ns-ip-0.pivotal.io=10.8.8.8,ns-ip-1.pivotal.io=fc88:: \
+  -addresses=ns-ip-0.pivotal.io=10.8.8.8,ns-ip-1.pivotal.io=fc88:: \
+  -blocklistURL=file:///dev/null \
   -ptr-domain=xip.pivotal.io
 ```
 
@@ -82,9 +83,10 @@ docker run \
   --rm \
   -p 5553:53/udp \
   cunnie/sslip.io-dns-server \
-    -nameservers=ns-ip-0.pivotal.io,ns-ip-1.pivotal.io \
-    -addresses ns-ip-0.pivotal.io=10.8.8.8,ns-ip-1.pivotal.io=fc88:: \
-    -ptr-domain=xip.pivotal.io   
+  -nameservers=ns-ip-0.pivotal.io,ns-ip-1.pivotal.io \
+  -addresses=ns-ip-0.pivotal.io=10.8.8.8,ns-ip-1.pivotal.io=fc88:: \
+  -blocklistURL=file:///dev/null \
+  -ptr-domain=xip.pivotal.io
 ```
 
 From our machine, we look up the DNS NS records for "127.0.0.1.com", and we
@@ -103,7 +105,7 @@ dig ns 127.0.0.1.com @localhost -p 5553
 ```
 
 The Docker image is multi-platform, supporting both x86_64 architecture as well
-as ARM64 (AWS Graviton, Apple M1/M2).
+as ARM64 (AWS Graviton, Apple M1–M6).
 
 ## Command-line Flags
 
