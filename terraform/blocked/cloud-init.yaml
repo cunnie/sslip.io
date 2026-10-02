@@ -168,7 +168,7 @@ runcmd:
   - mkdir -p /var/www/blocked /var/www/sslip.io /etc/letsencrypt/live/blocked.nip.io
   - curl -L -o /var/www/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/index.html
   - curl -L -o /var/www/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/experimental.html
-  - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/phishing.html
+  - curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/refs/heads/main/k8s/document_root_nip.io/blocked.html
   # nginx.conf hardcodes the Let's Encrypt cert path, so seed a throwaway
   # cert there just so nginx can pass config-check and start; deleted below
   # once nginx has it open, freeing the path for certbot's webroot challenge.

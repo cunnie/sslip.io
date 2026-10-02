@@ -126,7 +126,7 @@ sleep 10; while ! curl -sfI blocked.nip.io >/dev/null; do sleep 5; done
 
 Trigger a new workflow to publish the Docker image: <https://github.com/cunnie/sslip.io/actions/workflows/docker-sslip.io-dns-server.yml>
 
-Update the webservers with the HTML with new versions:
+Update the webservers' HTML with new versions:
 
 ```bash
 ssh nono.io
@@ -135,7 +135,7 @@ git pull -r
 HOST=blocked
 ssh $HOST sudo curl -L -o /var/www/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_nip.io/index.html
 ssh $HOST sudo curl -L -o /var/www/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_nip.io/experimental.html
-ssh $HOST sudo curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_nip.io/phishing.html
+ssh $HOST sudo curl -L -o /var/www/blocked/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_nip.io/blocked.html
 ```
 
 Browse to <https://github.com/cunnie/sslip.io/actions/workflows/nameservers.yml>, trigger the workflow, and check that everything is green.
