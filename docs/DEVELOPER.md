@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=5.1.5
-export VERSION=6.0.0
+export OLD_VERSION=6.0.0
+export VERSION=6.0.1
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
@@ -36,6 +36,7 @@ Build & start the new executables:
 bin/make_all
 bin/sslip.io-dns-server-darwin-arm64 --port 5333 \
 -nameservers=ns-00.nip.io.,ns-01.nip.io.,ns-ovh.sslip.io. \
+-blocklistURL=file:///dev/null \
 -addresses=nip.io=78.46.204.247,sslip.io=78.46.204.247,nip.io=2a01:4f8:c17:b8f::2,sslip.io=2a01:4f8:c17:b8f::2,ns.nip.io=167.172.4.236,ns.nip.io=2400:6180:0:d2:0:2:e3e7:0,ns.nip.io=5.78.28.211,ns.nip.io=2a01:4ff:1f2:10d::,ns.nip.io=51.75.53.19,ns.nip.io=2001:41d0:602:2313::1,ns.sslip.io=167.172.4.236,ns.sslip.io=2400:6180:0:d2:0:2:e3e7:0,ns.sslip.io=5.78.28.211,ns.sslip.io=2a01:4ff:1f2:10d::,ns.sslip.io=51.75.53.19,ns.sslip.io=2001:41d0:602:2313::1,blocked.nip.io=64.176.22.9,blocked.nip.io=2001:19f0:c800:2315::,ns-00.nip.io=167.172.4.236,ns-00.nip.io=2400:6180:0:d2:0:2:e3e7:0,ns-01.nip.io=5.78.28.211,ns-01.nip.io=2a01:4ff:1f2:10d::,ns-ovh.sslip.io=51.75.53.19,ns-ovh.sslip.io=2001:41d0:602:2313::1
 ```
 
@@ -43,7 +44,7 @@ Test from another window:
 
 ```bash
 DNS_SERVER_IP=127.0.0.1
-VERSION=6.0.0
+VERSION=6.0.1
 PORT=5333
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
@@ -90,7 +91,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: No hard-coded nameservers, addresses"
+GIT_MESSAGE="$VERSION: TCP hang bugfix"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION

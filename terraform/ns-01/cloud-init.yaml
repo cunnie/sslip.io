@@ -83,7 +83,7 @@ write_files:
       WantedBy=multi-user.target
 
 runcmd:
-  - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/6.0.0/sslip.io-dns-server-linux-amd64
+  - curl -L -o /usr/bin/sslip.io-dns-server https://github.com/cunnie/sslip.io/releases/download/6.0.1/sslip.io-dns-server-linux-amd64
   - chmod +x /usr/bin/sslip.io-dns-server
   - systemctl daemon-reload
   - systemctl enable floating-ips.service
