@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -14,27 +15,36 @@ import (
 	"syscall"
 	"time"
 	"xip/xip"
+
+	"golang.org/x/net/dns/dnsmessage"
 )
 
 func main() {
 	var blocklistURL = flag.String("blocklistURL",
 		"https://raw.githubusercontent.com/cunnie/sslip.io-blocklist/main/blocklist.txt",
-		`URL containing a list of non-resolvable IPs/names/CIDRs, usually phishing or scamming sites. Example "file://etc/blocklist.txt"`)
+		`URL containing a list of non-resolvable IPs/names/CIDRs, usually phishing or scamming sites. ` +
+		`Examples: "file:///dev/null", "file://etc/blocklist.txt"`)
 	var nameservers = flag.String("nameservers", "",
-		"comma-separated list of FQDNs of nameservers. If you're running your own sslip.io nameservers, set them here")
+		"(deprecated in favor of -ns) comma-separated list of FQDNs of nameservers")
 	var addresses = flag.String("addresses", "",
-		"comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es). If you're running your own sslip.io nameservers, add their hostnames and addresses here. If unsure, add to the list rather than replace")
-	var delegates = flag.String("delegates", "", "comma-separated list of domains you own "+
-		"and nameservers you control to which to delegate, often used to acquire wildcard certificates from "+
-		"Let's Encrypt via DNS challenge. Example: "+
-		`-delegates=_acme-challenge.73-189-219-4.xip.nono.io=ns-437.awsdns-54.com.,_acme-challenge.73-189-219-4.xip.nono.io=ns-1097.awsdns-09.org."`)
+		"(deprecated in favor of -a and -aaaa) comma-separated list of hosts and corresponding IPv4 and/or IPv6 address(es)")
+	var delegates = flag.String("delegates", "", "(deprecated in favor of -ns) comma-separated list of domains and their delegated nameservers")
 	var bindPort = flag.Int("port", 53, "port the DNS server should bind to")
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response. Use this to avoid Google Cloud charging you $30/month to retain the logs of your GKE-based sslip.io server")
 	var public = flag.Bool("public", true, "allows resolution of public IP addresses. If false, only resolves private IPs including localhost (127/8, ::1), link-local (169.254/16, fe80::/10), CG-NAT (100.64/12), private (10/8, 172.16/12, 192.168/16, fc/7). Set to false if you don't want miscreants impersonating you via public IPs. If unsure, set to false")
 	var ptrDomain = flag.String("ptr-domain", "nip.io.", "the domain to use for PTR records, e.g. if 'nip.io',  127-0-0-1.nip.io.")
 	var dnstapSocket = flag.String("dnstap", "", `enables dnstap logging of queries that return an A or AAAA record; argument is the destination socket, either a Unix socket path (e.g. "/var/run/dnstap.sock") or a TCP address (e.g. "127.0.0.1:6000" or "[::1]:6000")`)
+	var records = newRecordFlags(xip.Customizations)
+	flag.Func("a", `A record as "hostname=ipv4", e.g. "-a nip.io=192.168.1.1 -a nip.io=172.31.0.1"`, records.addA)
+	flag.Func("aaaa", `AAAA record as "hostname=ipv6", e.g. "-aaaa nip.io=2600:: -aaaa nip.io=2601::`, records.addAAAA)
+	flag.Func("mx", `MX record as "domain=preference,host", e.g. "-mx nip.io=10 mail.protonmail.ch. -mx nip.io=20,mailsec.protonmail.ch."`, records.addMX)
+	flag.Func("txt", `TXT record as "domain=text", e.g. '-txt nip.io="protonmail-verification=19b0837c" -txt nip.io="v=spf1 include:_spf.protonmail.ch mx -all"`, records.addTXT)
+	flag.Func("ns", `NS record as "domain=nameserver", often used to acquire wildcard certificates from Let's Encrypt via DNS-01 challenge, e.g. "-ns _acme-challenge.73-189-219-4.xip.nono.io.=ns-437.awsdns-54.com. -ns nip.io=ns-00.nip.io -ns nip.io=ns-ovh.sslip.io."`, records.addNS)
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
+	for _, logMessage := range records.logMessages {
+		log.Println(logMessage)
+	}
 	log.Printf("blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
 		*blocklistURL, *nameservers, *bindPort, *quiet)
 
@@ -127,6 +137,176 @@ func main() {
 	}
 	log.Printf("Ready to answer queries")
 	readFromUDP(udpConns[0], x, *quiet, dw) // refrain from exiting; There should always be a udpConns[0], and readFromUDP() _never_ returns
+}
+
+// recordFlags parses the -a, -aaaa, -mx, -txt, and -ns flags into DomainCustomizations.
+// The first flag of a given type for a domain replaces that domain's built-in records of
+// that type (e.g. nip.io's protonmail MX records); subsequent flags append.
+type recordFlags struct {
+	customizations xip.DomainCustomizations
+	replaced       map[string]bool     // "type domain", e.g. "MX nip.io."
+	txts           map[string][]string // domain → TXT strings, read at query time
+	logMessages    []string
+}
+
+func newRecordFlags(customizations xip.DomainCustomizations) *recordFlags {
+	return &recordFlags{
+		customizations: customizations,
+		replaced:       map[string]bool{},
+		txts:           map[string][]string{},
+	}
+}
+
+// splitRecordFlag splits "domain=value" into a lower-cased, absolute domain and the value
+func splitRecordFlag(arg string) (domain, value string, err error) {
+	domain, value, found := strings.Cut(arg, "=")
+	if !found || domain == "" || value == "" {
+		return "", "", fmt.Errorf(`should be in the format "domain=value", not %q`, arg)
+	}
+	return absolute(strings.ToLower(domain)), value, nil
+}
+
+// absolute appends the trailing "." if missing
+func absolute(name string) string {
+	if !strings.HasSuffix(name, ".") {
+		name += "."
+	}
+	return name
+}
+
+// update applies f to the domain's customization, clearing the built-in records of
+// recordType the first time a flag of that type is seen for that domain
+func (r *recordFlags) update(recordType, domain string, f func(dc *xip.DomainCustomization, first bool)) {
+	key := recordType + " " + domain
+	first := !r.replaced[key]
+	r.replaced[key] = true
+	dc := r.customizations[domain]
+	f(&dc, first)
+	r.customizations[domain] = dc
+}
+
+func (r *recordFlags) addA(arg string) error {
+	domain, value, err := splitRecordFlag(arg)
+	if err != nil {
+		return err
+	}
+	ip := net.ParseIP(value).To4()
+	if ip == nil {
+		return fmt.Errorf("%q is not a valid IPv4 address", value)
+	}
+	r.update("A", domain, func(dc *xip.DomainCustomization, first bool) {
+		if first {
+			dc.A = nil
+		}
+		dc.A = append(dc.A, dnsmessage.AResource{A: [4]byte(ip)})
+	})
+	r.logMessages = append(r.logMessages, fmt.Sprintf(`Adding A record "%s=%s"`, domain, ip))
+	return nil
+}
+
+func (r *recordFlags) addAAAA(arg string) error {
+	domain, value, err := splitRecordFlag(arg)
+	if err != nil {
+		return err
+	}
+	ip := net.ParseIP(value)
+	if ip == nil || ip.To4() != nil {
+		return fmt.Errorf("%q is not a valid IPv6 address", value)
+	}
+	r.update("AAAA", domain, func(dc *xip.DomainCustomization, first bool) {
+		if first {
+			dc.AAAA = nil
+		}
+		dc.AAAA = append(dc.AAAA, dnsmessage.AAAAResource{AAAA: [16]byte(ip)})
+	})
+	r.logMessages = append(r.logMessages, fmt.Sprintf(`Adding AAAA record "%s=%s"`, domain, ip))
+	return nil
+}
+
+func (r *recordFlags) addMX(arg string) error {
+	domain, value, err := splitRecordFlag(arg)
+	if err != nil {
+		return err
+	}
+	prefString, host, found := strings.Cut(value, ",")
+	if !found {
+		return fmt.Errorf(`should be in the format "domain=preference,host", not %q`, arg)
+	}
+	pref, err := strconv.ParseUint(prefString, 10, 16)
+	if err != nil {
+		return fmt.Errorf("%q is not a valid MX preference (0-65535)", prefString)
+	}
+	mx, err := dnsmessage.NewName(absolute(host))
+	if err != nil {
+		return fmt.Errorf("%q is not a valid mail exchanger: %w", host, err)
+	}
+	r.update("MX", domain, func(dc *xip.DomainCustomization, first bool) {
+		if first {
+			dc.MX = nil
+		}
+		dc.MX = append(dc.MX, dnsmessage.MXResource{Pref: uint16(pref), MX: mx})
+	})
+	r.logMessages = append(r.logMessages, fmt.Sprintf(`Adding MX record "%s=%d,%s"`, domain, pref, mx))
+	return nil
+}
+
+func (r *recordFlags) addTXT(arg string) error {
+	domain, value, err := splitRecordFlag(arg)
+	if err != nil {
+		return err
+	}
+	// allow, but don't require, the text to be double-quoted
+	if strings.HasPrefix(value, `"`) {
+		if value, err = strconv.Unquote(value); err != nil {
+			return fmt.Errorf("%q is not a properly-quoted string: %w", arg, err)
+		}
+	}
+	if value == "" {
+		return fmt.Errorf("TXT record for %q is empty", domain)
+	}
+	r.update("TXT", domain, func(dc *xip.DomainCustomization, first bool) {
+		if first {
+			r.txts[domain] = nil
+		}
+		dc.TXT = func(*xip.Xip, net.IP) ([]dnsmessage.TXTResource, error) {
+			var txts []dnsmessage.TXTResource
+			for _, txt := range r.txts[domain] {
+				txts = append(txts, dnsmessage.TXTResource{TXT: chunk(txt, 255)})
+			}
+			return txts, nil
+		}
+	})
+	r.txts[domain] = append(r.txts[domain], value)
+	r.logMessages = append(r.logMessages, fmt.Sprintf(`Adding TXT record %s=%q`, domain, value))
+	return nil
+}
+
+func (r *recordFlags) addNS(arg string) error {
+	domain, value, err := splitRecordFlag(arg)
+	if err != nil {
+		return err
+	}
+	ns, err := dnsmessage.NewName(absolute(strings.ToLower(value)))
+	if err != nil {
+		return fmt.Errorf("%q is not a valid nameserver: %w", value, err)
+	}
+	r.update("NS", domain, func(dc *xip.DomainCustomization, first bool) {
+		if first {
+			dc.NS = nil
+		}
+		dc.NS = append(dc.NS, dnsmessage.NSResource{NS: ns})
+	})
+	r.logMessages = append(r.logMessages, fmt.Sprintf(`Adding NS record "%s=%s"`, domain, ns))
+	return nil
+}
+
+// chunk splits s into strings of at most size bytes; a TXT record's strings can't exceed 255 bytes
+func chunk(s string, size int) (chunks []string) {
+	for len(s) > size {
+		chunks = append(chunks, s[:size])
+		s = s[size:]
+	}
+	return append(chunks, s)
 }
 
 func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {

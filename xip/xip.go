@@ -826,9 +826,6 @@ func String2IPv4(fqdn string) net.IP {
 		if ipv4address == nil {
 			return nil
 		}
-		if ipv4address == nil {
-			return nil
-		}
 		return ipv4address
 	}
 	return nil
