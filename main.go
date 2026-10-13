@@ -22,8 +22,8 @@ import (
 func main() {
 	var blocklistURL = flag.String("blocklistURL",
 		"https://raw.githubusercontent.com/cunnie/sslip.io-blocklist/main/blocklist.txt",
-		`URL containing a list of non-resolvable IPs/names/CIDRs, usually phishing or scamming sites. ` +
-		`Examples: "file:///dev/null", "file://etc/blocklist.txt"`)
+		`URL containing a list of non-resolvable IPs/names/CIDRs, usually phishing or scamming sites. `+
+			`Examples: "file:///dev/null", "file://etc/blocklist.txt"`)
 	var nameservers = flag.String("nameservers", "",
 		"(deprecated in favor of -ns) comma-separated list of FQDNs of nameservers")
 	var addresses = flag.String("addresses", "",
@@ -36,10 +36,11 @@ func main() {
 	var dnstapSocket = flag.String("dnstap", "", `enables dnstap logging of queries that return an A or AAAA record; argument is the destination socket, either a Unix socket path (e.g. "/var/run/dnstap.sock") or a TCP address (e.g. "127.0.0.1:6000" or "[::1]:6000")`)
 	var records = newRecordFlags(xip.Customizations)
 	flag.Func("a", `A record as "hostname=ipv4", e.g. "-a nip.io=192.168.1.1 -a nip.io=172.31.0.1"`, records.addA)
-	flag.Func("aaaa", `AAAA record as "hostname=ipv6", e.g. "-aaaa nip.io=2600:: -aaaa nip.io=2601::`, records.addAAAA)
-	flag.Func("mx", `MX record as "domain=preference,host", e.g. "-mx nip.io=10 mail.protonmail.ch. -mx nip.io=20,mailsec.protonmail.ch."`, records.addMX)
+	flag.Func("aaaa", `AAAA record as "hostname=ipv6", e.g. "-aaaa nip.io=2600:: -aaaa nip.io=2601::"`, records.addAAAA)
+	flag.Func("mx", `MX record as "domain=preference,host", e.g. "-mx nip.io=10,mail.protonmail.ch. -mx nip.io=20,mailsec.protonmail.ch."`, records.addMX)
 	flag.Func("txt", `TXT record as "domain=text", e.g. '-txt nip.io="protonmail-verification=19b0837c" -txt nip.io="v=spf1 include:_spf.protonmail.ch mx -all"`, records.addTXT)
-	flag.Func("ns", `NS record as "domain=nameserver", often used to acquire wildcard certificates from Let's Encrypt via DNS-01 challenge, e.g. "-ns _acme-challenge.73-189-219-4.xip.nono.io.=ns-437.awsdns-54.com. -ns nip.io=ns-00.nip.io -ns nip.io=ns-ovh.sslip.io."`, records.addNS)
+	flag.Func("ns", `NS record as "domain=nameserver". If the domain is ".", sets the default nameservers returned for every query, e.g. "-ns .=ns-00.nip.io -ns .=ns-ovh.sslip.io.". `+
+		`Otherwise delegates the domain to the nameserver, often used to acquire wildcard certificates from Let's Encrypt via DNS-01 challenge, e.g. "-ns _acme-challenge.73-189-219-4.xip.nono.io.=ns-437.awsdns-54.com."`, records.addNS)
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	for _, logMessage := range records.logMessages {
@@ -48,7 +49,7 @@ func main() {
 	log.Printf("blocklist URL: %s, name servers: %s, bind port: %d, quiet: %t",
 		*blocklistURL, *nameservers, *bindPort, *quiet)
 
-	x, logmessages := xip.NewXip(*blocklistURL, strings.Split(*nameservers, ","), strings.Split(*addresses, ","), strings.Split(*delegates, ","), *ptrDomain)
+	x, logmessages := xip.NewXip(*blocklistURL, append(strings.Split(*nameservers, ","), records.nameservers...), strings.Split(*addresses, ","), strings.Split(*delegates, ","), *ptrDomain)
 	x.Public = *public
 	for _, logmessage := range logmessages {
 		log.Println(logmessage)
@@ -146,6 +147,7 @@ type recordFlags struct {
 	customizations xip.DomainCustomizations
 	replaced       map[string]bool     // "type domain", e.g. "MX nip.io."
 	txts           map[string][]string // domain → TXT strings, read at query time
+	nameservers    []string            // default nameservers, set via "-ns .=nameserver"
 	logMessages    []string
 }
 
@@ -289,6 +291,10 @@ func (r *recordFlags) addNS(arg string) error {
 	ns, err := dnsmessage.NewName(absolute(strings.ToLower(value)))
 	if err != nil {
 		return fmt.Errorf("%q is not a valid nameserver: %w", value, err)
+	}
+	if domain == "." { // the root domain means "default nameservers", like -nameservers; NewXip logs them
+		r.nameservers = append(r.nameservers, ns.String())
+		return nil
 	}
 	r.update("NS", domain, func(dc *xip.DomainCustomization, first bool) {
 		if first {

@@ -128,6 +128,31 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns)", func() {
 				Expect(string(serverSession.Err.Contents())).To(ContainSubstring(`Adding NS record "delegated.example.com.=ns-00.nip.io."`))
 			})
 		})
+		When("-ns is set for the root domain (\".\")", func() {
+			BeforeEach(func() {
+				flags = []string{"-ns", ".=NS-00.nip.io", "-ns", ".=ns-01.nip.io."}
+			})
+			It("sets the default nameservers, like -nameservers, appending the trailing dot if missing", func() {
+				answer := digShort("example.com ns")
+				Expect(answer).To(ContainSubstring("ns-00.nip.io.\n"))
+				Expect(answer).To(ContainSubstring("ns-01.nip.io.\n"))
+				Expect(string(serverSession.Err.Contents())).To(ContainSubstring(`Adding nameserver "ns-00.nip.io."`))
+				Expect(string(serverSession.Err.Contents())).To(ContainSubstring(`Adding nameserver "ns-01.nip.io."`))
+			})
+			It("doesn't delegate anything", func() {
+				Expect(digShort("127.0.0.1.nip.io a")).To(Equal("127.0.0.1\n"))
+			})
+		})
+		When("-ns is set for the root domain and -nameservers is also set", func() {
+			BeforeEach(func() {
+				flags = []string{"-ns", ".=ns-00.nip.io", "-nameservers", "ns-01.nip.io"}
+			})
+			It("returns the nameservers from both flags", func() {
+				answer := digShort("example.com ns")
+				Expect(answer).To(ContainSubstring("ns-00.nip.io.\n"))
+				Expect(answer).To(ContainSubstring("ns-01.nip.io.\n"))
+			})
+		})
 	})
 
 	DescribeTable("when a flag is invalid, it exits with an informative message",
