@@ -134,7 +134,7 @@ var _ = Describe("flags", func() {
 			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(digSession, 1).Should(Exit(0))
-			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA 8-8-8-8\.sslip\.io\. briancunnie\.gmail\.com\.`))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA ns-01\.nip\.io\. dns\.nip\.io\.`))
 		})
 		It("doesn't resolve public IPv6 addresses", func() {
 			digArgs := "@localhost aaaa 2600--.sslip.io -p " + strconv.Itoa(port)
@@ -142,7 +142,7 @@ var _ = Describe("flags", func() {
 			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(digSession, 1).Should(Exit(0))
-			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA 2600--\.sslip\.io\. briancunnie\.gmail\.com\.`))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA ns-01\.nip\.io\. dns\.nip\.io\.`))
 		})
 		It("doesn't resolve public IPv4 addresses (hexadecimal)", func() {
 			digArgs := "@localhost 08080808.nip.io -p " + strconv.Itoa(port)
@@ -150,7 +150,7 @@ var _ = Describe("flags", func() {
 			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(digSession, 1).Should(Exit(0))
-			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA 08080808\.nip\.io\. briancunnie\.gmail\.com\.`))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA ns-01\.nip\.io\. dns\.nip\.io\.`))
 		})
 		It("doesn't resolve public IPv6 addresses (hexadecimal)", func() {
 			digArgs := "@localhost aaaa 26010646010069f0042c6ab3cdd9e562.nip.io -p " + strconv.Itoa(port) // my laptop's IPv6 address
@@ -158,7 +158,7 @@ var _ = Describe("flags", func() {
 			digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(digSession, 1).Should(Exit(0))
-			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA 26010646010069f0042c6ab3cdd9e562\.nip\.io\. briancunnie\.gmail\.com\.`))
+			Eventually(string(serverSession.Err.Contents())).Should(MatchRegexp(`\? nil, SOA ns-01\.nip\.io\. dns\.nip\.io\.`))
 		})
 		It("resolves private IPv4 addresses", func() {
 			digArgs := "@localhost 192-168-0-1.sslip.io -p " + strconv.Itoa(port)

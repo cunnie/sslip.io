@@ -208,12 +208,13 @@ var _ = Describe("Xip", func() {
 		})
 	})
 
-	Describe("SOAResource()", func() {
-		It("returns the SOA resource for the domain in question", func() {
-			randomDomain := testhelper.Random8ByteString() + ".com."
-			randomDomainName := dnsmessage.MustNewName(randomDomain)
-			soa := xip.SOAResource(randomDomainName)
-			Expect(soa.NS.Data).To(Equal(randomDomainName.Data))
+	Describe("SOAAuthority()", func() {
+		It("returns the same SOA (and MNAME) regardless of the domain in question", func() {
+			randomDomainName := dnsmessage.MustNewName(testhelper.Random8ByteString() + ".com.")
+			header, soa := xip.SOAAuthority(randomDomainName)
+			Expect(header.Name).To(Equal(randomDomainName))
+			Expect(soa).To(Equal(xip.SOA))
+			Expect(soa.NS.String()).To(Equal("ns-01.nip.io."))
 		})
 	})
 

@@ -145,10 +145,10 @@ as ARM64 (AWS Graviton, Apple M1–M6).
 ## DNS Server Miscellany
 
 - it binds to both UDP and TCP.
-- The SOA record is hard-coded except the _MNAME_ (primary master name server)
-  record, which is set to the queried hostname (e.g. `dig big.apple.com
-  @ns.sslip.io` would return an SOA with an _MNAME_ record of
-  `big.apple.com.`
+- The same SOA record is returned for every domain; its _MNAME_ (primary master
+  name server) is always `ns-01.nip.io.` Override it
+  with the `-soa` flag, e.g.
+  `-soa=nip.io.,dns.nip.io.,998506478,900,900,604800,300`
 - The MX records are hard-coded to the queried hostname with a preference of 0,
   except `sslip.io` itself, which has custom MX records to enable email
   delivery to ProtonMail
@@ -156,12 +156,17 @@ as ARM64 (AWS Graviton, Apple M1–M6).
 
 ## Directory Structure
 
-- `spec/` contains the tests for the production nameservers. To run
-  the tests locally:
+- `spec/` contains the tests for the production nameservers. To ensure the production nameservers are running properly:
 
   ```bash
   DOMAINS=nip.io,sslip.io ginkgo -r -p spec/
   ```
+
+- To test the code (if you've made changes) without testing the production nameservers:
+
+```bash
+ginkgo -r -p --skip-package=spec
+```
 
 - `k8s/document_root_nip.io/` contains the HTML content of the nip.io
   website.

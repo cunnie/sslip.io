@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns)", func() {
+var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns, -soa)", func() {
 	var serverCmd *exec.Cmd
 	var serverSession *Session
 	var port = getFreePort()
@@ -153,6 +153,23 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns)", func() {
 				Expect(answer).To(ContainSubstring("ns-01.nip.io.\n"))
 			})
 		})
+		When("-soa is set", func() {
+			BeforeEach(func() {
+				flags = []string{"-soa=NIP.io,dns-admin.nip.io.,998506478,900,900,1800,300"}
+			})
+			It("returns that SOA for every domain, appending the trailing dot if missing", func() {
+				Expect(digShort("example.com soa")).To(Equal("nip.io. dns-admin.nip.io. 998506478 900 900 1800 300\n"))
+				Expect(digShort("127.0.0.1.sslip.io soa")).To(Equal("nip.io. dns-admin.nip.io. 998506478 900 900 1800 300\n"))
+				Expect(string(serverSession.Err.Contents())).To(ContainSubstring(`Setting SOA record "nip.io. dns-admin.nip.io. 998506478 900 900 1800 300"`))
+			})
+			It("returns that SOA in the authority section when there's no answer", func() {
+				digCmd := exec.Command("dig", "@localhost", "-p", strconv.Itoa(port), "example.com", "a")
+				digSession, err := Start(digCmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(digSession, 1).Should(Exit(0))
+				Expect(string(digSession.Out.Contents())).To(MatchRegexp(`example\.com\.\s+\d+\s+IN\s+SOA\s+nip\.io\. dns-admin\.nip\.io\. 998506478 900 900 1800 300\n`))
+			})
+		})
 	})
 
 	DescribeTable("when a flag is invalid, it exits with an informative message",
@@ -173,5 +190,9 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns)", func() {
 		Entry("-txt with an unterminated quote", "-txt", `nip.io="oops`, "is not a properly-quoted string"),
 		Entry("-txt with an empty quoted string", "-txt", `nip.io=""`, "is empty"),
 		Entry("-ns with a nameserver > 255 chars", "-ns", "nip.io="+strings.Repeat("a.", 128), "is not a valid nameserver"),
+		Entry("-soa with too few fields", "-soa", "nip.io.,dns-admin.nip.io.,998506478,900,900,1800", `should be in the format "mname,rname,serial,refresh,retry,expire,minimum"`),
+		Entry("-soa with a non-numeric serial", "-soa", "nip.io.,dns-admin.nip.io.,one,900,900,1800,300", `"one" is not a valid SOA serial`),
+		Entry("-soa with a minimum > 4294967295", "-soa", "nip.io.,dns-admin.nip.io.,998506478,900,900,1800,4294967296", `"4294967296" is not a valid SOA minimum`),
+		Entry("-soa with an rname > 255 chars", "-soa", "nip.io.,"+strings.Repeat("a.", 128)+",998506478,900,900,1800,300", "is not a valid SOA rname"),
 	)
 })

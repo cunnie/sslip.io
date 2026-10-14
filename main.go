@@ -41,6 +41,8 @@ func main() {
 	flag.Func("txt", `TXT record as "domain=text", e.g. '-txt nip.io="protonmail-verification=19b0837c" -txt nip.io="v=spf1 include:_spf.protonmail.ch mx -all"`, records.addTXT)
 	flag.Func("ns", `NS record as "domain=nameserver". If the domain is ".", sets the default nameservers returned for every query, e.g. "-ns .=ns-00.nip.io -ns .=ns-ovh.sslip.io.". `+
 		`Otherwise delegates the domain to the nameserver, often used to acquire wildcard certificates from Let's Encrypt via DNS-01 challenge, e.g. "-ns _acme-challenge.73-189-219-4.xip.nono.io.=ns-437.awsdns-54.com."`, records.addNS)
+	flag.Func("soa", `SOA record returned for every domain as "mname,rname,serial,refresh,retry,expire,minimum", e.g. "-soa nip.io.,dns-admin.nip.io.,998506478,900,900,1800,300". `+
+		`Defaults to "ns-01.nip.io.,dns.nip.io.,20261001,900,900,604800,180"`, records.setSOA)
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	for _, logMessage := range records.logMessages {
@@ -140,7 +142,8 @@ func main() {
 	readFromUDP(udpConns[0], x, *quiet, dw) // refrain from exiting; There should always be a udpConns[0], and readFromUDP() _never_ returns
 }
 
-// recordFlags parses the -a, -aaaa, -mx, -txt, and -ns flags into DomainCustomizations.
+// recordFlags parses the -a, -aaaa, -mx, -txt, and -ns flags into DomainCustomizations,
+// and the -soa flag into xip.SOA.
 // The first flag of a given type for a domain replaces that domain's built-in records of
 // that type (e.g. nip.io's protonmail MX records); subsequent flags append.
 type recordFlags struct {
@@ -303,6 +306,41 @@ func (r *recordFlags) addNS(arg string) error {
 		dc.NS = append(dc.NS, dnsmessage.NSResource{NS: ns})
 	})
 	r.logMessages = append(r.logMessages, fmt.Sprintf(`Adding NS record "%s=%s"`, domain, ns))
+	return nil
+}
+
+func (r *recordFlags) setSOA(arg string) error {
+	fields := strings.Split(arg, ",")
+	if len(fields) != 7 {
+		return fmt.Errorf(`should be in the format "mname,rname,serial,refresh,retry,expire,minimum", not %q`, arg)
+	}
+	var names [2]dnsmessage.Name
+	for i, label := range []string{"mname", "rname"} {
+		name, err := dnsmessage.NewName(absolute(strings.ToLower(fields[i])))
+		if err != nil {
+			return fmt.Errorf("%q is not a valid SOA %s: %w", fields[i], label, err)
+		}
+		names[i] = name
+	}
+	var numbers [5]uint32
+	for i, label := range []string{"serial", "refresh", "retry", "expire", "minimum"} {
+		number, err := strconv.ParseUint(fields[i+2], 10, 32)
+		if err != nil {
+			return fmt.Errorf("%q is not a valid SOA %s (0-4294967295)", fields[i+2], label)
+		}
+		numbers[i] = uint32(number)
+	}
+	xip.SOA = dnsmessage.SOAResource{
+		NS:      names[0],
+		MBox:    names[1],
+		Serial:  numbers[0],
+		Refresh: numbers[1],
+		Retry:   numbers[2],
+		Expire:  numbers[3],
+		MinTTL:  numbers[4],
+	}
+	r.logMessages = append(r.logMessages, fmt.Sprintf(`Setting SOA record "%s %s %d %d %d %d %d"`,
+		names[0], names[1], numbers[0], numbers[1], numbers[2], numbers[3], numbers[4]))
 	return nil
 }
 

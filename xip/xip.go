@@ -59,9 +59,6 @@ type Metrics struct {
 // For example, when querying for MX records for "sslip.io", return the protonmail servers,
 // but when querying for MX records for generic queries, e.g. "127.0.0.1.sslip.io", return the
 // default (which happens to be no MX records).
-//
-// Noticeably absent are the NS records and SOA records. They don't need to be customized
-// because they are always the same, regardless of the domain being queried.
 type DomainCustomization struct {
 	A     []dnsmessage.AResource
 	AAAA  []dnsmessage.AAAAResource
@@ -94,7 +91,7 @@ var (
 	ipv6ReverseRE    = regexp.MustCompile(`^(([[:xdigit:]]\.){32})ip6\.arpa\.`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
 
-	mbox, _       = dnsmessage.NewName("briancunnie.gmail.com.")
+	mbox, _       = dnsmessage.NewName("dns.nip.io.")
 	mx1, _        = dnsmessage.NewName("mail.protonmail.ch.")
 	mx2, _        = dnsmessage.NewName("mailsec.protonmail.ch.")
 	dkim1Sslip, _ = dnsmessage.NewName("protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
@@ -109,6 +106,18 @@ var (
 	VersionGitHash  = "cafexxx"
 
 	MetricsBufferSize = 200 // big enough to run our tests, and small enough to prevent DNS amplification attacks
+
+	// SOA is returned verbatim for every domain; override it with the -soa flag
+	SOA = dnsmessage.SOAResource{
+		NS:     dnsmessage.MustNewName("ns-01.nip.io."),
+		MBox:   mbox,
+		Serial: 20261001,
+		// cribbed the Refresh/Retry from google.com. & cloudflare.com
+		Refresh: 900,
+		Retry:   900,
+		Expire:  604800,
+		MinTTL:  180,
+	}
 
 	Customizations = DomainCustomizations{
 		"nip.io.": {
@@ -567,7 +576,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 	case dnsmessage.TypeSOA:
 		{
 			x.Metrics.AnsweredQueries++
-			soaResource := SOAResource(q.Name)
+			soaResource := SOA
 			response.Answers = append(response.Answers,
 				func(b *dnsmessage.Builder) error {
 					err = b.SOAResource(dnsmessage.ResourceHeader{
@@ -648,7 +657,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 				logMessageTXTss = append(logMessageTXTss, `["`+strings.Join(logMessageTXTs, `", "`)+`"]`)
 			}
 			if len(logMessageTXTss) == 0 {
-				return response, logMessage + "nil, SOA " + soaLogMessage(SOAResource(q.Name)), nil
+				return response, logMessage + "nil, SOA " + soaLogMessage(SOA), nil
 			}
 			return response, logMessage + strings.Join(logMessageTXTss, ", "), nil
 		}
@@ -657,15 +666,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 			ptr := x.PTRResource([]byte(q.Name.String()))
 			if ptr == nil {
 				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(dnsmessage.MustNewName("sslip.io."))
-				response.Authorities = append(response.Authorities,
-					func(b *dnsmessage.Builder) error {
-						if err = b.SOAResource(soaHeader, soaResource); err != nil {
-							return err
-						}
-						return nil
-					})
-				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
+				return soaAuthorityResponse(q.Name, response, logMessage)
 			}
 			//x.Metrics.AnsweredQueries++
 			response.Answers = append(response.Answers,
@@ -976,23 +977,7 @@ func SOAAuthority(name dnsmessage.Name) (dnsmessage.ResourceHeader, dnsmessage.S
 		Class:  dnsmessage.ClassINET,
 		TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
 		Length: 0,
-	}, SOAResource(name)
-}
-
-// SOAResource returns the hard-coded (except MNAME) SOA
-func SOAResource(name dnsmessage.Name) dnsmessage.SOAResource {
-	return dnsmessage.SOAResource{
-		NS:     name,
-		MBox:   mbox,
-		Serial: 20261001,
-		// cribbed the Refresh/Retry/Expire from google.com.
-		// MinTTL was 300, but I dropped to 180 for faster
-		// key-value propagation
-		Refresh: 900,
-		Retry:   900,
-		Expire:  1800,
-		MinTTL:  180,
-	}
+	}, SOA
 }
 
 // PTRResource returns the PTR record, otherwise nil
