@@ -21,19 +21,6 @@ var _ = Describe("Xip", func() {
 			cname := xip.CNAMEResource(randomDomain)
 			Expect(cname).To(BeNil())
 		})
-		When("querying one of sslip.io's DKIM CNAMEs", func() {
-			It("returns the CNAME", func() {
-				cname := xip.CNAMEResource("protonmail._domainkey.SSlip.Io.")
-				Expect(cname.CNAME.String()).To(MatchRegexp("^protonmail\\.domainkey.*.domains\\.proton\\.ch\\.$"))
-			})
-		})
-		When("querying one of nip.io's DKIM CNAMEs", func() {
-			It("returns the CNAME", func() {
-				cname := xip.CNAMEResource("protonmail._domainkey.nIP.iO.")
-				Expect(cname).ToNot(BeNil())
-				Expect(cname.CNAME.String()).To(MatchRegexp("^protonmail\\.domainkey.*.domains\\.proton\\.ch\\.$"))
-			})
-		})
 		When("a domain has been customized but has no CNAMEs", func() {
 			It("returns nil", func() {
 				customizedDomain := testhelper.Random8ByteString() + ".com."
@@ -71,20 +58,6 @@ var _ = Describe("Xip", func() {
 			mxHostName := dnsmessage.MustNewName(randomDomain)
 			Expect(len(mx)).To(Equal(1))
 			Expect(mx[0].MX).To(Equal(mxHostName))
-		})
-		When("sslip.io is the domain being queried", func() {
-			It("returns sslip.io's custom MX records", func() {
-				mx := xip.MXResources("sslIP.iO.")
-				Expect(len(mx)).To(Equal(2))
-				Expect(mx[0].MX.Data).To(Equal(xip.Customizations["sslip.io."].MX[0].MX.Data))
-			})
-		})
-		When("nip.io is the domain being queried", func() {
-			It("returns nip.io's custom MX records", func() {
-				mx := xip.MXResources("nip.iO.")
-				Expect(len(mx)).To(Equal(2))
-				Expect(mx[0].MX.Data).To(Equal(xip.Customizations["nip.io."].MX[0].MX.Data))
-			})
 		})
 	})
 
@@ -225,26 +198,6 @@ var _ = Describe("Xip", func() {
 			txts, err := x.TXTResources(randomDomain, nil)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(len(txts)).To(Equal(0))
-		})
-		When("queried for the sslip.io domain", func() {
-			It("returns mail-related TXT resources for the sslip.io domain", func() {
-				domain := "ssLip.iO."
-				txts, err := x.TXTResources(domain, nil)
-				Expect(err).To(Not(HaveOccurred()))
-				Expect(len(txts)).To(Equal(2))
-				Expect(txts[0].TXT[0]).To(MatchRegexp("protonmail-verification="))
-				Expect(txts[1].TXT[0]).To(MatchRegexp("v=spf1"))
-			})
-		})
-		When("queried for the nip.io domain", func() {
-			It("returns mail-related TXT resources for the nip.io domain", func() {
-				domain := "niP.iO."
-				txts, err := x.TXTResources(domain, nil)
-				Expect(err).To(Not(HaveOccurred()))
-				Expect(len(txts)).To(Equal(2))
-				Expect(txts[0].TXT[0]).To(MatchRegexp("protonmail-verification="))
-				Expect(txts[1].TXT[0]).To(MatchRegexp("v=spf1"))
-			})
 		})
 		When("a random domain has been customized w/out any TXT defaults", func() { // Unnecessary, but confirms Golang's behavior for me, a doubting Thomas
 			customizedDomain := testhelper.Random8ByteString() + ".com."

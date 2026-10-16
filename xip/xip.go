@@ -91,15 +91,7 @@ var (
 	ipv6ReverseRE    = regexp.MustCompile(`^(([[:xdigit:]]\.){32})ip6\.arpa\.`)
 	dns01ChallengeRE = regexp.MustCompile(`(?i)_acme-challenge\.`) // (?i) → non-capturing case insensitive
 
-	mbox, _       = dnsmessage.NewName("dns.nip.io.")
-	mx1, _        = dnsmessage.NewName("mail.protonmail.ch.")
-	mx2, _        = dnsmessage.NewName("mailsec.protonmail.ch.")
-	dkim1Sslip, _ = dnsmessage.NewName("protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
-	dkim2Sslip, _ = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
-	dkim3Sslip, _ = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
-	dkim1Nip, _   = dnsmessage.NewName("protonmail.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
-	dkim2Nip, _   = dnsmessage.NewName("protonmail2.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
-	dkim3Nip, _   = dnsmessage.NewName("protonmail3.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.")
+	mbox, _ = dnsmessage.NewName("dns.nip.io.")
 
 	VersionSemantic = "0.0.0"
 	VersionDate     = "0001/01/01-99:99:99-0800"
@@ -120,70 +112,6 @@ var (
 	}
 
 	Customizations = DomainCustomizations{
-		"nip.io.": {
-			MX: []dnsmessage.MXResource{
-				{
-					Pref: 10,
-					MX:   mx1,
-				},
-				{
-					Pref: 20,
-					MX:   mx2,
-				},
-			},
-			TXT: TXTNipIoSPF,
-		},
-		"sslip.io.": {
-			MX: []dnsmessage.MXResource{
-				{
-					Pref: 10,
-					MX:   mx1,
-				},
-				{
-					Pref: 20,
-					MX:   mx2,
-				},
-			},
-			TXT: TXTSslipIoSPF,
-		},
-		"_dmarc.nip.io.": {
-			TXT: TXTDmarc,
-		},
-		"_dmarc.sslip.io.": {
-			TXT: TXTDmarc,
-		},
-		// nameserver addresses; we get queries for those every once in a while
-		// CNAMEs for nip.io/sslip.io for DKIM signing
-		"protonmail._domainkey.nip.io.": {
-			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim1Nip,
-			},
-		},
-		"protonmail2._domainkey.nip.io.": {
-			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim2Nip,
-			},
-		},
-		"protonmail3._domainkey.nip.io.": {
-			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim3Nip,
-			},
-		},
-		"protonmail._domainkey.sslip.io.": {
-			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim1Sslip,
-			},
-		},
-		"protonmail2._domainkey.sslip.io.": {
-			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim2Sslip,
-			},
-		},
-		"protonmail3._domainkey.sslip.io.": {
-			CNAME: dnsmessage.CNAMEResource{
-				CNAME: dkim3Sslip,
-			},
-		},
 		// Special-purpose TXT records
 		"ip.nip.io.": {
 			TXT: TXTIp,
@@ -250,8 +178,7 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 
 	// Parse and set our nameservers
 	for _, ns := range nameservers {
-		if len(ns) == 0 {
-			logmessages = append(logmessages, `-nameservers: ignoring zero-length nameserver ""`)
+		if ns == "" { // most common case: no "-nameservers" flag
 			continue
 		}
 		// all nameservers must be absolute (end in ".")
@@ -270,6 +197,9 @@ func NewXip(blocklistURL string, nameservers []string, addresses []string, deleg
 	}
 	// Parse and set our addresses
 	for _, address := range addresses {
+		if address == "" { // most common case: no "-addresses" flag
+			continue
+		}
 		hostAddr := strings.Split(address, "=")
 		if len(hostAddr) != 2 {
 			logmessages = append(logmessages, fmt.Sprintf(`-addresses: arguments should be in the format "host=ip", not "%s"`, address))
@@ -1033,37 +963,6 @@ func (x *Xip) PTRResource(fqdn []byte) *dnsmessage.PTRResource {
 		}
 	}
 	return nil
-}
-
-// TXTSslipIoSPF SPF records for nip.io
-func TXTNipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
-	// Although multiple TXT records with multiple strings are allowed, we're sticking
-	// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
-	// and that's what google.com does.
-	return []dnsmessage.TXTResource{
-		{TXT: []string{"protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313"}}, // ProtonMail verification; don't delete
-		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx -all"}},
-	}, nil // Sender Policy Framework
-}
-
-// TXTSslipIoSPF SPF records for sslio.io
-func TXTSslipIoSPF(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
-	// Although multiple TXT records with multiple strings are allowed, we're sticking
-	// with a multiple TXT records with a single string apiece because that's what ProtonMail requires
-	// and that's what google.com does.
-	return []dnsmessage.TXTResource{
-		{TXT: []string{"protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26"}}, // ProtonMail verification; don't delete
-		{TXT: []string{"v=spf1 include:_spf.protonmail.ch mx -all"}},
-	}, nil // Sender Policy Framework
-}
-
-// TXTDmarc DMARC record
-// Tighten the screws to prevent spam, thanks @brakhane
-// - p=reject -> reject all emails that don't meet SPF requirements, subdomains inherit
-func TXTDmarc(_ *Xip, _ net.IP) ([]dnsmessage.TXTResource, error) {
-	return []dnsmessage.TXTResource{
-		{TXT: []string{"v=DMARC1; p=reject"}},
-	}, nil
 }
 
 // TXTIp when TXT for "ip.sslip.io" is queried, return the IP address of the querier

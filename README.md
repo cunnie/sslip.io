@@ -42,14 +42,14 @@ go get github.com/onsi/gomega/...
 
 ## Running Your Own Nameservers
 
-We can customize our nameserver and address records (NS, A, and AAAA), which
-can be particularly useful in an internetless (air-gapped) environment. This can
-be done with a combination of the `-nameservers` flag and the `-addresses` flag.
+We can customize our nameserver and address records (NS, A, and AAAA). This can
+be done with a combination of the `-ns`, `-a`, and `-aaaa` flags.
 
-For example, let's say we're the DNS admin for pivotal.io, and we'd like to
-have a subdomain, "xip.pivotal.io", that does sslip.io-style lookups (e.g.
-"127.0.0.1.xip.pivotal.io" would resolve to "127.0.0.1"). Let's say we have two
-servers that we've set aside for this purpose:
+For example, let's say we're the DNS admin for pivotal.io and our email is
+dns-admin\@pivotal.io, and we'd like to have a subdomain, "xip.pivotal.io",
+that does sslip.io-style lookups (e.g. "127.0.0.1.xip.pivotal.io" would resolve
+to "127.0.0.1"). Let's say we have two servers that we've set aside for this
+purpose:
 
 - ns-ip-0.pivotal.io, 10.8.8.8 (IPv4)
 - ns-ip-1.pivotal.io, fc88:: (IPv6)
@@ -60,15 +60,18 @@ then we run the following command run on each of the two servers:
 ```bash
  # after we've cloned our repo & cd'ed into it
 go run . \
-  -nameservers=ns-ip-0.pivotal.io,ns-ip-1.pivotal.io \
-  -addresses=ns-ip-0.pivotal.io=10.8.8.8,ns-ip-1.pivotal.io=fc88:: \
+  -ns=.=ns-ip-0.pivotal.io \
+  -ns=.=ns-ip-1.pivotal.io \
+  -a=ns-ip-0.pivotal.io=10.8.8.8 \
+  -aaaa=ns-ip-1.pivotal.io=fc88:: \
+  -soa=ns-ip-0.pivotal.io,dns-admin.pivotal.io,20261001,900,900,604800,180 \
   -blocklistURL=file:///dev/null \
   -ptr-domain=xip.pivotal.io
 ```
 
-**Note: These nameservers are not general-purpose nameservers; for example,
-they won't look up google.com. They are not recursive.** Don't ever configure a
-client to use these nameservers.
+Note: These nameservers are not general-purpose nameservers; for example,
+they won't look up google.com. They are not recursive. **Don't ever configure a
+client to use these nameservers**.
 
 ### Running with Docker
 
@@ -83,8 +86,11 @@ docker run \
   --rm \
   -p 5553:53/udp \
   cunnie/sslip.io-dns-server \
-  -nameservers=ns-ip-0.pivotal.io,ns-ip-1.pivotal.io \
-  -addresses=ns-ip-0.pivotal.io=10.8.8.8,ns-ip-1.pivotal.io=fc88:: \
+  -ns=.=ns-ip-0.pivotal.io \
+  -ns=.=ns-ip-1.pivotal.io \
+  -a=ns-ip-0.pivotal.io=10.8.8.8 \
+  -aaaa=ns-ip-1.pivotal.io=fc88:: \
+  -soa=ns-ip-0.pivotal.io,dns-admin.pivotal.io,20261001,900,900,604800,180 \
   -blocklistURL=file:///dev/null \
   -ptr-domain=xip.pivotal.io
 ```
@@ -114,47 +120,68 @@ as ARM64 (AWS Graviton, Apple M1–M6).
   privileged ports (<1024) ("`listen udp :53: bind: permission denied`"). For
   example, to run the server on port 9553: `go run main.go -port 9553`. To
   query, `dig @localhost 127.0.0.1.sslip.io -p 9553`
-- `-nameservers` overrides the default NS records `ns-00.nip.io`,
-  `ns-01.nip.io`, and `ns-ovh.sslip.io`; flag, e.g. `go run main.go
-  -nameservers ns1.example.com,ns2.example.com`). If you're running your own
-  nameservers, you probably want to set this. Don't forget to set address
-  records for the new name servers with the `-addresses` flag (see below).
-- `-addresses` overrides the default A/AAAA (IPv4/IPv6) address records. For
-  example, here's how we set the IPv4 record & IPv6 record for our nameserver
-  (in the `-nameservers` example above), ns1.example.com: `-addresses
-  ns1.example.com=10.8.8.8,ns1.example.com=fc::8888`. Note that you can set
-  many addresses for a single host, e.g.
-  `ns1.example.com=1.1.1.1,ns1.example.com=8.8.8.8,ns1.example.com=9.9.9.9`
+- `-ns` sets NS records as `domain=nameserver`. If the domain is `.`, it sets
+  the nameservers returned for every query, e.g. `-ns=.=ns1.example.com
+  -ns=.=ns2.example.com`. If you're running your own nameservers, you probably
+  want to set this; otherwise no NS records are returned. Don't forget to set
+  address records for your nameservers with the `-a` and `-aaaa` flags (see
+  below). For any other domain, `-ns` delegates that domain and its subdomains
+  to the nameserver, often used to acquire wildcard certificates from Let's
+  Encrypt via the DNS-01 challenge, e.g.
+  `-ns=_acme-challenge.73-189-219-4.xip.nono.io=ns-437.awsdns-54.com`
+- `-a` sets an A (IPv4) record as `hostname=ipv4`, e.g.
+  `-a=ns1.example.com=10.8.8.8`. Repeat the flag to set many addresses for a
+  single host, e.g. `-a=ns1.example.com=1.1.1.1 -a=ns1.example.com=8.8.8.8`
+- `-aaaa` sets an AAAA (IPv6) record as `hostname=ipv6`, e.g.
+  `-aaaa=ns1.example.com=fc::8888`
+- `-soa` sets the SOA record returned for every domain as
+  `mname,rname,serial,refresh,retry,expire,minimum`, e.g.
+  `-soa=ns1.example.com,dns-admin.example.com,20261001,900,900,604800,180`.
+  Unlike the other record flags, there's only one SOA, and it always has a
+  default: `ns-01.nip.io.,dns.nip.io.,20261001,900,900,604800,180`
+- `-mx` sets an MX record as `domain=preference,host`, e.g.
+  `-mx=example.com=10,mail.example.com -mx=example.com=20,mail2.example.com`.
+  Without it, the MX record is the queried hostname with a preference of 0
+- `-txt` sets a TXT record as `domain=text`; the surrounding double quotes are
+  optional, e.g. `-txt=example.com="v=spf1 mx -all"`. Text longer than 255
+  bytes is split into multiple strings within the record
+- `-cname` sets a CNAME record as `domain=target`, e.g.
+  `-cname=www.example.com=example.com`. A domain can have only one CNAME
 - `-blocklistURL` overrides the default block list,
   (<https://raw.githubusercontent.com/cunnie/sslip.io/main/etc/blocklist.txt>).
   The blocklist is not a show-stopper: if the DNS server can't download the
   blocklist, it logs a message and continues to serve DNS queries
-- `ptr-domain` the domain to use for PTR records. For example, if you set
-  `ptr-domain=ip.example.com` and then do a reverse-lookup (PTR record), e.g.
+- `-ptr-domain` the domain to use for PTR records. For example, if you set
+  `-ptr-domain=ip.example.com` and then do a reverse-lookup (PTR record), e.g.
   `dig -x 127.0.0.1`, the result will be `127-0-0-1.ip.example.com`. Best
   practice: make sure the forward lookup matches the reverse lookup, e.g. `dig
   127-0-0-1.ip.example.com` should return an A record of `127.0.0.1`.
-- `public` controls whether public addresses are resolved. If unsure, set
+- `-public` controls whether public addresses are resolved. If unsure, set
   `-public=false`, which means only private IP addresses will resolve, e.g.
   `10.9.9.30`, `192.168.0.1`, `169.254.169.254`. Let's say you run a bank, and
   your nip.io-style subdomain is `ip.wellsfargo.com`, you don't a phisher
   scammer to spin up a VM with a public IP address and get a certificate for
   that IP address's hostname `52-0-56-137.ip.wellsfargo.com` and use it to
   phish your customers. `-public=false` prevents that scenario.
+- `-quiet` suppresses logging of each DNS response, which can save you money
+  if your cloud provider charges you to retain logs
+- `-dnstap` enables [dnstap](https://dnstap.info/) logging of queries that
+  return an A or AAAA record; its argument is the destination socket, either a
+  Unix socket path (e.g. `/var/run/dnstap.sock`) or a TCP address (e.g.
+  `127.0.0.1:6000`)
+
+In the record flags (`-ns`, `-a`, `-aaaa`, `-soa`, `-mx`, `-txt`, `-cname`),
+names are case-insensitive, and the trailing dot is optional. You can repeat
+`-ns`, `-a`, `-aaaa`, `-mx`, and `-txt` to set several records for the same
+domain.
 
 ## DNS Server Miscellany
 
-- it binds to both UDP and TCP.
-- The same SOA record is returned for every domain; its _MNAME_ (primary master
-  name server) is always `ns-01.nip.io.` Override it
-  with the `-soa` flag, e.g.
-  `-soa=nip.io.,dns.nip.io.,998506478,900,900,604800,300`
-- The MX records are hard-coded to the queried hostname with a preference of 0,
-  except `sslip.io` itself, which has custom MX records to enable email
-  delivery to ProtonMail
+- It binds to both UDP and TCP.
+- It returns the same SOA record for every domain (see `-soa`).
 - There are no SRV records
 
-## Directory Structure
+## Running Tests
 
 - `spec/` contains the tests for the production nameservers. To ensure the production nameservers are running properly:
 

@@ -38,6 +38,7 @@ func main() {
 	flag.Func("a", `A record as "hostname=ipv4", e.g. "-a nip.io=192.168.1.1 -a nip.io=172.31.0.1"`, records.addA)
 	flag.Func("aaaa", `AAAA record as "hostname=ipv6", e.g. "-aaaa nip.io=2600:: -aaaa nip.io=2601::"`, records.addAAAA)
 	flag.Func("mx", `MX record as "domain=preference,host", e.g. "-mx nip.io=10,mail.protonmail.ch. -mx nip.io=20,mailsec.protonmail.ch."`, records.addMX)
+	flag.Func("cname", `CNAME record as "domain=target"; a domain can have only one CNAME, e.g. "-cname protonmail._domainkey.nip.io=protonmail.domainkey.example.domains.proton.ch."`, records.setCNAME)
 	flag.Func("txt", `TXT record as "domain=text", e.g. '-txt nip.io="protonmail-verification=19b0837c" -txt nip.io="v=spf1 include:_spf.protonmail.ch mx -all"`, records.addTXT)
 	flag.Func("ns", `NS record as "domain=nameserver". If the domain is ".", sets the default nameservers returned for every query, e.g. "-ns .=ns-00.nip.io -ns .=ns-ovh.sslip.io.". `+
 		`Otherwise delegates the domain to the nameserver, often used to acquire wildcard certificates from Let's Encrypt via DNS-01 challenge, e.g. "-ns _acme-challenge.73-189-219-4.xip.nono.io.=ns-437.awsdns-54.com."`, records.addNS)
@@ -142,7 +143,7 @@ func main() {
 	readFromUDP(udpConns[0], x, *quiet, dw) // refrain from exiting; There should always be a udpConns[0], and readFromUDP() _never_ returns
 }
 
-// recordFlags parses the -a, -aaaa, -mx, -txt, and -ns flags into DomainCustomizations,
+// recordFlags parses the -a, -aaaa, -mx, -cname, -txt, and -ns flags into DomainCustomizations,
 // and the -soa flag into xip.SOA.
 // The first flag of a given type for a domain replaces that domain's built-in records of
 // that type (e.g. nip.io's protonmail MX records); subsequent flags append.
@@ -252,6 +253,22 @@ func (r *recordFlags) addMX(arg string) error {
 		dc.MX = append(dc.MX, dnsmessage.MXResource{Pref: uint16(pref), MX: mx})
 	})
 	r.logMessages = append(r.logMessages, fmt.Sprintf(`Adding MX record "%s=%d,%s"`, domain, pref, mx))
+	return nil
+}
+
+func (r *recordFlags) setCNAME(arg string) error {
+	domain, value, err := splitRecordFlag(arg)
+	if err != nil {
+		return err
+	}
+	cname, err := dnsmessage.NewName(absolute(value))
+	if err != nil {
+		return fmt.Errorf("%q is not a valid CNAME: %w", value, err)
+	}
+	r.update("CNAME", domain, func(dc *xip.DomainCustomization, _ bool) {
+		dc.CNAME = dnsmessage.CNAMEResource{CNAME: cname}
+	})
+	r.logMessages = append(r.logMessages, fmt.Sprintf(`Setting CNAME record "%s=%s"`, domain, cname))
 	return nil
 }
 

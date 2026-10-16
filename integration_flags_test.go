@@ -54,8 +54,8 @@ var _ = Describe("flags", func() {
 			BeforeEach(func() {
 				flags = []string{"-nameservers="}
 			})
-			It("should message that it's skipping that nameserver and continue", func() {
-				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-nameservers: ignoring zero-length nameserver ""`))
+			It("silently ignores it", func() {
+				Expect(string(serverSession.Err.Contents())).ShouldNot(ContainSubstring(`-nameservers:`))
 			})
 		})
 		When("a nameserver is too long (>255 chars)", func() {
@@ -108,6 +108,14 @@ var _ = Describe("flags", func() {
 			})
 			It("should message that it's skipping that address and continue", func() {
 				Expect(string(serverSession.Err.Contents())).Should(MatchRegexp(`-addresses: arguments should be in the format "host=ip", not "a.b.c"`))
+			})
+		})
+		When("-addresses is empty", func() {
+			BeforeEach(func() {
+				flags = []string{"-addresses="}
+			})
+			It("silently ignores it", func() {
+				Expect(string(serverSession.Err.Contents())).ShouldNot(ContainSubstring(`-addresses:`))
 			})
 		})
 	})

@@ -51,12 +51,32 @@ var defaultAddresses = "nip.io=78.46.204.247," +
 	"ns-ovh.sslip.io=51.75.53.19," +
 	"ns-ovh.sslip.io=2001:41d0:602:2313::1"
 
+// the MX, TXT & CNAME records that our production nameservers set via flags (see terraform/)
+var productionRecordFlags = []string{
+	"-mx=nip.io=10,mail.protonmail.ch.",
+	"-mx=nip.io=20,mailsec.protonmail.ch.",
+	"-mx=sslip.io=10,mail.protonmail.ch.",
+	"-mx=sslip.io=20,mailsec.protonmail.ch.",
+	"-txt=nip.io=protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313",
+	"-txt=nip.io=v=spf1 include:_spf.protonmail.ch mx -all",
+	"-txt=sslip.io=protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26",
+	"-txt=sslip.io=v=spf1 include:_spf.protonmail.ch mx -all",
+	"-txt=_dmarc.nip.io=v=DMARC1; p=reject",
+	"-txt=_dmarc.sslip.io=v=DMARC1; p=reject",
+	"-cname=protonmail._domainkey.nip.io=protonmail.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.",
+	"-cname=protonmail2._domainkey.nip.io=protonmail2.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.",
+	"-cname=protonmail3._domainkey.nip.io=protonmail3.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch.",
+	"-cname=protonmail._domainkey.sslip.io=protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.",
+	"-cname=protonmail2._domainkey.sslip.io=protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.",
+	"-cname=protonmail3._domainkey.sslip.io=protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.",
+}
+
 var _ = BeforeSuite(func() {
 	format.MaxLength = 0 // need more output, 4000 is the default
 	serverPath, err = Build("xip")
 	Expect(err).ToNot(HaveOccurred())
-	serverCmd = exec.Command(serverPath, "-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist-test.txt",
-		"-nameservers", defaultNameservers, "-addresses", defaultAddresses)
+	serverCmd = exec.Command(serverPath, append([]string{"-port", strconv.Itoa(port), "-blocklistURL", "file://etc/blocklist-test.txt",
+		"-nameservers", defaultNameservers, "-addresses", defaultAddresses}, productionRecordFlags...)...)
 	serverSession, err = Start(serverCmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 	// takes 0.455s to start up on macOS Big Sur 3.7 GHz Quad Core 22-nm Xeon E5-1620v2 processor (2013 Mac Pro)

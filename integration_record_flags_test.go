@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns, -soa)", func() {
+var _ = Describe("record flags (-a, -aaaa, -mx, -cname, -txt, -ns, -soa)", func() {
 	var serverCmd *exec.Cmd
 	var serverSession *Session
 	var port = getFreePort()
@@ -73,17 +73,6 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns, -soa)", func() {
 				Expect(string(serverSession.Err.Contents())).To(ContainSubstring(`Adding MX record "mx.example.com.=20,mailsec.protonmail.ch."`))
 			})
 		})
-		When("-mx is set for a domain with built-in MX records (nip.io)", func() {
-			BeforeEach(func() {
-				flags = []string{"-mx", "nip.io=30,mx.example.com"}
-			})
-			It("replaces the built-in MX records", func() {
-				Expect(digShort("nip.io mx")).To(Equal("30 mx.example.com.\n"))
-			})
-			It("leaves the other domains' built-in MX records alone", func() {
-				Expect(digShort("sslip.io mx")).To(ContainSubstring("mail.protonmail.ch."))
-			})
-		})
 		When("-txt is set", func() {
 			BeforeEach(func() {
 				flags = []string{
@@ -105,12 +94,21 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns, -soa)", func() {
 				Expect(digShort("long.example.com txt")).To(Equal(`"` + strings.Repeat("a", 255) + `" "bcd"` + "\n"))
 			})
 		})
-		When("-txt is set for a domain with built-in TXT records (nip.io)", func() {
+		When("-txt is set for a domain with a built-in TXT record (ip.nip.io)", func() {
 			BeforeEach(func() {
-				flags = []string{"-txt", "nip.io=replaced"}
+				flags = []string{"-txt", "ip.nip.io=replaced"}
 			})
-			It("replaces the built-in TXT records", func() {
-				Expect(digShort("nip.io txt")).To(Equal(`"replaced"` + "\n"))
+			It("replaces the built-in TXT record", func() {
+				Expect(digShort("ip.nip.io txt")).To(Equal(`"replaced"` + "\n"))
+			})
+		})
+		When("-cname is set", func() {
+			BeforeEach(func() {
+				flags = []string{"-cname", "CNAME.example.com=overwritten.example.com", "-cname", "cname.example.com.=target.example.com"}
+			})
+			It("returns the last CNAME, appending the trailing dot if missing", func() {
+				Expect(digShort("cname.example.com cname")).To(Equal("target.example.com.\n"))
+				Expect(string(serverSession.Err.Contents())).To(ContainSubstring(`Setting CNAME record "cname.example.com.=target.example.com."`))
 			})
 		})
 		When("-ns is set", func() {
@@ -187,6 +185,8 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -txt, -ns, -soa)", func() {
 		Entry("-mx without a preference", "-mx", "nip.io=mail.protonmail.ch", `should be in the format "domain=preference,host"`),
 		Entry("-mx with a non-numeric preference", "-mx", "nip.io=ten,mail.protonmail.ch", `"ten" is not a valid MX preference`),
 		Entry("-mx with a preference > 65535", "-mx", "nip.io=65536,mail.protonmail.ch", `"65536" is not a valid MX preference`),
+		Entry("-cname without a target", "-cname", "cname.example.com=", `should be in the format "domain=value"`),
+		Entry("-cname with a target > 255 chars", "-cname", "cname.example.com="+strings.Repeat("a.", 128), "is not a valid CNAME"),
 		Entry("-txt with an unterminated quote", "-txt", `nip.io="oops`, "is not a properly-quoted string"),
 		Entry("-txt with an empty quoted string", "-txt", `nip.io=""`, "is empty"),
 		Entry("-ns with a nameserver > 255 chars", "-ns", "nip.io="+strings.Repeat("a.", 128), "is not a valid nameserver"),
