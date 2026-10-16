@@ -40,52 +40,15 @@ resource "hcloud_floating_ip_assignment" "nameserver_ipv6" {
   server_id      = hcloud_server.nameserver.id
 }
 
-resource "hcloud_firewall" "nameserver" {
-  name = "ns-01-firewall"
-
-  rule {
-    direction  = "in"
-    protocol   = "icmp"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
-
-  rule {
-    direction  = "in"
-    protocol   = "tcp"
-    port       = "22"
-    source_ips = ["73.231.94.127/32", "2601:645:8103:e3a0::/60", "99.123.0.161/32", "2600:1700:486:a840::/60"]
-  }
-
-  rule {
-    direction  = "in"
-    protocol   = "tcp"
-    port       = "53"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
-
-  rule {
-    direction  = "in"
-    protocol   = "udp"
-    port       = "53"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
-
-  rule {
-    direction  = "in"
-    protocol   = "tcp"
-    port       = "80"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
-
-  rule {
-    direction  = "in"
-    protocol   = "tcp"
-    port       = "443"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
+resource "hcloud_rdns" "nameserver_ipv4" {
+  floating_ip_id = hcloud_floating_ip.nameserver_ipv4.id
+  ip_address     = hcloud_floating_ip.nameserver_ipv4.ip_address
+  dns_ptr        = "ns-01.nip.io"
 }
 
-resource "hcloud_firewall_attachment" "nameserver" {
-  firewall_id = hcloud_firewall.nameserver.id
-  server_ids  = [hcloud_server.nameserver.id]
+resource "hcloud_rdns" "nameserver_ipv6" {
+  floating_ip_id = hcloud_floating_ip.nameserver_ipv6.id
+  # the floating IPv6 is a /64; set the PTR of the address the nameserver listens on
+  ip_address = split("/", hcloud_floating_ip.nameserver_ipv6.ip_address)[0]
+  dns_ptr    = "ns-01.nip.io"
 }
