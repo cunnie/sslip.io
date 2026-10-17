@@ -111,6 +111,15 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -cname, -txt, -ns, -soa)", func(
 				Expect(string(serverSession.Err.Contents())).To(ContainSubstring(`Setting CNAME record "cname.example.com.=target.example.com."`))
 			})
 		})
+		When("-cname is set for an ACME challenge", func() {
+			BeforeEach(func() {
+				flags = []string{"-cname=_acme-challenge.ip.example.com=_acme-challenge.acme.example.com"}
+			})
+			It("returns the alias for TXT queries over UDP and TCP", func() {
+				Expect(digShort("_acme-challenge.ip.example.com txt")).To(Equal("_acme-challenge.acme.example.com.\n"))
+				Expect(digShort("+tcp _acme-challenge.ip.example.com txt")).To(Equal("_acme-challenge.acme.example.com.\n"))
+			})
+		})
 		When("-ns is set", func() {
 			BeforeEach(func() {
 				flags = []string{"-ns", "delegated.example.com=NS-00.nip.io", "-ns", "delegated.example.com=ns-01.nip.io."}

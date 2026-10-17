@@ -139,6 +139,43 @@ var _ = Describe("Xip", func() {
 			return reply
 		}
 
+		DescribeTable("customized CNAMEs answer queries for other record types",
+			func(name string, qType dnsmessage.Type) {
+				x, _ := xip.NewXip("file:///", []string{"ns.example.com."}, []string{}, []string{}, "")
+				target := dnsmessage.MustNewName("_acme-challenge.acme.example.com.")
+				key := strings.ToLower(name)
+				saved, existed := xip.Customizations[key]
+				DeferCleanup(func() {
+					if existed {
+						xip.Customizations[key] = saved
+					} else {
+						delete(xip.Customizations, key)
+					}
+				})
+				xip.Customizations[key] = xip.DomainCustomization{
+					CNAME: dnsmessage.CNAMEResource{CNAME: target},
+				}
+
+				reply := query(x, name, qType)
+				Expect(reply.Header.RCode).To(Equal(dnsmessage.RCodeSuccess))
+				Expect(reply.Header.Authoritative).To(BeTrue())
+				Expect(reply.Questions[0].Type).To(Equal(qType))
+				Expect(reply.Answers).To(HaveLen(1))
+				Expect(reply.Answers[0].Header.Name).To(Equal(dnsmessage.MustNewName(name)))
+				Expect(reply.Answers[0].Header.Type).To(Equal(dnsmessage.TypeCNAME))
+				Expect(reply.Answers[0].Body).To(Equal(&dnsmessage.CNAMEResource{CNAME: target}))
+				Expect(reply.Authorities).To(BeEmpty())
+				Expect(x.Metrics.AnsweredQueries).To(Equal(1))
+			},
+			Entry("ACME TXT", "_acme-challenge.ip.example.com.", dnsmessage.TypeTXT),
+			Entry("ACME TXT with an embedded IP overrides automatic delegation", "_acme-challenge.192-0-2-1.example.com.", dnsmessage.TypeTXT),
+			Entry("case-insensitive TXT", "_ACME-CHALLENGE.IP.EXAMPLE.COM.", dnsmessage.TypeTXT),
+			Entry("A with an embedded IP", "192-0-2-1.example.com.", dnsmessage.TypeA),
+			Entry("AAAA", "alias.example.com.", dnsmessage.TypeAAAA),
+			Entry("MX", "alias.example.com.", dnsmessage.TypeMX),
+			Entry("CNAME", "alias.example.com.", dnsmessage.TypeCNAME),
+		)
+
 		When("no nameservers are configured", func() {
 			It("doesn't panic on NS queries, and returns no NS records", func() {
 				x, _ := xip.NewXip("file:///", []string{}, []string{}, []string{}, "")

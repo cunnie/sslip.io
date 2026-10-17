@@ -409,6 +409,28 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 		response.Header.Authoritative = false
 		return x.NSResponse(q.Name, response, logMessage)
 	}
+	// Return configured aliases for all record queries before automatic IP resolution
+	// or ACME delegation. Recursive resolvers need the CNAME when querying TXT too.
+	// Keep the existing policy of refusing ANY queries.
+	if cname := CNAMEResource(q.Name.String()); cname != nil && q.Type != dnsmessage.TypeALL {
+		x.Metrics.AnsweredQueries++
+		response.Answers = append(response.Answers,
+			// 1 CNAME record, via Customizations
+			func(b *dnsmessage.Builder) error {
+				err = b.CNAMEResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeCNAME,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					Length: 0,
+				}, *cname)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+		return response, logMessage + cname.CNAME.String(), nil
+	}
 	if IsAcmeChallenge(q.Name.String()) && !x.blocklist(q.Name.String()) {
 		// thanks, @NormanR
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
@@ -435,37 +457,13 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 		}
 	case dnsmessage.TypeCNAME:
 		{
-			// If there is a CNAME, there can only be 1, and only from Customizations
-			cname := CNAMEResource(q.Name.String())
-			if cname == nil {
-				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
-				response.Authorities = append(response.Authorities,
-					func(b *dnsmessage.Builder) error {
-						if err = b.SOAResource(soaHeader, soaResource); err != nil {
-							return err
-						}
-						return nil
-					})
-				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
-			}
-			x.Metrics.AnsweredQueries++
-			response.Answers = append(response.Answers,
-				// 1 CNAME record, via Customizations
+			// No configured CNAME: return the SOA with an empty answer section.
+			soaHeader, soaResource := SOAAuthority(q.Name)
+			response.Authorities = append(response.Authorities,
 				func(b *dnsmessage.Builder) error {
-					err = b.CNAMEResource(dnsmessage.ResourceHeader{
-						Name:   q.Name,
-						Type:   dnsmessage.TypeCNAME,
-						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-						Length: 0,
-					}, *cname)
-					if err != nil {
-						return err
-					}
-					return nil
+					return b.SOAResource(soaHeader, soaResource)
 				})
-			return response, logMessage + cname.CNAME.String(), nil
+			return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 		}
 	case dnsmessage.TypeMX:
 		{
