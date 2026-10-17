@@ -160,6 +160,26 @@ ssh blocked sudo shutdown -r now
 sleep 10; while ! curl -sfI blocked.nip.io >/dev/null; do sleep 5; done
 ```
 
+Quick tests for special records:
+
+```bash
+for NS in ns-{00,01}.nip.io ns-ovh.sslip.io; do
+  printf "\n$NS:\n"
+  for PROT in tcp notcp; do
+    for DOMAIN in nip.io sslip.io; do
+      dig @$NS +$PROT +short mx $DOMAIN
+      dig @$NS +$PROT +short txt _dmarc.$DOMAIN
+      dig @$NS +$PROT +short cname protonmail._domainkey.$DOMAIN
+      dig @$NS +$PROT +short cname protonmail2._domainkey.$DOMAIN
+      dig @$NS +$PROT +short cname protonmail3._domainkey.$DOMAIN
+      dig @$NS +$PROT +short cname version.status.$DOMAIN
+      dig @$NS +$PROT +short txt -4 ip.$DOMAIN
+      dig @$NS +$PROT +short txt -6 ip.$DOMAIN
+    done
+  done
+done
+```
+
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
 - Click "Publish release"
