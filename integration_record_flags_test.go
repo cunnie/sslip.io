@@ -110,6 +110,11 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -cname, -txt, -ns, -soa)", func(
 				Expect(digShort("cname.example.com cname")).To(Equal("target.example.com.\n"))
 				Expect(string(serverSession.Err.Contents())).To(ContainSubstring(`Setting CNAME record "cname.example.com.=target.example.com."`))
 			})
+			It("returns the CNAME for other query types, too", func() {
+				for _, queryType := range []string{"txt", "a", "aaaa", "mx", "ns", "soa"} {
+					Expect(digShort("cname.example.com " + queryType)).To(Equal("target.example.com.\n"), queryType)
+				}
+			})
 		})
 		When("-ns is set", func() {
 			BeforeEach(func() {

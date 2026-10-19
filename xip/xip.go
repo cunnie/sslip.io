@@ -401,6 +401,24 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 			RCode:              dnsmessage.RCodeSuccess, // assume success, may be replaced later
 		},
 	}
+	// A CNAME can't coexist with other records (RFC 1034 §3.6.2), so whatever
+	// the query type (TXT, A, MX, ...), return the CNAME and let the resolver
+	// follow it. ANY is the exception: we don't implement it.
+	if cname := CNAMEResource(q.Name.String()); cname != nil && q.Type != dnsmessage.TypeALL {
+		x.Metrics.AnsweredQueries++
+		response.Answers = append(response.Answers,
+			// 1 CNAME record, via Customizations
+			func(b *dnsmessage.Builder) error {
+				return b.CNAMEResource(dnsmessage.ResourceHeader{
+					Name:   q.Name,
+					Type:   dnsmessage.TypeCNAME,
+					Class:  dnsmessage.ClassINET,
+					TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+					Length: 0,
+				}, *cname)
+			})
+		return response, logMessage + cname.CNAME.String(), nil
+	}
 	if IsDelegated(q.Name.String()) {
 		// if xip.pivotal.io has been delegated to ns-437.awsdns-54.com.
 		// and a query comes in for 127-0-0-1.cloudfoundry.xip.pivotal.io
@@ -435,37 +453,9 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 		}
 	case dnsmessage.TypeCNAME:
 		{
-			// If there is a CNAME, there can only be 1, and only from Customizations
-			cname := CNAMEResource(q.Name.String())
-			if cname == nil {
-				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
-				response.Authorities = append(response.Authorities,
-					func(b *dnsmessage.Builder) error {
-						if err = b.SOAResource(soaHeader, soaResource); err != nil {
-							return err
-						}
-						return nil
-					})
-				return response, logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
-			}
-			x.Metrics.AnsweredQueries++
-			response.Answers = append(response.Answers,
-				// 1 CNAME record, via Customizations
-				func(b *dnsmessage.Builder) error {
-					err = b.CNAMEResource(dnsmessage.ResourceHeader{
-						Name:   q.Name,
-						Type:   dnsmessage.TypeCNAME,
-						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
-						Length: 0,
-					}, *cname)
-					if err != nil {
-						return err
-					}
-					return nil
-				})
-			return response, logMessage + cname.CNAME.String(), nil
+			// customized CNAMEs were answered above; there's no CNAME
+			// No Answers, only 1 Authorities
+			return soaAuthorityResponse(q.Name, response, logMessage)
 		}
 	case dnsmessage.TypeMX:
 		{
