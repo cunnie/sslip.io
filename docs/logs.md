@@ -1,4 +1,4 @@
-### Tools for Exploring Log Files
+# Tools for Exploring Log Files
 
 To generate log files on, say, ns-ovh:
 

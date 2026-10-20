@@ -112,7 +112,7 @@ var _ = Describe("record flags (-a, -aaaa, -mx, -cname, -txt, -ns, -soa)", func(
 			})
 			It("returns the CNAME for other query types, too", func() {
 				for _, queryType := range []string{"txt", "a", "aaaa", "mx", "ns", "soa"} {
-					Expect(digShort("cname.example.com " + queryType)).To(Equal("target.example.com.\n"), queryType)
+					Expect(digShort("cname.example.com "+queryType)).To(Equal("target.example.com.\n"), queryType)
 				}
 			})
 		})

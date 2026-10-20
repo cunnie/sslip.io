@@ -158,7 +158,6 @@ var _ = Describe("-dnstap flag with bad socket", func() {
 
 const (
 	dtFsAccept      = uint32(1)
-	dtFsStart       = uint32(2)
 	dtFsContentType = "protobuf:dnstap.Dnstap"
 )
 

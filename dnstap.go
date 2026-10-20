@@ -177,12 +177,12 @@ func pbAppendBytes(b []byte, fieldNum uint64, data []byte) []byte {
 
 // wire type 0: varint (int32, int64, uint32, uint64, sint32, sint64, bool, enum)
 func pbAppendUint32(b []byte, fieldNum uint64, v uint32) []byte {
-	b = pbAppendVarint(b, fieldNum<<3|0)
+	b = pbAppendVarint(b, fieldNum<<3)
 	return pbAppendVarint(b, uint64(v))
 }
 
 func pbAppendUint64(b []byte, fieldNum uint64, v uint64) []byte {
-	b = pbAppendVarint(b, fieldNum<<3|0)
+	b = pbAppendVarint(b, fieldNum<<3)
 	return pbAppendVarint(b, v)
 }
 
