@@ -28,10 +28,10 @@ dig +short 127.0.0.1.nip.io @2400:6180:0:d2:0:2:e3e7:0
 
 The Digital Ocean Terraform is a dumpster fire:
 
+- `tofu apply` failures are common, especially with IP assignment. Keep trying. I've had to do three for one deploy.
 - I've seen as many as three droplets at once; there should only ever be one
 - I've had to manually assign & unassign the reserved IPs from the instances; Terraform doesn't always assign/unassign properly (TODO: next time wait for apply to finish)
 - On the positive side, Terraform won't ever delete the reserved IPs, which is good because they're hard to change (requires code change and registrar change)
-- ~~They don't have a Fedora 44 image, only a Fedora 43, so you have to update by hand~~
 
 ```bash
 sudo dnf upgrade --refresh

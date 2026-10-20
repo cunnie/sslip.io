@@ -64,7 +64,7 @@ resource "vultr_firewall_rule" "ssh_v6_home" {
   firewall_group_id = vultr_firewall_group.blocked.id
   protocol          = "tcp"
   ip_type           = "v6"
-  subnet            = "2601:645:8103:e3a0::"
+  subnet            = "2601:645:8105:e060::"
   subnet_size       = 60
   port              = "22"
 }
@@ -163,7 +163,7 @@ resource "vultr_instance" "blocked" {
   hostname          = "blocked.nip.io"
   label             = "blocked"
   region            = "scl"
-  plan              = "vhp-1c-2gb"
+  plan              = "vhp-1c-2gb-amd"
   os_id             = data.vultr_os.fedora44.id
   enable_ipv6       = true
   firewall_group_id = vultr_firewall_group.blocked.id
