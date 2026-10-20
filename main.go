@@ -65,9 +65,10 @@ func main() {
 		if err != nil {
 			log.Printf("dnstap: warning: could not connect to %q: %v", *dnstapSocket, err)
 			dw = nil
+		} else {
+			log.Printf("dnstap: connected to %q", *dnstapSocket)
+			defer dw.Close()
 		}
-		log.Printf("dnstap: connected to %q", *dnstapSocket)
-		defer dw.Close()
 	}
 
 	var udpConns []*net.UDPConn

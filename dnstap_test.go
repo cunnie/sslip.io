@@ -43,6 +43,21 @@ var _ = Describe("ResponseHasAorAAAA", func() {
 	})
 })
 
+var _ = Describe("encodeDnstapFrame", func() {
+	It("sets identity, type, and message", func() {
+		msg := []byte{0x08, 0x02}
+		encoded := encodeDnstapFrame([]byte("ns-ovh"), msg)
+		Expect(pbTestExtract(encoded, 1)).To(Equal([]byte("ns-ovh"))) // Dnstap.identity
+		Expect(pbTestExtractUint(encoded, 15)).To(Equal(uint64(1)))   // Dnstap.type = MESSAGE
+		Expect(pbTestExtract(encoded, 14)).To(Equal(msg))             // Dnstap.message
+	})
+
+	It("omits identity when it is empty", func() {
+		encoded := encodeDnstapFrame(nil, []byte{0x08, 0x02})
+		Expect(pbTestExtract(encoded, 1)).To(BeNil())
+	})
+})
+
 var _ = Describe("encodeDnstapMsg", func() {
 	It("includes the query and response bytes verbatim in the encoded message", func() {
 		queryBytes := []byte{0x12, 0x34, 0x01, 0x00}

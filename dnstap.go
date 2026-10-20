@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -29,8 +30,9 @@ const (
 
 // DnstapWriter sends dnstap AUTH_RESPONSE messages over a framestream connection.
 type DnstapWriter struct {
-	conn net.Conn
-	mu   sync.Mutex
+	conn     net.Conn
+	identity []byte // Dnstap.identity: the hostname, e.g. "ns-ovh"
+	mu       sync.Mutex
 }
 
 // NewDnstapWriter connects to addr (Unix socket path starting with "/" or TCP "host:port")
@@ -47,6 +49,10 @@ func NewDnstapWriter(addr string) (*DnstapWriter, error) {
 		return nil, err
 	}
 	dw := &DnstapWriter{conn: conn}
+	if hostname, err := os.Hostname(); err == nil {
+		shortHostname, _, _ := strings.Cut(hostname, ".") // "ns-ovh.sslip.io" → "ns-ovh"
+		dw.identity = []byte(shortHostname)
+	}
 	if err = dw.handshake(); err != nil {
 		_ = conn.Close()
 		return nil, fmt.Errorf("dnstap framestream handshake: %w", err)
@@ -67,9 +73,7 @@ func (dw *DnstapWriter) handshake() error {
 // SendDnstap encodes and sends a dnstap AUTH_RESPONSE message for a DNS query/response pair.
 func (dw *DnstapWriter) SendDnstap(queryBytes, responseBytes []byte, srcAddr net.IP, srcPort int, isUDP bool, queryTime, responseTime time.Time) error {
 	msg := encodeDnstapMsg(queryBytes, responseBytes, srcAddr, srcPort, isUDP, queryTime, responseTime)
-	var frame []byte
-	frame = pbAppendUint32(frame, 15, 1)  // Dnstap.type = MESSAGE(1)
-	frame = pbAppendBytes(frame, 14, msg) // Dnstap.message
+	frame := encodeDnstapFrame(dw.identity, msg)
 	dw.mu.Lock()
 	defer dw.mu.Unlock()
 	return fsWriteData(dw.conn, frame)
@@ -190,6 +194,18 @@ func pbAppendUint64(b []byte, fieldNum uint64, v uint64) []byte {
 func pbAppendFixed32(b []byte, fieldNum uint64, v uint32) []byte {
 	b = pbAppendVarint(b, fieldNum<<3|5)
 	return binary.LittleEndian.AppendUint32(b, v)
+}
+
+// --- Dnstap encoding (dnstap.proto Dnstap type) ---
+
+func encodeDnstapFrame(identity, msg []byte) []byte {
+	var frame []byte
+	if len(identity) > 0 {
+		frame = pbAppendBytes(frame, 1, identity) // Dnstap.identity
+	}
+	frame = pbAppendUint32(frame, 15, 1)  // Dnstap.type = MESSAGE(1)
+	frame = pbAppendBytes(frame, 14, msg) // Dnstap.message
+	return frame
 }
 
 // --- Dnstap Message encoding (dnstap.proto Message type) ---
