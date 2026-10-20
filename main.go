@@ -43,7 +43,7 @@ func main() {
 	flag.Func("ns", `NS record as "domain=nameserver". If the domain is ".", sets the default nameservers returned for every query, e.g. "-ns .=ns-00.nip.io -ns .=ns-ovh.sslip.io.". `+
 		`Otherwise delegates the domain to the nameserver, often used to acquire wildcard certificates from Let's Encrypt via DNS-01 challenge, e.g. "-ns _acme-challenge.73-189-219-4.xip.nono.io.=ns-437.awsdns-54.com."`, records.addNS)
 	flag.Func("soa", `SOA record returned for every domain as "mname,rname,serial,refresh,retry,expire,minimum", e.g. "-soa nip.io.,dns-admin.nip.io.,998506478,900,900,1800,300". `+
-		`Defaults to "ns-01.nip.io.,dns.nip.io.,20261001,900,900,604800,180"`, records.setSOA)
+		`Defaults to "ns-01.nip.io.,dns.nip.io.,20261024,900,900,604800,180"`, records.setSOA)
 	flag.Parse()
 	log.Printf("%s version %s starting", os.Args[0], xip.VersionSemantic)
 	for _, logMessage := range records.logMessages {

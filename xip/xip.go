@@ -103,7 +103,7 @@ var (
 	SOA = dnsmessage.SOAResource{
 		NS:     dnsmessage.MustNewName("ns-01.nip.io."),
 		MBox:   mbox,
-		Serial: 20261001,
+		Serial: 20261024,
 		// cribbed the Refresh/Retry from google.com. & cloudflare.com
 		Refresh: 900,
 		Retry:   900,

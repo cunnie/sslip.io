@@ -64,7 +64,7 @@ go run . \
   -ns=.=ns-ip-1.pivotal.io \
   -a=ns-ip-0.pivotal.io=10.8.8.8 \
   -aaaa=ns-ip-1.pivotal.io=fc88:: \
-  -soa=ns-ip-0.pivotal.io,dns-admin.pivotal.io,20261001,900,900,604800,180 \
+  -soa=ns-ip-0.pivotal.io,dns-admin.pivotal.io,20261024,900,900,604800,180 \
   -blocklistURL=file:///dev/null \
   -ptr-domain=xip.pivotal.io
 ```
@@ -90,7 +90,7 @@ docker run \
   -ns=.=ns-ip-1.pivotal.io \
   -a=ns-ip-0.pivotal.io=10.8.8.8 \
   -aaaa=ns-ip-1.pivotal.io=fc88:: \
-  -soa=ns-ip-0.pivotal.io,dns-admin.pivotal.io,20261001,900,900,604800,180 \
+  -soa=ns-ip-0.pivotal.io,dns-admin.pivotal.io,20261024,900,900,604800,180 \
   -blocklistURL=file:///dev/null \
   -ptr-domain=xip.pivotal.io
 ```
@@ -136,9 +136,9 @@ as ARM64 (AWS Graviton, Apple M1–M6).
   `-aaaa=ns1.example.com=fc::8888`
 - `-soa` sets the SOA record returned for every domain as
   `mname,rname,serial,refresh,retry,expire,minimum`, e.g.
-  `-soa=ns1.example.com,dns-admin.example.com,20261001,900,900,604800,180`.
+  `-soa=ns1.example.com,dns-admin.example.com,20261024,900,900,604800,180`.
   Unlike the other record flags, there's only one SOA, and it always has a
-  default: `ns-01.nip.io.,dns.nip.io.,20261001,900,900,604800,180`
+  default: `ns-01.nip.io.,dns.nip.io.,20261024,900,900,604800,180`
 - `-mx` sets an MX record as `domain=preference,host`, e.g.
   `-mx=example.com=10,mail.example.com -mx=example.com=20,mail2.example.com`.
   Without it, the MX record is the queried hostname with a preference of 0
