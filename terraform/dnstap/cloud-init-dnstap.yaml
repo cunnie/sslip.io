@@ -12,6 +12,7 @@ packages:
   - curl
   - dnf-plugins-core
   - golang
+  - htop
   - jq
   - neovim
   - netcat
@@ -115,11 +116,25 @@ runcmd:
   - cp /tmp/cunnie-zshrc /home/cunnie/.zshrc
   - chown cunnie:cunnie /home/cunnie/.zshrc
   - systemctl enable nftables
-  - dnf install -y https://zfsonlinux.org/fedora/zfs-release-3-1.fc44.noarch.rpm
-  - dnf install -y zfs
+  # Passed-through 18 TB HDD (Proxmox scsi1); data is disposable, so always
+  # wipe (incl. stale ZFS labels), partition (GPT), & format it
+  - |
+    DISK=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
+    wipefs -a "$DISK"-part* 2>/dev/null || true
+    wipefs -a "$DISK"
+    printf 'label: gpt\n,,L\n' | sfdisk --wipe always "$DISK"
+    udevadm settle
+    mkfs.xfs -f -L tap "$DISK"-part1
+  - mkdir -p /mnt/tap
+  - echo 'LABEL=tap /mnt/tap xfs defaults,noatime,nofail 0 2' >> /etc/fstab
+  - systemctl daemon-reload
+  - mount /mnt/tap
+  - chmod 775 /mnt/tap
   - dnf config-manager addrepo --from-repofile=https://packages.clickhouse.com/rpm/clickhouse.repo
   - dnf install -y clickhouse-server clickhouse-client
   - chown clickhouse:clickhouse /mnt/tap
+  # "clickhouse" group doesn't exist until the RPM is installed
+  - usermod -aG clickhouse cunnie
   - systemctl enable --now clickhouse-server
   - for i in $(seq 1 30); do clickhouse-client --query "SELECT 1" >/dev/null 2>&1 && break; sleep 1; done
   - clickhouse-client --query "CREATE DATABASE IF NOT EXISTS dnscollector"

@@ -49,7 +49,7 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
     size         = 64 # Size in GiB
   }
 
-  # Pass through the host disk /dev/sda directly to the VM
+  # Pass through the host disk /dev/sda directly to the VM (guest sees /dev/sdb)
   disk {
     datastore_id      = ""
     interface         = "scsi1"
@@ -70,8 +70,8 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
         gateway = "10.9.9.1"
       }
       ipv6 {
-        address = "2601:645:8103:e3a0::78/64"
-        gateway = "2601:645:8103:e3a0::"
+        address = "2601:645:8105:e060::78/64"
+        gateway = "2601:645:8105:e060::"
       }
 
     }
