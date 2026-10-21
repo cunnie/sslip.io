@@ -163,18 +163,23 @@ sleep 10; while ! curl -sfI blocked.nip.io >/dev/null; do sleep 5; done
 Quick tests for special records:
 
 ```bash
-for NS in ns-{00,01}.nip.io ns-ovh.sslip.io; do
-  printf "\n$NS:\n"
-  for PROT in tcp notcp; do
-    for DOMAIN in nip.io sslip.io; do
-      dig @$NS +$PROT +short mx $DOMAIN
-      dig @$NS +$PROT +short txt _dmarc.$DOMAIN
-      dig @$NS +$PROT +short cname protonmail._domainkey.$DOMAIN
-      dig @$NS +$PROT +short cname protonmail2._domainkey.$DOMAIN
-      dig @$NS +$PROT +short cname protonmail3._domainkey.$DOMAIN
-      dig @$NS +$PROT +short cname version.status.$DOMAIN
-      dig @$NS +$PROT +short txt -4 ip.$DOMAIN
-      dig @$NS +$PROT +short txt -6 ip.$DOMAIN
+for EXPR in \
+  'dig @$NS +$PROT +short mx $DOMAIN' \
+  'dig @$NS +$PROT +short txt _dmarc.$DOMAIN' \
+  'dig @$NS +$PROT +short cname protonmail._domainkey.$DOMAIN' \
+  'dig @$NS +$PROT +short cname protonmail2._domainkey.$DOMAIN' \
+  'dig @$NS +$PROT +short cname protonmail3._domainkey.$DOMAIN' \
+  'dig @$NS +$PROT +short txt version.status.$DOMAIN' \
+  'dig @$NS +$PROT +short txt -4 ip.$DOMAIN' \
+  'dig @$NS +$PROT +short txt -6 ip.$DOMAIN' \
+
+do
+  printf "\n$EXPR:\n"
+  for NS in ns-{00,01}.nip.io ns-ovh.sslip.io; do
+    for PROT in tcp notcp; do
+      for DOMAIN in nip.io sslip.io; do
+        eval $EXPR
+      done
     done
   done
 done
