@@ -4,8 +4,8 @@ These instructions are meant primarily for me when deploying a new release;
 they might not make sense unless you're on my workstation.
 
 ```bash
-export OLD_VERSION=6.0.1
-export VERSION=6.1.0
+export OLD_VERSION=6.1.0
+export VERSION=6.1.1
 cd ~/workspace/sslip.io
 git pull -r --autostash
 # update the hard-coded version numbers
@@ -82,7 +82,7 @@ Test from another window:
 
 ```bash
 DNS_SERVER_IP=127.0.0.1
-VERSION=6.1.0
+VERSION=6.1.1
 PORT=5333
 # quick sanity test
 ( dig +short 127.0.0.1.example.com @$DNS_SERVER_IP -p $PORT
@@ -131,7 +131,7 @@ Review the output then close the second window. Stop the server in the
 original window. Commit our changes:
 
 ```bash
-GIT_MESSAGE="$VERSION: Remove hard-coded DNS records"
+GIT_MESSAGE="$VERSION: \`-dnstap\` flag is production-ready"
 git add -p
 git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
