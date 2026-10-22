@@ -129,6 +129,49 @@ write_files:
       #!/bin/sh
       systemctl reload nginx
 
+  # Rate-limit HTTP(S) connection floods: a source that opens new connections
+  # faster than 20/minute (after a burst of 20) is reset for a day. A separate
+  # table, not firewalld's, so firewall-cmd --reload leaves it alone.
+  - path: /etc/nftables/http-ratelimit.nft
+    permissions: "0644"
+    content: |
+      table inet http_ratelimit {
+        # per-source token buckets; idle entries expire after a minute
+        set track4 { type ipv4_addr; flags dynamic, timeout; timeout 1m; }
+        set track6 { type ipv6_addr; flags dynamic, timeout; timeout 1m; }
+        # offenders, blocked for a day
+        set block4 { type ipv4_addr; flags dynamic, timeout; timeout 1d; }
+        set block6 { type ipv6_addr; flags dynamic, timeout; timeout 1d; }
+
+        chain input {
+          # runs just before firewalld's chain (priority filter = 0)
+          type filter hook input priority filter - 10; policy accept;
+
+          tcp dport { 80, 443 } ip  saddr @block4 reject with tcp reset
+          tcp dport { 80, 443 } ip6 saddr @block6 reject with tcp reset
+
+          tcp dport { 80, 443 } ct state new update @track4 { ip  saddr limit rate over 20/minute burst 20 packets } add @block4 { ip  saddr } reject with tcp reset
+          tcp dport { 80, 443 } ct state new update @track6 { ip6 saddr limit rate over 20/minute burst 20 packets } add @block6 { ip6 saddr } reject with tcp reset
+        }
+      }
+
+  # Not nftables.service: its ExecStop flushes the whole ruleset, firewalld's included
+  - path: /etc/systemd/system/http-ratelimit.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Block HTTP(S) clients that open too many connections
+      After=firewalld.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/sbin/nft -f /etc/nftables/http-ratelimit.nft
+      ExecStop=/usr/sbin/nft delete table inet http_ratelimit
+
+      [Install]
+      WantedBy=multi-user.target
+
   - path: /usr/local/sbin/mount-nginx-log-volume.sh
     permissions: "0755"
     content: |
@@ -178,6 +221,7 @@ runcmd:
   - firewall-cmd --permanent --add-service=http
   - firewall-cmd --permanent --add-service=https
   - firewall-cmd --reload
+  - systemctl enable --now http-ratelimit.service
   - /usr/local/sbin/mount-nginx-log-volume.sh
   - systemctl enable --now nginx
   - rm -rf /etc/letsencrypt/live/blocked.nip.io
