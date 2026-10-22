@@ -2,7 +2,12 @@ package main
 
 import (
 	"encoding/binary"
+	"io"
+	"log"
 	"net"
+	"os"
+	"path/filepath"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -59,36 +64,35 @@ var _ = Describe("encodeDnstapFrame", func() {
 })
 
 var _ = Describe("encodeDnstapMsg", func() {
-	It("includes the query and response bytes verbatim in the encoded message", func() {
-		queryBytes := []byte{0x12, 0x34, 0x01, 0x00}
+	It("includes the response bytes verbatim and omits the query bytes", func() {
 		responseBytes := dnsAResponse()
 		src := net.ParseIP("192.168.1.50")
 		qt := time.Unix(1700000000, 123456789)
 		rt := time.Unix(1700000001, 987654321)
 
-		encoded := encodeDnstapMsg(queryBytes, responseBytes, src, 5353, true, qt, rt)
+		encoded := encodeDnstapMsg(responseBytes, src, 5353, true, qt, rt)
 
-		Expect(pbTestExtract(encoded, 10)).To(Equal(queryBytes))    // Message.query_message
+		Expect(pbTestExtract(encoded, 10)).To(BeNil())              // Message.query_message
 		Expect(pbTestExtract(encoded, 14)).To(Equal(responseBytes)) // Message.response_message
 	})
 
 	It("sets socket_family to INET for IPv4 sources", func() {
-		encoded := encodeDnstapMsg([]byte{0}, dnsAResponse(), net.ParseIP("1.2.3.4"), 53, true, time.Now(), time.Now())
+		encoded := encodeDnstapMsg(dnsAResponse(), net.ParseIP("1.2.3.4"), 53, true, time.Now(), time.Now())
 		Expect(pbTestExtractUint(encoded, 2)).To(Equal(uint64(dtSocketFamilyINET)))
 	})
 
 	It("sets socket_family to INET6 for IPv6 sources", func() {
-		encoded := encodeDnstapMsg([]byte{0}, dnsAAAAResponse(), net.ParseIP("2001:db8::1"), 53, true, time.Now(), time.Now())
+		encoded := encodeDnstapMsg(dnsAAAAResponse(), net.ParseIP("2001:db8::1"), 53, true, time.Now(), time.Now())
 		Expect(pbTestExtractUint(encoded, 2)).To(Equal(uint64(dtSocketFamilyINET6)))
 	})
 
 	It("sets socket_protocol to UDP when isUDP is true", func() {
-		encoded := encodeDnstapMsg([]byte{0}, dnsAResponse(), net.ParseIP("1.2.3.4"), 53, true, time.Now(), time.Now())
+		encoded := encodeDnstapMsg(dnsAResponse(), net.ParseIP("1.2.3.4"), 53, true, time.Now(), time.Now())
 		Expect(pbTestExtractUint(encoded, 3)).To(Equal(uint64(dtSocketProtocolUDP)))
 	})
 
 	It("sets socket_protocol to TCP when isUDP is false", func() {
-		encoded := encodeDnstapMsg([]byte{0}, dnsAResponse(), net.ParseIP("1.2.3.4"), 53, false, time.Now(), time.Now())
+		encoded := encodeDnstapMsg(dnsAResponse(), net.ParseIP("1.2.3.4"), 53, false, time.Now(), time.Now())
 		Expect(pbTestExtractUint(encoded, 3)).To(Equal(uint64(dtSocketProtocolTCP)))
 	})
 })
@@ -243,4 +247,128 @@ func pbTestExtractUint(data []byte, fieldNum uint64) uint64 {
 		}
 	}
 	return 0
+}
+
+var _ = Describe("DnstapWriter", func() {
+	BeforeEach(func() {
+		// DnstapWriter logs via the standard logger; send it to GinkgoWriter so it only appears on failure or with -v
+		log.SetOutput(GinkgoWriter)
+		DeferCleanup(log.SetOutput, os.Stderr)
+	})
+
+	sendOne := func(dw *DnstapWriter) {
+		dw.SendDnstap(dnsAResponse(), net.ParseIP("1.2.3.4"), 53, true, time.Now(), time.Now())
+	}
+
+	When("the collector stops reading", func() {
+		It("never blocks the sender, and counts the dropped messages", func() {
+			client, server := net.Pipe() // unbuffered: writes block until server reads, which it never does
+			defer server.Close()
+			dw := newDnstapWriter("", 4)
+			go func() { _ = dw.stream(client) }()
+			sent := make(chan struct{})
+			go func() {
+				for i := 0; i < 10000; i++ {
+					sendOne(dw)
+				}
+				close(sent)
+			}()
+			Eventually(sent, 2).Should(BeClosed())
+			Expect(dw.dropped.Load()).To(BeNumerically(">", 0))
+			close(dw.stop)
+		})
+	})
+
+	It("batches many small frames into large writes", func() {
+		client, server := net.Pipe()
+		dw := newDnstapWriter("", dnstapQueueLength)
+		for i := 0; i < 1000; i++ {
+			sendOne(dw)
+		}
+		streamDone := make(chan error)
+		go func() { streamDone <- dw.stream(client) }()
+		buf := make([]byte, 2*dnstapBatchBytes)
+		n, err := server.Read(buf) // net.Pipe delivers each Write as-is, so n is the size of one write
+		Expect(err).ToNot(HaveOccurred())
+		Expect(n).To(Equal(dnstapBatchBytes))
+		go func() { _, _ = io.Copy(io.Discard, server) }()
+		close(dw.stop)
+		Eventually(streamDone).Should(Receive(BeNil()))
+	})
+
+	When("the collector restarts", func() {
+		It("reconnects and resumes sending", func() {
+			socketPath := filepath.Join(GinkgoT().TempDir(), "dnstap.sock")
+			frames := make(chan []byte, 100)
+
+			shutdown := fakeCollector(socketPath, frames)
+			dw := newDnstapWriter(socketPath, dnstapQueueLength)
+			dw.retryInterval = 500 * time.Millisecond
+			go dw.run()
+			defer dw.Close()
+			Eventually(func() int { sendOne(dw); return len(frames) }, 5, 100*time.Millisecond).Should(BeNumerically(">", 0))
+
+			// the collector goes away, then comes back
+			shutdown()
+			for len(frames) > 0 {
+				<-frames
+			}
+			shutdown = fakeCollector(socketPath, frames)
+			defer shutdown()
+			Eventually(func() int { sendOne(dw); return len(frames) }, 10, 100*time.Millisecond).Should(BeNumerically(">", 0))
+		})
+	})
+})
+
+// fakeCollector listens on socketPath and, for each connection, performs the framestream
+// handshake and forwards data frames to frames. The returned func shuts it down,
+// closing the listener and every connection, as a restarting collector would.
+func fakeCollector(socketPath string, frames chan<- []byte) (shutdown func()) {
+	_ = os.Remove(socketPath)
+	listener, err := net.Listen("unix", socketPath)
+	Expect(err).ToNot(HaveOccurred())
+	var mu sync.Mutex
+	var conns []net.Conn
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			conns = append(conns, conn)
+			mu.Unlock()
+			go func() {
+				defer conn.Close()
+				if fsReadControl(conn, fsControlReady) != nil ||
+					fsWriteControl(conn, fsControlAccept, dnstapContentType) != nil ||
+					fsReadControl(conn, fsControlStart) != nil {
+					return
+				}
+				var hdr [4]byte
+				for {
+					if _, err := io.ReadFull(conn, hdr[:]); err != nil {
+						return
+					}
+					length := binary.BigEndian.Uint32(hdr[:])
+					if length == 0 { // control frame (e.g. STOP)
+						return
+					}
+					frame := make([]byte, length)
+					if _, err := io.ReadFull(conn, frame); err != nil {
+						return
+					}
+					frames <- frame
+				}
+			}()
+		}
+	}()
+	return func() {
+		_ = listener.Close()
+		mu.Lock()
+		defer mu.Unlock()
+		for _, conn := range conns {
+			_ = conn.Close()
+		}
+	}
 }

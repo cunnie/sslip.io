@@ -60,15 +60,8 @@ func main() {
 
 	var dw *DnstapWriter
 	if *dnstapSocket != "" {
-		var err error
-		dw, err = NewDnstapWriter(*dnstapSocket)
-		if err != nil {
-			log.Printf("dnstap: warning: could not connect to %q: %v", *dnstapSocket, err)
-			dw = nil
-		} else {
-			log.Printf("dnstap: connected to %q", *dnstapSocket)
-			defer dw.Close()
-		}
+		dw = NewDnstapWriter(*dnstapSocket) // connects (and reconnects) in the background
+		defer dw.Close()
 	}
 
 	var udpConns []*net.UDPConn
@@ -374,7 +367,7 @@ func chunk(s string, size int) (chunks []string) {
 func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 	for {
 		query := make([]byte, 512)
-		n, addr, err := conn.ReadFromUDP(query)
+		_, addr, err := conn.ReadFromUDP(query)
 		if err != nil {
 			log.Println(err.Error())
 			continue
@@ -396,9 +389,7 @@ func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 			}
 			if dw != nil && ResponseHasAorAAAA(response) {
 				responseTime := time.Now()
-				if err := dw.SendDnstap(query[:n], response, addr.IP, addr.Port, true, queryTime, responseTime); err != nil {
-					log.Printf("dnstap send error: %v", err)
-				}
+				dw.SendDnstap(response, addr.IP, addr.Port, true, queryTime, responseTime)
 			}
 			x.Metrics.UDPQueries += 1
 		}()
@@ -471,9 +462,7 @@ func handleTCPConn(tcpConn *net.TCPConn, x *xip.Xip, quiet bool, dw *DnstapWrite
 		if dw != nil && ResponseHasAorAAAA(response) {
 			portNum, _ := strconv.Atoi(port)
 			responseTime := time.Now()
-			if err := dw.SendDnstap(query, response, net.ParseIP(addr), portNum, false, queryTime, responseTime); err != nil {
-				log.Printf("dnstap send error: %v", err)
-			}
+			dw.SendDnstap(response, net.ParseIP(addr), portNum, false, queryTime, responseTime)
 		}
 		x.Metrics.TCPQueries += 1
 	}

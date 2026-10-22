@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"strings"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/net/dns/dnsmessage"
@@ -26,65 +28,202 @@ const (
 	dtSocketFamilyINET6   = uint32(2)
 	dtSocketProtocolUDP   = uint32(1)
 	dtSocketProtocolTCP   = uint32(2)
+
+	// at ~10k qps, 64k frames is several seconds of backlog; beyond that we drop rather than block DNS
+	dnstapQueueLength = 65536
+	// frames are batched into writes of this size: fewer syscalls and full-sized TCP segments
+	dnstapBatchBytes = 16 * 1024
+	// a partially-filled batch is sent at least this often, so low-traffic servers aren't stuck
+	dnstapFlushInterval   = time.Second
+	dnstapDropLogInterval = time.Minute
+	// after a lost connection or a failed connection attempt, wait this long before trying again
+	dnstapRetryInterval = time.Minute
+	// a collector that accepts but never responds or reads must not wedge the writer
+	dnstapConnectTimeout = 5 * time.Second
+	dnstapWriteTimeout   = 10 * time.Second
 )
 
 // DnstapWriter sends dnstap AUTH_RESPONSE messages over a framestream connection.
+// Sending never blocks: frames are queued, batched by a background goroutine,
+// and dropped (and counted) if the queue is full or the collector is unreachable.
+// If the connection fails, the background goroutine reconnects.
 type DnstapWriter struct {
-	conn     net.Conn
+	addr     string // Unix socket path starting with "/" or TCP "host:port"
 	identity []byte // Dnstap.identity: the hostname, e.g. "ns-ovh"
-	mu       sync.Mutex
+	// how long to wait before reconnecting; a field, not just a const, so tests needn't wait a minute
+	retryInterval time.Duration
+	frames        chan []byte
+	dropped       atomic.Uint64
+	stop          chan struct{}
+	done          chan struct{}
 }
 
-// NewDnstapWriter connects to addr (Unix socket path starting with "/" or TCP "host:port")
-// and performs the framestream handshake.
-func NewDnstapWriter(addr string) (*DnstapWriter, error) {
-	var conn net.Conn
-	var err error
-	if strings.HasPrefix(addr, "/") {
-		conn, err = net.Dial("unix", addr)
-	} else {
-		conn, err = net.Dial("tcp", addr)
+// NewDnstapWriter returns a writer that connects to addr (Unix socket path starting with "/"
+// or TCP "host:port") in the background, reconnecting whenever the connection is lost.
+func NewDnstapWriter(addr string) *DnstapWriter {
+	dw := newDnstapWriter(addr, dnstapQueueLength)
+	go dw.logDrops()
+	go dw.run()
+	return dw
+}
+
+func newDnstapWriter(addr string, queueLength int) *DnstapWriter {
+	dw := &DnstapWriter{
+		addr:          addr,
+		retryInterval: dnstapRetryInterval,
+		frames:        make(chan []byte, queueLength),
+		stop:          make(chan struct{}),
+		done:          make(chan struct{}),
 	}
-	if err != nil {
-		return nil, err
-	}
-	dw := &DnstapWriter{conn: conn}
 	if hostname, err := os.Hostname(); err == nil {
 		shortHostname, _, _ := strings.Cut(hostname, ".") // "ns-ovh.sslip.io" → "ns-ovh"
 		dw.identity = []byte(shortHostname)
 	}
-	if err = dw.handshake(); err != nil {
+	return dw
+}
+
+// connect dials the collector and performs the framestream handshake.
+func (dw *DnstapWriter) connect() (net.Conn, error) {
+	network := "tcp"
+	if strings.HasPrefix(dw.addr, "/") {
+		network = "unix"
+	}
+	conn, err := net.DialTimeout(network, dw.addr, dnstapConnectTimeout)
+	if err != nil {
+		return nil, err
+	}
+	_ = conn.SetDeadline(time.Now().Add(dnstapConnectTimeout))
+	if err = fsHandshake(conn); err != nil {
 		_ = conn.Close()
-		return nil, fmt.Errorf("dnstap framestream handshake: %w", err)
+		return nil, fmt.Errorf("framestream handshake: %w", err)
 	}
-	return dw, nil
+	_ = conn.SetDeadline(time.Time{})
+	return conn, nil
 }
 
-func (dw *DnstapWriter) handshake() error {
-	if err := fsWriteControl(dw.conn, fsControlReady, dnstapContentType); err != nil {
+func fsHandshake(conn net.Conn) error {
+	if err := fsWriteControl(conn, fsControlReady, dnstapContentType); err != nil {
 		return err
 	}
-	if err := fsReadControl(dw.conn, fsControlAccept); err != nil {
+	if err := fsReadControl(conn, fsControlAccept); err != nil {
 		return err
 	}
-	return fsWriteControl(dw.conn, fsControlStart, dnstapContentType)
+	return fsWriteControl(conn, fsControlStart, dnstapContentType)
 }
 
-// SendDnstap encodes and sends a dnstap AUTH_RESPONSE message for a DNS query/response pair.
-func (dw *DnstapWriter) SendDnstap(queryBytes, responseBytes []byte, srcAddr net.IP, srcPort int, isUDP bool, queryTime, responseTime time.Time) error {
-	msg := encodeDnstapMsg(queryBytes, responseBytes, srcAddr, srcPort, isUDP, queryTime, responseTime)
-	frame := encodeDnstapFrame(dw.identity, msg)
-	dw.mu.Lock()
-	defer dw.mu.Unlock()
-	return fsWriteData(dw.conn, frame)
+// SendDnstap queues a dnstap AUTH_RESPONSE message for a DNS response. It never blocks:
+// if the queue is full (slow link or collector), the message is dropped.
+func (dw *DnstapWriter) SendDnstap(responseBytes []byte, srcAddr net.IP, srcPort int, isUDP bool, queryTime, responseTime time.Time) {
+	msg := encodeDnstapMsg(responseBytes, srcAddr, srcPort, isUDP, queryTime, responseTime)
+	select {
+	case dw.frames <- encodeDnstapFrame(dw.identity, msg):
+	default:
+		dw.dropped.Add(1)
+	}
 }
 
-// Close sends a STOP control frame and closes the connection.
+// Close sends any queued frames and a STOP control frame, then closes the connection.
 func (dw *DnstapWriter) Close() {
-	dw.mu.Lock()
-	defer dw.mu.Unlock()
-	_ = fsWriteControl(dw.conn, fsControlStop, "")
-	_ = dw.conn.Close()
+	close(dw.stop)
+	<-dw.done
+}
+
+// run connects to the collector and streams frames to it. If connecting fails or the
+// connection is lost, it waits dw.retryInterval before trying again.
+func (dw *DnstapWriter) run() {
+	defer close(dw.done)
+	for {
+		conn, err := dw.connect()
+		if err != nil {
+			log.Printf("dnstap: warning: could not connect to %q, retrying in %v: %v", dw.addr, dw.retryInterval, err)
+		} else {
+			log.Printf("dnstap: connected to %q", dw.addr)
+			if err = dw.stream(conn); err == nil {
+				return // stopped
+			}
+			log.Printf("dnstap: lost connection to %q, reconnecting in %v: %v", dw.addr, dw.retryInterval, err)
+		}
+		if !dw.discardFor(dw.retryInterval) {
+			return
+		}
+	}
+}
+
+// discardFor drops queued frames (so the queue doesn't fill with stale data while the
+// collector is unreachable) for duration d. It returns false if the writer was stopped.
+func (dw *DnstapWriter) discardFor(d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	for {
+		select {
+		case <-dw.frames:
+			dw.dropped.Add(1)
+		case <-timer.C:
+			return true
+		case <-dw.stop:
+			return false
+		}
+	}
+}
+
+// stream is the sole writer to conn. It packs frames into large writes, flushing
+// when the batch buffer fills or every dnstapFlushInterval. It returns nil when the
+// writer is stopped, or the error that broke the connection. Either way, conn is closed.
+func (dw *DnstapWriter) stream(conn net.Conn) error {
+	defer func() { _ = conn.Close() }()
+	bw := bufio.NewWriterSize(deadlineWriter{conn}, dnstapBatchBytes) // writes through to conn each time it fills
+	flushTicker := time.NewTicker(dnstapFlushInterval)
+	defer flushTicker.Stop()
+	for {
+		select {
+		case frame := <-dw.frames:
+			if err := fsWriteData(bw, frame); err != nil {
+				return err // the frames in bw are lost, too
+			}
+		case <-flushTicker.C:
+			if err := bw.Flush(); err != nil {
+				return err
+			}
+		case <-dw.stop:
+			for {
+				select {
+				case frame := <-dw.frames:
+					if err := fsWriteData(bw, frame); err != nil {
+						return nil
+					}
+				default:
+					_ = fsWriteControl(bw, fsControlStop, "")
+					_ = bw.Flush()
+					return nil
+				}
+			}
+		}
+	}
+}
+
+// logDrops periodically reports how many frames were dropped.
+func (dw *DnstapWriter) logDrops() {
+	ticker := time.NewTicker(dnstapDropLogInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if dropped := dw.dropped.Swap(0); dropped > 0 {
+				log.Printf("dnstap: dropped %d messages in the last %v (queue full or collector unreachable)", dropped, dnstapDropLogInterval)
+			}
+		case <-dw.stop:
+			return
+		}
+	}
+}
+
+// deadlineWriter gives each write a deadline, so a collector that stops reading
+// breaks the connection (and triggers a reconnect) instead of blocking forever.
+type deadlineWriter struct{ net.Conn }
+
+func (w deadlineWriter) Write(p []byte) (int, error) {
+	_ = w.SetWriteDeadline(time.Now().Add(dnstapWriteTimeout))
+	return w.Conn.Write(p)
 }
 
 // ResponseHasAorAAAA reports whether the packed DNS response contains at least one A or AAAA answer.
@@ -210,7 +349,9 @@ func encodeDnstapFrame(identity, msg []byte) []byte {
 
 // --- Dnstap Message encoding (dnstap.proto Message type) ---
 
-func encodeDnstapMsg(queryBytes, responseBytes []byte, srcAddr net.IP, srcPort int, isUDP bool, queryTime, responseTime time.Time) []byte {
+// The query message is omitted: the response's question section carries the query name,
+// and leaving it out roughly halves the size of each frame on the wire.
+func encodeDnstapMsg(responseBytes []byte, srcAddr net.IP, srcPort int, isUDP bool, queryTime, responseTime time.Time) []byte {
 	socketFamily := dtSocketFamilyINET
 	addrBytes := srcAddr.To4()
 	if addrBytes == nil {
@@ -230,7 +371,6 @@ func encodeDnstapMsg(queryBytes, responseBytes []byte, srcAddr net.IP, srcPort i
 	msg = pbAppendUint32(msg, 6, uint32(srcPort))                     // Message.query_port
 	msg = pbAppendUint64(msg, 8, uint64(queryTime.Unix()))            // Message.query_time_sec
 	msg = pbAppendFixed32(msg, 9, uint32(queryTime.Nanosecond()))     // Message.query_time_nsec
-	msg = pbAppendBytes(msg, 10, queryBytes)                          // Message.query_message
 	msg = pbAppendUint64(msg, 12, uint64(responseTime.Unix()))        // Message.response_time_sec
 	msg = pbAppendFixed32(msg, 13, uint32(responseTime.Nanosecond())) // Message.response_time_nsec
 	msg = pbAppendBytes(msg, 14, responseBytes)                       // Message.response_message

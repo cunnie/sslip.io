@@ -146,8 +146,10 @@ var _ = Describe("-dnstap flag with bad socket", func() {
 				"-dnstap=/nonexistent/path/dnstap.sock")
 			badSession, serr := Start(badCmd, GinkgoWriter, GinkgoWriter)
 			Expect(serr).ToNot(HaveOccurred())
-			Eventually(badSession.Err, 10).Should(Say("dnstap.*warning|warning.*dnstap"))
+			// connecting happens in the background, so the warning may precede or follow "Ready"
 			Eventually(badSession.Err, 10).Should(Say("Ready to answer queries"))
+			Eventually(func() string { return string(badSession.Err.Contents()) }, 10).Should(
+				ContainSubstring("dnstap: warning: could not connect"))
 			badSession.Terminate()
 			Eventually(badSession).Should(Exit())
 		})
