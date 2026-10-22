@@ -59,13 +59,15 @@ write_files:
     content: |
       user nginx;
       worker_processes auto;
+      # one fd per connection, plus slack for logs & listeners 1024 -> 16384
+      worker_rlimit_nofile 16384;
       error_log /var/log/nginx/error.log notice;
       pid /run/nginx.pid;
 
       include /usr/share/nginx/modules/*.conf;
 
       events {
-          worker_connections 1024;
+          worker_connections 8192;
       }
 
       http {
