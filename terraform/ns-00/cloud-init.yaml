@@ -57,6 +57,8 @@ write_files:
       After=droplet-agent.service do-agent.service
 
       [Service]
+      # delay 10 secs to avoid "dial tcp: lookup raw.githubusercontent.com on 127.0.0.53:53: read udp 127.0.0.1:38520->127.0.0.53:53: i/o timeout"
+      ExecStartPre=/usr/bin/sleep 10
       ExecStart=/usr/bin/sslip.io-dns-server \
         -ns=.=ns-00.nip.io. \
         -ns=.=ns-01.nip.io. \

@@ -1034,7 +1034,7 @@ func (x *Xip) downloadBlockList(blocklistURL string) string {
 		//noinspection GoUnhandledErrorResult
 		defer blocklistReader.Close()
 	} else {
-		resp, err := http.Get(blocklistURL)
+		resp, err := (&http.Client{Timeout: 30 * time.Second}).Get(blocklistURL)
 		if err != nil {
 			return fmt.Sprintf(`failed to download blocklist "%s": %s`, blocklistURL, err.Error())
 		}
