@@ -185,6 +185,14 @@ do
 done
 ```
 
+Make sure the servers were able to pick up the blocklist (non-zero numbers):
+
+```bash
+for NS in ns-{00,01}.nip.io ns-ovh.sslip.io; do
+  printf "\n$NS\n"; dig TXT metrics.status.sslip.io @$NS +short
+done | grep Blocklist
+```
+
 - Browse to <https://github.com/cunnie/sslip.io/releases/new> to draft a new release
 - Drag and drop the executables in `bin/` to the _Attach binaries..._ section.
 - Click "Publish release"
