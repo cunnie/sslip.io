@@ -43,9 +43,10 @@ write_files:
           meta l4proto { icmp, ipv6-icmp } accept
           tcp dport 22 accept
           # CIDR for ns-00 because outbound IPv6 originates from _other_ addr
-          ip6 saddr 2400:6180:0:d2::/64   tcp dport 6000 accept # ns-00
-          ip6 saddr 2a01:4ff:1f2:10d::    tcp dport 6000 accept # ns-01
-          ip6 saddr 2001:41d0:602:2313::1 tcp dport 6000 accept # ns-ovh
+          ip6 saddr 2400:6180:0:d2::/64     tcp dport 6000 accept # ns-00
+          ip6 saddr 2a01:4ff:1f2:10d::      tcp dport 6000 accept # ns-01
+          ip6 saddr 2001:41d0:602:2313::1   tcp dport 6000 accept # ns-ovh
+          ip6 saddr 2601:645:8105:e060::/64 tcp dport 6000 accept # debugging from home
         }
       }
     permissions: "0644"
@@ -80,7 +81,7 @@ write_files:
             url: "http://127.0.0.1:8123"
             user: "default"
             password: ""
-            database: "dnscollector"
+            database: "default"
             table: "records"
     permissions: "0644"
   - path: /etc/systemd/system/dnscollector.service
@@ -137,9 +138,47 @@ runcmd:
   - usermod -aG clickhouse cunnie
   - systemctl enable --now clickhouse-server
   - for i in $(seq 1 30); do clickhouse-client --query "SELECT 1" >/dev/null 2>&1 && break; sleep 1; done
-  - clickhouse-client --query "CREATE DATABASE IF NOT EXISTS dnscollector"
-  - clickhouse-client --query "CREATE TABLE IF NOT EXISTS dnscollector.records (identity String, queryip String, qname String, operation String, family String, protocol String, qtype String, rcode String, timensec String, timestamp String) ENGINE = MergeTree ORDER BY (timestamp)"
-  - curl -L -o /tmp/dnscollector.tar.gz https://github.com/dmachard/DNS-collector/releases/download/v2.5.0/DNS-collector_2.5.0_linux_amd64.tar.gz
+  # Columns match DNS-collector v3's JSONEachRow fields (see docs/loggers/logger_clickhouse.md);
+  # queryip is IPv6, which also accepts IPv4 (stored as ::ffff:a.b.c.d). No responseip/responseport:
+  # sslip.io doesn't send response_address, and ClickHouse skips the JSON fields that lack a column
+  - |
+    clickhouse-client --query "
+      CREATE TABLE IF NOT EXISTS records (
+        timestamp DateTime64(3, 'UTC'),
+        timensec UInt64,
+        timestamp_rfc3339 String,
+        identity LowCardinality(String),
+        operation LowCardinality(String),
+        family LowCardinality(String),
+        protocol LowCardinality(String),
+        queryip IPv6,
+        queryport UInt16,
+        qname String,
+        qtype LowCardinality(String),
+        rcode LowCardinality(String),
+        length UInt16,
+        id UInt16,
+        opcode UInt8,
+        latency Float64,
+        qr Bool,
+        tc Bool,
+        aa Bool,
+        ra Bool,
+        ad Bool,
+        rd Bool,
+        cd Bool,
+        malformed_packet Bool,
+        tld LowCardinality(String),
+        etld_plus_one LowCardinality(String),
+        city LowCardinality(String),
+        country LowCardinality(String),
+        as_number UInt32,
+        as_owner LowCardinality(String),
+        suspicious_score Float64
+      ) ENGINE = MergeTree()
+      PARTITION BY toYYYYMM(timestamp)
+      ORDER BY (timestamp, qname)"
+  - curl -L -o /tmp/dnscollector.tar.gz https://github.com/dmachard/DNS-collector/releases/download/v3.2.3/DNS-collector_3.2.3_linux_amd64.tar.gz
   - tar -xzf /tmp/dnscollector.tar.gz -C /usr/bin dnscollector
   - chmod +x /usr/bin/dnscollector
   - /usr/bin/dnscollector -test-config -config /etc/dnscollector/config.yml
