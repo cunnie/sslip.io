@@ -102,7 +102,9 @@ write_files:
         -cname=protonmail3._domainkey.nip.io=protonmail3.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch. \
         -cname=protonmail._domainkey.sslip.io=protonmail.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch. \
         -cname=protonmail2._domainkey.sslip.io=protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch. \
-        -cname=protonmail3._domainkey.sslip.io=protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.
+        -cname=protonmail3._domainkey.sslip.io=protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch. \
+        -quiet \
+        -dnstap dnstap.nono.io:6000
       Restart=on-failure
       RestartSec=5
 
