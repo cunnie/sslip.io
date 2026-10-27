@@ -83,6 +83,10 @@ write_files:
             password: ""
             database: "default"
             table: "records"
+          # fills as_number & as_owner; DB-IP's ASN Lite is GeoLite2-ASN-compatible (CC BY 4.0)
+          transforms:
+            geoip:
+              mmdb-asn-file: "/usr/share/GeoIP/dbip-asn-lite.mmdb"
     permissions: "0644"
   - path: /etc/systemd/system/dnscollector.service
     content: |
@@ -181,6 +185,10 @@ runcmd:
   - curl -L -o /tmp/dnscollector.tar.gz https://github.com/dmachard/DNS-collector/releases/download/v3.2.3/DNS-collector_3.2.3_linux_amd64.tar.gz
   - tar -xzf /tmp/dnscollector.tar.gz -C /usr/bin dnscollector
   - chmod +x /usr/bin/dnscollector
+  # DB-IP publishes a new ASN Lite database monthly
+  - mkdir -p /usr/share/GeoIP
+  - curl -fsSL https://download.db-ip.com/free/dbip-asn-lite-$(date +%Y-%m).mmdb.gz |
+      gunzip > /usr/share/GeoIP/dbip-asn-lite.mmdb
   - /usr/bin/dnscollector -test-config -config /etc/dnscollector/config.yml
   - systemctl daemon-reload
   - systemctl enable dnscollector.service
