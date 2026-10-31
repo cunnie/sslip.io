@@ -137,23 +137,34 @@ git ci -vm"$GIT_MESSAGE"
 git tag $VERSION
 git push
 git push --tags
-for HOST in ns-00 ns-01 ns-ovh blocked; do
-  ssh $HOST sudo dnf upgrade -y
+for REMOTE_HOST in dnstap fed runner; do
+  printf "\n$REMOTE_HOST:\n"
+  ssh $REMOTE_HOST sudo dnf upgrade -y
+  ssh $REMOTE_HOST sudo shutdown -r now
+done
+for REMOTE_HOST in ui; do
+  printf "\n$REMOTE_HOST:\n"
+  ssh $REMOTE_HOST sudo apt-get upgrade -y
+  ssh $REMOTE_HOST sudo shutdown -r now
+done
+for REMOTE_HOST in ns-00 ns-01 ns-ovh blocked; do
+  printf "\n$REMOTE_HOST:\n"
+  ssh $REMOTE_HOST sudo dnf upgrade -y
 done
 scp bin/sslip.io-dns-server-linux-amd64 ns-00:
 scp bin/sslip.io-dns-server-linux-amd64 ns-01:
 scp bin/sslip.io-dns-server-linux-amd64 ns-ovh:
 ssh ns-00 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-00 sudo shutdown -r now
- # check version number; wait until it is back up before rebooting ns-01
+ # check version number and wait until it is back up before rebooting ns-01
 sleep 10; while ! dig txt @ns-00.nip.io version.status.sslip.io +short; do sleep 5; done
 ssh ns-01 sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-01 sudo shutdown -r now
- # check version number; wait until it is back up before rebooting ns-ovh
+ # check version number and wait until it is back up before rebooting ns-ovh
 sleep 10; while ! dig txt @ns-01.nip.io version.status.sslip.io +short; do sleep 5; done
 ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-server
 ssh ns-ovh sudo shutdown -r now
- # check version number; wait until it is back up before rebooting blocked
+ # check version number and wait until it is back up before rebooting blocked
 sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done
  # reboot blocked in case it has a new kernel
 ssh blocked sudo shutdown -r now
