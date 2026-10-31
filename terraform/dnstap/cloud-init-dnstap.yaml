@@ -9,6 +9,7 @@ package_upgrade: true
 packages:
   - "@development-tools"
   - autojump
+  - caddy
   - curl
   - dnf-plugins-core
   - golang
@@ -42,6 +43,10 @@ write_files:
           ct state established,related accept
           meta l4proto { icmp, ipv6-icmp } accept
           tcp dport 22 accept
+          tcp dport 80 accept # Let's Encrypt HTTP-01 challenge; otherwise redirects to 443
+          # ClickHouse via Caddy; UDP for HTTP/3 (QUIC)
+          ip saddr 10.0.0.0/8                meta l4proto { tcp, udp } th dport 443 accept
+          ip6 saddr 2601:645:8105:e060::/64 meta l4proto { tcp, udp } th dport 443 accept
           # CIDR for ns-00 because outbound IPv6 originates from _other_ addr
           ip6 saddr 2400:6180:0:d2::/64     tcp dport 6000 accept # ns-00
           ip6 saddr 2a01:4ff:1f2:10d::      tcp dport 6000 accept # ns-01
@@ -88,6 +93,23 @@ write_files:
             geoip:
               mmdb-asn-file: "/usr/share/GeoIP/dbip-asn-lite.mmdb"
     permissions: "0644"
+  # Fedora's Caddyfile imports Caddyfile.d/*.caddyfile. Caddy gets & renews the
+  # Let's Encrypt cert itself (HTTP-01 on port 80) and redirects HTTP to HTTPS
+  - path: /etc/caddy/Caddyfile.d/clickhouse.caddyfile
+    content: |
+      dnstap.nono.io {
+          # TLS-ALPN-01 needs 443 open to the internet; it's internal-only
+          tls {
+              issuer acme {
+                  disable_tlsalpn_challenge
+              }
+          }
+          reverse_proxy 127.0.0.1:8123 {
+              # stream long-running query results
+              flush_interval -1
+          }
+      }
+    permissions: "0644"
   - path: /etc/systemd/system/dnscollector.service
     content: |
       [Unit]
@@ -121,15 +143,18 @@ runcmd:
   - cp /tmp/cunnie-zshrc /home/cunnie/.zshrc
   - chown cunnie:cunnie /home/cunnie/.zshrc
   - systemctl enable nftables
-  # Passed-through 18 TB HDD (Proxmox scsi1); data is disposable, so always
-  # wipe (incl. stale ZFS labels), partition (GPT), & format it
+  # Passed-through 18 TB HDD (Proxmox scsi1); preserve existing data: only
+  # wipe, partition (GPT), & format it if it has no partitions
   - |
     DISK=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
-    wipefs -a "$DISK"-part* 2>/dev/null || true
-    wipefs -a "$DISK"
-    printf 'label: gpt\n,,L\n' | sfdisk --wipe always "$DISK"
-    udevadm settle
-    mkfs.xfs -f -L tap "$DISK"-part1
+    if lsblk -no TYPE "$DISK" | grep -qx part; then
+      echo "$DISK already partitioned; leaving it alone"
+    else
+      wipefs -a "$DISK"
+      printf 'label: gpt\n,,L\n' | sfdisk --wipe always "$DISK"
+      udevadm settle
+      mkfs.xfs -f -L tap "$DISK"-part1
+    fi
   - mkdir -p /mnt/tap
   - echo 'LABEL=tap /mnt/tap xfs defaults,noatime,nofail 0 2' >> /etc/fstab
   - systemctl daemon-reload
@@ -137,7 +162,8 @@ runcmd:
   - chmod 775 /mnt/tap
   - dnf config-manager addrepo --from-repofile=https://packages.clickhouse.com/rpm/clickhouse.repo
   - dnf install -y clickhouse-server clickhouse-client
-  - chown clickhouse:clickhouse /mnt/tap
+  # recursive: a preserved disk's files may be owned by a previous build's UID
+  - chown -R clickhouse:clickhouse /mnt/tap
   # "clickhouse" group doesn't exist until the RPM is installed
   - usermod -aG clickhouse cunnie
   - systemctl enable --now clickhouse-server
@@ -192,6 +218,9 @@ runcmd:
   - /usr/bin/dnscollector -test-config -config /etc/dnscollector/config.yml
   - systemctl daemon-reload
   - systemctl enable dnscollector.service
+  # Caddy proxies ClickHouse's web UI over HTTPS (the RPM sets the SELinux bits).
+  # The cert is issued via HTTP-01 over IPv6 (dnstap.nono.io has only an AAAA record)
+  - systemctl enable --now caddy
 
 final_message: |
   dnstap.nono.io installation completed!
