@@ -139,6 +139,12 @@ users:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIWiAzxc4uovfaphO0QVC2w00YmzrogUpjAzvuqaQ9tD cunnie@nono.io
 
 runcmd:
+  # Disable SELinux: it confines Caddy to httpd_t, which can't bind the admin
+  # API's port (2019). setenforce for this boot; selinux=0 takes effect on the
+  # reboot at the end of cloud-init (SELINUX=disabled alone no longer works)
+  - setenforce 0
+  - sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
+  - grubby --update-kernel ALL --args selinux=0
   - curl -fsSL https://raw.githubusercontent.com/wting/autojump/refs/heads/master/bin/autojump.zsh -o /usr/share/autojump/autojump.zsh
   - cp /tmp/cunnie-zshrc /home/cunnie/.zshrc
   - chown cunnie:cunnie /home/cunnie/.zshrc
@@ -218,7 +224,7 @@ runcmd:
   - /usr/bin/dnscollector -test-config -config /etc/dnscollector/config.yml
   - systemctl daemon-reload
   - systemctl enable dnscollector.service
-  # Caddy proxies ClickHouse's web UI over HTTPS (the RPM sets the SELinux bits).
+  # Caddy proxies ClickHouse's web UI over HTTPS.
   # The cert is issued via HTTP-01 over IPv6 (dnstap.nono.io has only an AAAA record)
   - systemctl enable --now caddy
 
