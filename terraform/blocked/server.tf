@@ -5,10 +5,10 @@ data "vultr_ssh_key" "nono" {
   }
 }
 
-data "vultr_os" "fedora44" {
+data "vultr_os" "fedora45" {
   filter {
     name   = "name"
-    values = ["Fedora 44 x64"]
+    values = ["Fedora 45 x64"]
   }
 }
 
@@ -164,7 +164,7 @@ resource "vultr_instance" "blocked" {
   label             = "blocked"
   region            = "scl"
   plan              = "vhp-1c-2gb-amd"
-  os_id             = data.vultr_os.fedora44.id
+  os_id             = data.vultr_os.fedora45.id
   enable_ipv6       = true
   firewall_group_id = vultr_firewall_group.blocked.id
   ssh_key_ids       = [data.vultr_ssh_key.nono.id]

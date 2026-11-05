@@ -3,16 +3,18 @@
 To redeploy:
 
 ```bash
+export TF_VAR_vultr_api_key=X7UQ2Nxxxx
 tofu taint vultr_instance.blocked
 tofu apply
 ```
 
-After deploying, if the webserver isn't up, you'll need to do the following:
+After deploying:
 
 ```bash
+scp $PWD/terraform.tfstate nuada:$PWD/terraform.tfstate
+ssh-keygen -R blocked
+ssh blocked
 sudo cp /dev/null /etc/motd
-sudo certbot certonly --standalone --non-interactive --agree-tos --email brian.cunnie@gmail.com -d blocked.nip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io
-sudo systemctl restart nginx
 sudo usermod -aG nginx $USER
 ```
 

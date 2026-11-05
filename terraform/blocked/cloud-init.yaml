@@ -104,6 +104,12 @@ write_files:
           access_log /var/log/nginx/phishing-access.log main;
           error_log  /var/log/nginx/phishing-error.log;
 
+          # let certbot's webroot challenge files through; without this,
+          # try_files returns index.html, which Let's Encrypt rejects
+          location /.well-known/acme-challenge/ {
+              try_files $uri =404;
+          }
+
           location / {
               try_files /index.html =404;
           }
@@ -120,6 +126,12 @@ write_files:
           ssl_certificate     /etc/letsencrypt/live/blocked.nip.io/fullchain.pem;
           ssl_certificate_key /etc/letsencrypt/live/blocked.nip.io/privkey.pem;
 
+          # let certbot's webroot challenge files through; without this,
+          # try_files returns index.html, which Let's Encrypt rejects
+          location /.well-known/acme-challenge/ {
+              try_files $uri =404;
+          }
+
           location / {
               try_files /index.html =404;
           }
@@ -132,7 +144,7 @@ write_files:
       systemctl reload nginx
 
   # Rate-limit HTTP(S) connection floods: a source that opens new connections
-  # faster than 20/minute (after a burst of 20) is reset for a day. A separate
+  # faster than 40/minute (after a burst of 40) is reset for a day. A separate
   # table, not firewalld's, so firewall-cmd --reload leaves it alone.
   - path: /etc/nftables/http-ratelimit.nft
     permissions: "0644"
@@ -152,8 +164,8 @@ write_files:
           tcp dport { 80, 443 } ip  saddr @block4 reject with tcp reset
           tcp dport { 80, 443 } ip6 saddr @block6 reject with tcp reset
 
-          tcp dport { 80, 443 } ct state new update @track4 { ip  saddr limit rate over 20/minute burst 20 packets } add @block4 { ip  saddr } reject with tcp reset
-          tcp dport { 80, 443 } ct state new update @track6 { ip6 saddr limit rate over 20/minute burst 20 packets } add @block6 { ip6 saddr } reject with tcp reset
+          tcp dport { 80, 443 } ct state new update @track4 { ip  saddr limit rate over 40/minute burst 40 packets } add @block4 { ip  saddr } reject with tcp reset
+          tcp dport { 80, 443 } ct state new update @track6 { ip6 saddr limit rate over 40/minute burst 40 packets } add @block6 { ip6 saddr } reject with tcp reset
         }
       }
 
@@ -219,7 +231,6 @@ runcmd:
   # once nginx has it open, freeing the path for certbot's webroot challenge.
   - openssl req -x509 -newkey ed25519 -keyout /etc/letsencrypt/live/blocked.nip.io/privkey.pem -out /etc/letsencrypt/live/blocked.nip.io/fullchain.pem -days 1 -nodes -subj "/CN=localhost"
   - systemctl daemon-reload
-  - systemctl enable sslip.io-dns.service
   - firewall-cmd --permanent --add-service=http
   - firewall-cmd --permanent --add-service=https
   - firewall-cmd --reload
@@ -227,7 +238,7 @@ runcmd:
   - /usr/local/sbin/mount-nginx-log-volume.sh
   - systemctl enable --now nginx
   - rm -rf /etc/letsencrypt/live/blocked.nip.io
-  - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io -d 40B01609.nip.io --non-interactive --agree-tos --email cunnie@majestic-labs.ai
+  - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io -d 40B01609.nip.io --non-interactive --agree-tos --email brian.cunnie@gmail.com
   - systemctl reload nginx
   - systemctl enable --now certbot-renew.timer
 
