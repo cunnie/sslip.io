@@ -59,7 +59,7 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
 
   # Clone from template
   clone {
-    vm_id = 1002 # Fedora 44
+    vm_id = 1004 # Fedora 45
   }
 
   # Cloud-init configuration inline
