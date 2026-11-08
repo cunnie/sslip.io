@@ -101,6 +101,7 @@ write_files:
           # TLS-ALPN-01 needs 443 open to the internet; it's internal-only
           tls {
               issuer acme {
+                  email brian.cunnie@gmail.com
                   disable_tlsalpn_challenge
               }
           }

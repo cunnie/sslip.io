@@ -24,7 +24,7 @@ variable "password" {
 
 resource "proxmox_virtual_environment_vm" "dnstap" {
   name      = "dnstap"
-  vm_id     = 120
+  vm_id     = 2241
   node_name = "pve"
   # Do NOT use "hook_script_file_id"; it runs the hook on the HOST not the VM
   # hook_script_file_id = proxmox_virtual_environment_file.post_install_script.id
@@ -49,12 +49,12 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
     size         = 64 # Size in GiB
   }
 
-  # Pass through the host disk /dev/sda directly to the VM (guest sees /dev/sdb)
+  # 421GB == 1.56G records ("count(*)")
+  # 1 TiB data disk on local-lvm (guest sees /dev/sdc)
   disk {
-    datastore_id      = ""
-    interface         = "scsi1"
-    path_in_datastore = "/dev/sda"
-    file_format       = "raw"
+    datastore_id = "local-lvm"
+    interface    = "scsi1"
+    size         = 1024 # Size in GiB
   }
 
   # Clone from template
@@ -66,12 +66,12 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
   initialization {
     ip_config {
       ipv4 {
-        address = "10.9.9.120/24"
-        gateway = "10.9.9.1"
+        address = "10.9.2.241/24"
+        gateway = "10.9.2.1"
       }
       ipv6 {
-        address = "2601:645:8105:e060::78/64"
-        gateway = "2601:645:8105:e060::"
+        address = "2601:645:8105:e062::f1/64"
+        gateway = "2601:645:8105:e062::"
       }
 
     }
@@ -85,7 +85,8 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
   network_device {
     bridge      = "vmbr0"
     model       = "virtio"
-    mac_address = "02:00:00:00:00:78"
+    mac_address = "02:00:00:00:02:f1"
+    vlan_id     = 2
   }
 
   operating_system {
