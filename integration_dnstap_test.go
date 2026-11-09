@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -110,26 +109,47 @@ var _ = Describe("-dnstap flag", func() {
 	})
 
 	When("a query returns only NS records (no A/AAAA answer)", func() {
-		It("does not send a dnstap frame", func() {
+		It("sends a dnstap frame", func() {
 			digArgs := "@localhost example.com NS -p " + strconv.Itoa(dnstapPort)
 			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
 			digSession, derr := Start(digCmd, GinkgoWriter, GinkgoWriter)
 			Expect(derr).ToNot(HaveOccurred())
 			Eventually(digSession, 1).Should(Exit(0))
 
-			Consistently(receivedFrames, 500*time.Millisecond).ShouldNot(Receive())
+			var frame []byte
+			Eventually(receivedFrames, 2).Should(Receive(&frame))
+			Expect(dtFrameHasResponse(frame)).To(BeTrue())
+			Expect(dtFrameHasAorAAAA(frame)).To(BeFalse())
 		})
 	})
 
 	When("a query returns no answer", func() {
-		It("does not send a dnstap frame", func() {
+		It("sends a dnstap frame", func() {
 			digArgs := "@localhost nonexistent.example.com A -p " + strconv.Itoa(dnstapPort)
 			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
 			digSession, derr := Start(digCmd, GinkgoWriter, GinkgoWriter)
 			Expect(derr).ToNot(HaveOccurred())
 			Eventually(digSession, 1).Should(Exit(0))
 
-			Consistently(receivedFrames, 500*time.Millisecond).ShouldNot(Receive())
+			var frame []byte
+			Eventually(receivedFrames, 2).Should(Receive(&frame))
+			Expect(dtFrameHasResponse(frame)).To(BeTrue())
+			Expect(dtFrameHasAorAAAA(frame)).To(BeFalse())
+		})
+	})
+
+	When("a TXT query is made", func() {
+		It("sends a dnstap frame", func() {
+			digArgs := "@localhost ip.sslip.io TXT -p " + strconv.Itoa(dnstapPort)
+			digCmd := exec.Command("dig", strings.Split(digArgs, " ")...)
+			digSession, derr := Start(digCmd, GinkgoWriter, GinkgoWriter)
+			Expect(derr).ToNot(HaveOccurred())
+			Eventually(digSession, 1).Should(Exit(0))
+
+			var frame []byte
+			Eventually(receivedFrames, 2).Should(Receive(&frame))
+			Expect(dtFrameHasResponse(frame)).To(BeTrue())
+			Expect(dtFrameHasAorAAAA(frame)).To(BeFalse())
 		})
 	})
 })
@@ -234,6 +254,22 @@ func dtWriteControl(w io.Writer, frameType uint32) error {
 	}
 	_, err := w.Write(body)
 	return err
+}
+
+// dtFrameHasResponse reports whether a dnstap protobuf frame carries a
+// parseable DNS response_message.
+func dtFrameHasResponse(frame []byte) bool {
+	msgBytes := dtExtractBytes(frame, 14) // Dnstap.message (field 14)
+	if msgBytes == nil {
+		return false
+	}
+	responseBytes := dtExtractBytes(msgBytes, 14) // Message.response_message (field 14)
+	if responseBytes == nil {
+		return false
+	}
+	var p dnsmessage.Parser
+	h, err := p.Start(responseBytes)
+	return err == nil && h.Response
 }
 
 // dtFrameHasAorAAAA decodes a dnstap protobuf frame and checks whether the

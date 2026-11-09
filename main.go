@@ -33,7 +33,7 @@ func main() {
 	var quiet = flag.Bool("quiet", false, "suppresses logging of each DNS response. Use this to avoid Google Cloud charging you $30/month to retain the logs of your GKE-based sslip.io server")
 	var public = flag.Bool("public", true, "allows resolution of public IP addresses. If false, only resolves private IPs including localhost (127/8, ::1), link-local (169.254/16, fe80::/10), CG-NAT (100.64/12), private (10/8, 172.16/12, 192.168/16, fc/7). Set to false if you don't want miscreants impersonating you via public IPs. If unsure, set to false")
 	var ptrDomain = flag.String("ptr-domain", "nip.io.", "the domain to use for PTR records, e.g. if 'nip.io',  127-0-0-1.nip.io.")
-	var dnstapSocket = flag.String("dnstap", "", `enables dnstap logging of queries that return an A or AAAA record; argument is the destination socket, either a Unix socket path (e.g. "/var/run/dnstap.sock") or a TCP address (e.g. "127.0.0.1:6000" or "[::1]:6000")`)
+	var dnstapSocket = flag.String("dnstap", "", `enables dnstap logging of every query; argument is the destination socket, either a Unix socket path (e.g. "/var/run/dnstap.sock") or a TCP address (e.g. "127.0.0.1:6000" or "[::1]:6000")`)
 	var records = newRecordFlags(xip.Customizations)
 	flag.Func("a", `A record as "hostname=ipv4", e.g. "-a nip.io=192.168.1.1 -a nip.io=172.31.0.1"`, records.addA)
 	flag.Func("aaaa", `AAAA record as "hostname=ipv6", e.g. "-aaaa nip.io=2600:: -aaaa nip.io=2601::"`, records.addAAAA)
@@ -387,7 +387,7 @@ func readFromUDP(conn *net.UDPConn, x *xip.Xip, quiet bool, dw *DnstapWriter) {
 			if !quiet {
 				log.Printf("%v.%d %s", addr.IP, addr.Port, logMessage)
 			}
-			if dw != nil && ResponseHasAorAAAA(response) {
+			if dw != nil {
 				responseTime := time.Now()
 				dw.SendDnstap(response, addr.IP, addr.Port, true, queryTime, responseTime)
 			}
@@ -459,7 +459,7 @@ func handleTCPConn(tcpConn *net.TCPConn, x *xip.Xip, quiet bool, dw *DnstapWrite
 		if !quiet {
 			log.Printf("%s.%s %s", addr, port, logMessage)
 		}
-		if dw != nil && ResponseHasAorAAAA(response) {
+		if dw != nil {
 			portNum, _ := strconv.Atoi(port)
 			responseTime := time.Now()
 			dw.SendDnstap(response, net.ParseIP(addr), portNum, false, queryTime, responseTime)

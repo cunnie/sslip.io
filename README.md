@@ -69,8 +69,8 @@ go run . \
   -ptr-domain=xip.pivotal.io
 ```
 
-Note: These nameservers are not general-purpose nameservers; for example,
-they won't look up google.com. They are not recursive. **Don't ever configure a
+Note: These nameservers are not general-purpose nameservers; for example, they
+won't look up google.com. They are not recursive. **Don't ever configure a
 client to use these nameservers**.
 
 ### Running with Docker
@@ -78,7 +78,8 @@ client to use these nameservers**.
 Probably the easiest way to run the nameserver is with the official Docker
 image,
 [cunnie/sslip.io-dns-server](https://hub.docker.com/r/cunnie/sslip.io-dns-server).
-Using our DNS servers from the previous example, we run the following, setting our port to 5553 so we can run unprivileged:
+Using our DNS servers from the previous example, we run the following, setting
+our port to 5553 so we can run unprivileged:
 
 ```bash
 docker run \
@@ -163,12 +164,11 @@ as ARM64 (AWS Graviton, Apple M1–M6).
   scammer to spin up a VM with a public IP address and get a certificate for
   that IP address's hostname `52-0-56-137.ip.wellsfargo.com` and use it to
   phish your customers. `-public=false` prevents that scenario.
-- `-quiet` suppresses logging of each DNS response, which can save you money
-  if your cloud provider charges you to retain logs
-- `-dnstap` enables [dnstap](https://dnstap.info/) logging of queries that
-  return an A or AAAA record; its argument is the destination socket, either a
-  Unix socket path (e.g. `/var/run/dnstap.sock`) or a TCP address (e.g.
-  `127.0.0.1:6000`)
+- `-quiet` suppresses logging of each DNS response, which can save you money if
+  your cloud provider charges you to retain logs
+- `-dnstap` enables [dnstap](https://dnstap.info/) logging of every query; its
+  argument is the destination socket, either a Unix socket path (e.g.
+  `/var/run/dnstap.sock`) or a TCP address (e.g. `127.0.0.1:6000`)
 
 In the record flags (`-ns`, `-a`, `-aaaa`, `-soa`, `-mx`, `-txt`, `-cname`),
 names are case-insensitive, and the trailing dot is optional. You can repeat
@@ -183,7 +183,8 @@ domain.
 
 ## Running Tests
 
-- `spec/` contains the tests for the production nameservers. To ensure the production nameservers are running properly:
+- `spec/` contains the tests for the production nameservers. To ensure the
+  production nameservers are running properly:
 
   ```bash
   DOMAINS=nip.io,sslip.io ginkgo -r -p spec/
@@ -195,8 +196,7 @@ domain.
 ginkgo -r -p --skip-package=spec
 ```
 
-- `k8s/document_root_nip.io/` contains the HTML content of the nip.io
-  website.
+- `k8s/document_root_nip.io/` contains the HTML content of the nip.io website.
 
 ### Acknowledgements
 

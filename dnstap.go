@@ -11,8 +11,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-
-	"golang.org/x/net/dns/dnsmessage"
 )
 
 const (
@@ -224,29 +222,6 @@ type deadlineWriter struct{ net.Conn }
 func (w deadlineWriter) Write(p []byte) (int, error) {
 	_ = w.SetWriteDeadline(time.Now().Add(dnstapWriteTimeout))
 	return w.Conn.Write(p)
-}
-
-// ResponseHasAorAAAA reports whether the packed DNS response contains at least one A or AAAA answer.
-func ResponseHasAorAAAA(responseBytes []byte) bool {
-	var p dnsmessage.Parser
-	if _, err := p.Start(responseBytes); err != nil {
-		return false
-	}
-	if err := p.SkipAllQuestions(); err != nil {
-		return false
-	}
-	for {
-		hdr, err := p.AnswerHeader()
-		if err != nil {
-			return false
-		}
-		if hdr.Type == dnsmessage.TypeA || hdr.Type == dnsmessage.TypeAAAA {
-			return true
-		}
-		if err := p.SkipAnswer(); err != nil {
-			return false
-		}
-	}
 }
 
 // --- Framestream ---

@@ -15,39 +15,6 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-var _ = Describe("ResponseHasAorAAAA", func() {
-	When("the response contains an A record answer", func() {
-		It("returns true", func() {
-			Expect(ResponseHasAorAAAA(dnsAResponse())).To(BeTrue())
-		})
-	})
-	When("the response contains an AAAA record answer", func() {
-		It("returns true", func() {
-			Expect(ResponseHasAorAAAA(dnsAAAAResponse())).To(BeTrue())
-		})
-	})
-	When("the response contains only NS records in the authority section", func() {
-		It("returns false", func() {
-			Expect(ResponseHasAorAAAA(dnsNSAuthorityResponse())).To(BeFalse())
-		})
-	})
-	When("the response has an empty answer section", func() {
-		It("returns false", func() {
-			Expect(ResponseHasAorAAAA(dnsEmptyAnswerResponse())).To(BeFalse())
-		})
-	})
-	When("given invalid DNS bytes", func() {
-		It("returns false", func() {
-			Expect(ResponseHasAorAAAA([]byte{0xff, 0x00, 0x01})).To(BeFalse())
-		})
-	})
-	When("given empty bytes", func() {
-		It("returns false", func() {
-			Expect(ResponseHasAorAAAA([]byte{})).To(BeFalse())
-		})
-	})
-})
-
 var _ = Describe("encodeDnstapFrame", func() {
 	It("sets identity, type, and message", func() {
 		msg := []byte{0x08, 0x02}
@@ -127,35 +94,6 @@ func dnsAAAAResponse() []byte {
 		dnsmessage.ResourceHeader{Name: name, Type: dnsmessage.TypeAAAA, Class: dnsmessage.ClassINET, TTL: 3600},
 		dnsmessage.AAAAResource{AAAA: [16]byte{0xfc, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
 	)
-	_ = b.StartAuthorities()
-	_ = b.StartAdditionals()
-	result, _ := b.Finish()
-	return result
-}
-
-func dnsNSAuthorityResponse() []byte {
-	name, _ := dnsmessage.NewName("sslip.io.")
-	nsName, _ := dnsmessage.NewName("ns.sslip.io.")
-	b := dnsmessage.NewBuilder(nil, dnsmessage.Header{Response: true})
-	_ = b.StartQuestions()
-	_ = b.Question(dnsmessage.Question{Name: name, Type: dnsmessage.TypeNS, Class: dnsmessage.ClassINET})
-	_ = b.StartAnswers()
-	_ = b.StartAuthorities()
-	_ = b.NSResource(
-		dnsmessage.ResourceHeader{Name: name, Type: dnsmessage.TypeNS, Class: dnsmessage.ClassINET, TTL: 3600},
-		dnsmessage.NSResource{NS: nsName},
-	)
-	_ = b.StartAdditionals()
-	result, _ := b.Finish()
-	return result
-}
-
-func dnsEmptyAnswerResponse() []byte {
-	name, _ := dnsmessage.NewName("nonexistent.example.com.")
-	b := dnsmessage.NewBuilder(nil, dnsmessage.Header{Response: true})
-	_ = b.StartQuestions()
-	_ = b.Question(dnsmessage.Question{Name: name, Type: dnsmessage.TypeA, Class: dnsmessage.ClassINET})
-	_ = b.StartAnswers()
 	_ = b.StartAuthorities()
 	_ = b.StartAdditionals()
 	result, _ := b.Finish()
