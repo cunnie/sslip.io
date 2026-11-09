@@ -52,7 +52,7 @@ var _ = Describe("IntegrationMetrics", func() {
 			expectedMetrics.AnsweredQueries++
 			expectedMetrics.AnsweredBlockedQueries++
 			expectedMetrics = bumpExpectedToAccountForMetricsQuery(expectedMetrics)
-			dig("@localhost bank-of-raiffeisen.127.0.0.1.sslip.io +short -p " + strconv.Itoa(port))
+			dig("@localhost nf.23.45.67.89.sslip.io +short -p " + strconv.Itoa(port))
 			actualMetrics = getMetrics(port)
 			Expect(expectedMetrics.MostlyEquals(actualMetrics)).To(BeTrue())
 

@@ -79,7 +79,7 @@ dig @ns-ovh.nip.io version.status.nip.io txt +short
       <pre>
   dig @ns-ovh.nip.io metrics.status.nip.io txt +short
     "Uptime: 13940"
-    "Blocklist: 2025-11-07 08:08:50-08 3,773,2"
+    "Blocklist: 2025-11-07 08:08:50-08 3,773"
     "Queries: 58116774 (4169.1/s)"
     "TCP/UDP: 457/58259316"
     "Answer > 0: 18236428 (1308.2/s)"
@@ -97,10 +97,9 @@ dig @ns-ovh.nip.io version.status.nip.io txt +short
         <dd>The time since the DNS server has been started, in seconds</dd>
         <dt>Blocklist</dt>
         <dd>
-          The first value ("2023-10-04 07:37:50-07") is the date the blocklist was last downloaded. The following three
-          numbers are the number of CIDR matches that are blocked (e.g. 86.106.104.0/24), the number of IP addresses
-          that are blocked (e.g. 212.64.214.54), and the number of strings that are blocked (e.g. "raiffeisen" is a
-          string that is blocked if it appears in the queried hostname). The blocklist can be found <a
+          The first value ("2023-10-04 07:37:50-07") is the date the blocklist was last downloaded. The following two
+          numbers are the number of CIDR matches that are blocked (e.g. 86.106.104.0/24) and the number of IP addresses
+          that are blocked (e.g. 212.64.214.54). The blocklist can be found <a
             href="https://github.com/cunnie/sslip.io-blocklist/blob/main/blocklist.txt">here</a>
         </dd>
         <dt>Queries</dt>

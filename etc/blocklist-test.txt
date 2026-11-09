@@ -1,4 +1,4 @@
-# TESTING ONLY: List of "Forbidden" (blocked) names & CIDRs
+# TESTING ONLY: List of "Forbidden" (blocked) IPs & CIDRs
 
 # This is a shortened variant meant to be used for testing (`ginkgo`) because
 # the legitimate one has grown so long it clutters the test output
@@ -6,4 +6,3 @@
 12.34.56.78/24 # IPv4 CIDR
 1234::/64      # IPv6 CIDR
 23.45.67.89    # IPv4
-raiffeisen     # string
