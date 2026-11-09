@@ -427,7 +427,7 @@ func (x *Xip) processQuestion(q dnsmessage.Question, srcAddr net.IP) (response R
 		response.Header.Authoritative = false
 		return x.NSResponse(q.Name, response, logMessage)
 	}
-	if IsAcmeChallenge(q.Name.String()) && !x.blocklist(q.Name.String()) {
+	if IsAcmeChallenge(q.Name.String()) && !x.blocklist(q.Name.String(), dnsmessage.TypeA) && !x.blocklist(q.Name.String(), dnsmessage.TypeAAAA) {
 		// thanks, @NormanR
 		// delegate everything to its stripped (remove "_acme-challenge.") address, e.g.
 		// dig _acme-challenge.127-0-0-1.sslip.io mx → NS 127-0-0-1.sslip.io
@@ -853,7 +853,7 @@ func IsDelegated(fqdnString string) bool {
 
 func (x *Xip) NSResources(fqdnString string) []dnsmessage.NSResource {
 	fqdnStringLowerCased := strings.ToLower(fqdnString)
-	if x.blocklist(fqdnStringLowerCased) {
+	if x.blocklist(fqdnStringLowerCased, dnsmessage.TypeA) || x.blocklist(fqdnStringLowerCased, dnsmessage.TypeAAAA) {
 		x.Metrics.AnsweredQueries++
 		x.Metrics.AnsweredBlockedQueries++
 		return x.NameServers
@@ -1112,20 +1112,21 @@ func ReadBlocklist(blocklist io.Reader) (blocklistCIDRs []net.IPNet, blocklistIP
 	return blocklistCIDRs, blocklistIPs, blocklistStrings, nil
 }
 
-func (x *Xip) blocklist(hostname string) bool {
-	aResources := NameToA(hostname, true)
-	aaaaResources := NameToAAAA(hostname, true)
-	if len(aResources) == 0 && len(aaaaResources) == 0 {
-		return false
-	}
+func (x *Xip) blocklist(hostname string, AorAAAA dnsmessage.Type) bool {
 	var ip net.IP
-	if len(aResources) == 1 {
-		ip = aResources[0].A[:]
+	if AorAAAA == dnsmessage.TypeA {
+		aResources := NameToA(hostname, true)
+		if len(aResources) == 1 {
+			ip = aResources[0].A[:]
+		}
 	}
-	if len(aaaaResources) == 1 {
-		ip = aaaaResources[0].AAAA[:]
+	if AorAAAA == dnsmessage.TypeAAAA {
+		aaaaResources := NameToAAAA(hostname, true)
+		if len(aaaaResources) == 1 {
+			ip = aaaaResources[0].AAAA[:]
+		}
 	}
-	if ip == nil { // placate linter who worries ip is nil; it should never be nil
+	if ip == nil {
 		return false
 	}
 	if ip.IsPrivate() {
@@ -1162,7 +1163,7 @@ func (x *Xip) nameToAwithBlocklist(q dnsmessage.Question, response Response, log
 	if len(nameToAs) == 0 {
 		return soaAuthorityResponse(q.Name, response, logMessage)
 	}
-	if x.blocklist(q.Name.String()) {
+	if x.blocklist(q.Name.String(), dnsmessage.TypeA) {
 		x.Metrics.AnsweredQueries++
 		x.Metrics.AnsweredBlockedQueries++
 		if len(Customizations["blocked.nip.io."].A) == 0 {
@@ -1268,7 +1269,7 @@ func (x *Xip) nameToAAAAwithBlocklist(q dnsmessage.Question, response Response, 
 	if len(nameToAAAAs) == 0 {
 		return soaAuthorityResponse(q.Name, response, logMessage)
 	}
-	if x.blocklist(q.Name.String()) {
+	if x.blocklist(q.Name.String(), dnsmessage.TypeAAAA) {
 		x.Metrics.AnsweredQueries++
 		x.Metrics.AnsweredBlockedQueries++
 		if len(Customizations["blocked.nip.io."].AAAA) == 0 {
