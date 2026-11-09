@@ -7,7 +7,7 @@
 # container build -t cunnie/fedora-golang .
 # docker push cunnie/fedora-golang
 
-FROM fedora:44
+FROM fedora:45
 
 LABEL org.opencontainers.image.authors="Brian Cunnie <brian.cunnie@gmail.com>"
 
@@ -17,10 +17,6 @@ RUN dnf update -y; \
   dnf install -y \
   autojump-zsh \
   bind-utils \
-  btrfs-progs \
-  cmake \
-  direnv \
-  etcd \
   fd-find \
   gcc-g++ \
   golang \
@@ -28,13 +24,9 @@ RUN dnf update -y; \
   iproute \
   iputils \
   jq \
-  mysql-devel \
   neovim \
   net-tools \
   nmap-ncat \
-  npm \
-  openbao \
-  openssl-devel \
   python \
   redhat-rpm-config \
   ripgrep \
@@ -43,18 +35,19 @@ RUN dnf update -y; \
   tcpdump \
   tmux \
   wget \
-  zlib-devel \
   zsh \
+  zsh-autosuggestions \
   zsh-syntax-highlighting \
   ;
 
 RUN CGO_ENABLED=0 GOBIN=/usr/local/bin go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
-RUN  echo "" | SHELL=/usr/bin/zsh /usr/bin/zsh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"; \
-  echo 'export EDITOR=nvim' >> ~/.zshrc; \
+RUN echo 'export EDITOR=nvim' >> ~/.zshrc; \
   echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.zshrc
 
 RUN echo '[ -s /etc/profile.d/autojump.sh ] && . /etc/profile.d/autojump.sh' >> ~/.zshrc; \
-  echo 'alias z=j' >> ~/.zshrc
+  echo 'alias z=j' >> ~/.zshrc; \
+  echo '[ -s /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && . /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh' >> ~/.zshrc; \
+  echo '[ -s /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && . /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh' >> ~/.zshrc
 
 CMD [ "/usr/bin/zsh" ]
