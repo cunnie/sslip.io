@@ -44,22 +44,22 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
   }
 
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = "local-zfs"
     interface    = "scsi0"
     size         = 64 # Size in GiB
   }
 
   # 421GB == 1.56G records ("count(*)")
-  # 1 TiB data disk on local-lvm (guest sees /dev/sdc)
+  # 1 TiB data disk on local-zfs (guest sees /dev/sdc)
   disk {
-    datastore_id = "local-lvm"
+    datastore_id = "local-zfs"
     interface    = "scsi1"
     size         = 1024 # Size in GiB
   }
 
   # Clone from template
   clone {
-    vm_id = 1004 # Fedora 45
+    vm_id = 10000 # Fedora 45
   }
 
   # Cloud-init configuration inline
@@ -78,7 +78,7 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
     dns {
       servers = ["8.8.8.8", "8.8.4.4"]
     }
-    datastore_id      = "local-lvm"
+    datastore_id      = "local-zfs"
     user_data_file_id = proxmox_virtual_environment_file.cloud_config.id
   }
 
