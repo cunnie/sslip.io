@@ -64,7 +64,7 @@ resource "vultr_firewall_rule" "ssh_v6_home" {
   firewall_group_id = vultr_firewall_group.blocked.id
   protocol          = "tcp"
   ip_type           = "v6"
-  subnet            = "2601:645:8105:e060::"
+  subnet            = "2601:645:8181:f980::"
   subnet_size       = 60
   port              = "22"
 }

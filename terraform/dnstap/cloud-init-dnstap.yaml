@@ -46,12 +46,12 @@ write_files:
           tcp dport 80 accept # Let's Encrypt HTTP-01 challenge; otherwise redirects to 443
           # ClickHouse via Caddy; UDP for HTTP/3 (QUIC)
           ip saddr 10.0.0.0/8                meta l4proto { tcp, udp } th dport 443 accept
-          ip6 saddr 2601:645:8105:e060::/64 meta l4proto { tcp, udp } th dport 443 accept
+          ip6 saddr 2601:645:8181:f980::/64 meta l4proto { tcp, udp } th dport 443 accept
           # CIDR for ns-00 because outbound IPv6 originates from _other_ addr
           ip6 saddr 2400:6180:0:d2::/64     tcp dport 6000 accept # ns-00
           ip6 saddr 2a01:4ff:1f2:10d::      tcp dport 6000 accept # ns-01
           ip6 saddr 2001:41d0:602:2313::1   tcp dport 6000 accept # ns-ovh
-          ip6 saddr 2601:645:8105:e060::/64 tcp dport 6000 accept # debugging from home
+          ip6 saddr 2601:645:8181:f980::/64 tcp dport 6000 accept # debugging from home
         }
       }
     permissions: "0644"

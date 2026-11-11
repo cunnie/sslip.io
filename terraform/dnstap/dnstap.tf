@@ -70,8 +70,8 @@ resource "proxmox_virtual_environment_vm" "dnstap" {
         gateway = "10.9.2.1"
       }
       ipv6 {
-        address = "2601:645:8105:e062::f1/64"
-        gateway = "2601:645:8105:e062::"
+        address = "2601:645:8181:f982::f1/64"
+        gateway = "2601:645:8181:f982::"
       }
 
     }

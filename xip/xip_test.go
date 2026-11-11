@@ -597,7 +597,7 @@ var _ = Describe("Xip", func() {
 			},
 			Entry("Google Nameserver IPv4", net.ParseIP("8.8.8.8"), true),
 			Entry("Google Nameserver IPv6", net.ParseIP("2001:4860:4860::8888"), true),
-			Entry("Apple Mac Mini melkor.nono.io", net.ParseIP("2601:645:8105:e060:ca9:9938:e33a:c4a8"), true),
+			Entry("Apple Mac Mini melkor.nono.io", net.ParseIP("2601:645:8181:f980:ca9:9938:e33a:c4a8"), true),
 			Entry("External interface home.nono.io", net.ParseIP("2001:558:6045:1a:5c6a:3503:86d:b432"), true),
 			Entry("RFC 1918 Section 3 10/8", net.ParseIP("10.9.9.30"), false),
 			Entry("RFC 1918 Section 3 172.16/12", net.ParseIP("172.31.255.255"), false),
