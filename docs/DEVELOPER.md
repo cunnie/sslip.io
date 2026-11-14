@@ -166,7 +166,7 @@ ssh ns-ovh sudo install sslip.io-dns-server-linux-amd64 /usr/bin/sslip.io-dns-se
 ssh ns-ovh sudo shutdown -r now
  # check version number and wait until it is back up before rebooting blocked
 sleep 10; while ! dig txt @ns-ovh.sslip.io version.status.sslip.io +short; do sleep 5; done
- # reboot blocked in case it has a new kernel
+ # reboot "blocked" in case it has a new kernel
 ssh blocked sudo shutdown -r now
 sleep 10; while ! curl -sfI blocked.nip.io >/dev/null; do sleep 5; done
 ```
@@ -216,6 +216,7 @@ Update the webservers' HTML with new versions:
 ssh nono.io
 cd /www/sslip.io/
 git pull -r
+exit
 BLOCKED_HOST=blocked
 ssh $BLOCKED_HOST sudo curl -L -o /var/www/sslip.io/index.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_nip.io/index.html
 ssh $BLOCKED_HOST sudo curl -L -o /var/www/sslip.io/experimental.html https://raw.githubusercontent.com/cunnie/sslip.io/main/k8s/document_root_nip.io/experimental.html
