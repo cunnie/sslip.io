@@ -79,10 +79,16 @@ write_files:
         -ns=.=ns-00.nip.io. \
         -ns=.=ns-01.nip.io. \
         -ns=.=ns-ovh.sslip.io. \
-        -a=nip.io=78.46.204.247 \
-        -aaaa=nip.io=2a01:4f8:c17:b8f::2 \
-        -a=sslip.io=78.46.204.247 \
-        -aaaa=sslip.io=2a01:4f8:c17:b8f::2 \
+        -a=nip.io=185.199.108.153 \
+        -a=nip.io=185.199.109.153 \
+        -a=nip.io=185.199.110.153 \
+        -a=nip.io=185.199.111.153 \
+        -aaaa=nip.io=2606:50c0:8000::153 \
+        -aaaa=nip.io=2606:50c0:8001::153 \
+        -aaaa=nip.io=2606:50c0:8002::153 \
+        -aaaa=nip.io=2606:50c0:8003::153 \
+        -a=sslip.io=64.176.22.9 \
+        -aaaa=sslip.io=2001:19f0:c800:2315:: \
         -a=ns.nip.io=167.172.4.236 \
         -a=ns.nip.io=5.78.28.211 \
         -a=ns.nip.io=51.75.53.19 \
@@ -109,10 +115,12 @@ write_files:
         -mx=sslip.io=20,mailsec.protonmail.ch. \
         "-txt=nip.io=protonmail-verification=19b0837cc4d9daa1f49980071da231b00e90b313" \
         "-txt=nip.io=v=spf1 include:_spf.protonmail.ch mx -all" \
+        "-txt=_github-pages-challenge-cunnie.nip.io=d171e62a74270f9c2be3aa402c8aa5" \
         "-txt=sslip.io=protonmail-verification=ce0ca3f5010aa7a2cf8bcc693778338ffde73e26" \
         "-txt=sslip.io=v=spf1 include:_spf.protonmail.ch mx -all" \
         "-txt=_dmarc.nip.io=v=DMARC1; p=reject" \
         "-txt=_dmarc.sslip.io=v=DMARC1; p=reject" \
+        -cname=www.nip.io=cunnie.github.io. \
         -cname=protonmail._domainkey.nip.io=protonmail.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch. \
         -cname=protonmail2._domainkey.nip.io=protonmail2.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch. \
         -cname=protonmail3._domainkey.nip.io=protonmail3.domainkey.di5fzneyjbxuzcqcrbw2f63m34itvf6lmjde2s4maty3hdt6664dq.domains.proton.ch. \
