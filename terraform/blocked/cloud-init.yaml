@@ -120,7 +120,7 @@ write_files:
           listen [::]:80;
           listen 443 ssl;
           listen [::]:443 ssl;
-          server_name 64-176-22-9.nip.io 64.176.22.9.nip.io 40B01609.nip.io;
+          server_name 64-176-22-9.nip.io 64.176.22.9.nip.io 40B01609.nip.io 2001-19f0-c800-2315--0.nip.io;
           root /var/www/sslip.io;
           index index.html;
           ssl_certificate     /etc/letsencrypt/live/blocked.nip.io/fullchain.pem;
@@ -137,15 +137,78 @@ write_files:
           }
       }
 
+      server {
+          listen 80;
+          listen [::]:80;
+          listen 443 ssl;
+          listen [::]:443 ssl;
+          server_name sslip.io;
+          ssl_certificate     /etc/letsencrypt/live/sslip.io/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/sslip.io/privkey.pem;
+
+          # certbot renews via the webroot challenge in /var/www/blocked
+          location /.well-known/acme-challenge/ {
+              root /var/www/blocked;
+              try_files $uri =404;
+          }
+
+          location / {
+              return 301 https://nip.io$request_uri;
+          }
+      }
+
+      server {
+          listen 80;
+          listen [::]:80;
+          listen 443 ssl;
+          listen [::]:443 ssl;
+          server_name meet.cunnie.com;
+          ssl_certificate     /etc/letsencrypt/live/meet.cunnie.com/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/meet.cunnie.com/privkey.pem;
+
+          # certbot renews via the webroot challenge in /var/www/blocked
+          location /.well-known/acme-challenge/ {
+              root /var/www/blocked;
+              try_files $uri =404;
+          }
+
+          location / {
+              return 301 https://meet.google.com/vqu-uhvn-mfh;
+          }
+      }
+
+      server {
+          listen 80;
+          listen [::]:80;
+          listen 443 ssl;
+          listen [::]:443 ssl;
+          server_name ipv4.nono.io ipv6.nono.io;
+          ssl_certificate     /etc/letsencrypt/live/ipv4.nono.io/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/ipv4.nono.io/privkey.pem;
+
+          # certbot renews via the webroot challenge in /var/www/blocked
+          location /.well-known/acme-challenge/ {
+              root /var/www/blocked;
+              try_files $uri =404;
+          }
+
+          location / {
+              default_type text/plain;
+              return 200 "$remote_addr";
+          }
+      }
+
   - path: /etc/letsencrypt/renewal-hooks/deploy/nginx-reload.sh
     permissions: "0755"
     content: |
       #!/bin/sh
       systemctl reload nginx
 
-  # Rate-limit HTTP(S) connection floods: a source that opens new connections
-  # faster than 40/minute (after a burst of 40) is reset for a day. A separate
-  # table, not firewalld's, so firewall-cmd --reload leaves it alone.
+  # Rate-limit HTTPS connection floods: a source that opens new connections
+  # faster than 40/minute (after a burst of 40) is reset for a day. Port 80 is
+  # exempt so Let's Encrypt validators, which hit this box often, are never
+  # blocked. A separate table, not firewalld's, so firewall-cmd --reload
+  # leaves it alone.
   - path: /etc/nftables/http-ratelimit.nft
     permissions: "0644"
     content: |
@@ -161,11 +224,11 @@ write_files:
           # runs just before firewalld's chain (priority filter = 0)
           type filter hook input priority filter - 10; policy accept;
 
-          tcp dport { 80, 443 } ip  saddr @block4 reject with tcp reset
-          tcp dport { 80, 443 } ip6 saddr @block6 reject with tcp reset
+          tcp dport 443 ip  saddr @block4 reject with tcp reset
+          tcp dport 443 ip6 saddr @block6 reject with tcp reset
 
-          tcp dport { 80, 443 } ct state new update @track4 { ip  saddr limit rate over 40/minute burst 40 packets } add @block4 { ip  saddr } reject with tcp reset
-          tcp dport { 80, 443 } ct state new update @track6 { ip6 saddr limit rate over 40/minute burst 40 packets } add @block6 { ip6 saddr } reject with tcp reset
+          tcp dport 443 ct state new update @track4 { ip  saddr limit rate over 40/minute burst 40 packets } add @block4 { ip  saddr } reject with tcp reset
+          tcp dport 443 ct state new update @track6 { ip6 saddr limit rate over 40/minute burst 40 packets } add @block6 { ip6 saddr } reject with tcp reset
         }
       }
 
@@ -229,7 +292,7 @@ runcmd:
   # nginx.conf hardcodes the Let's Encrypt cert path, so seed a throwaway
   # cert there just so nginx can pass config-check and start; deleted below
   # once nginx has it open, freeing the path for certbot's webroot challenge.
-  - openssl req -x509 -newkey ed25519 -keyout /etc/letsencrypt/live/blocked.nip.io/privkey.pem -out /etc/letsencrypt/live/blocked.nip.io/fullchain.pem -days 1 -nodes -subj "/CN=localhost"
+  - for c in blocked.nip.io sslip.io meet.cunnie.com ipv4.nono.io; do mkdir -p /etc/letsencrypt/live/$c; openssl req -x509 -newkey ed25519 -keyout /etc/letsencrypt/live/$c/privkey.pem -out /etc/letsencrypt/live/$c/fullchain.pem -days 1 -nodes -subj "/CN=localhost"; done
   - systemctl daemon-reload
   - firewall-cmd --permanent --add-service=http
   - firewall-cmd --permanent --add-service=https
@@ -237,8 +300,11 @@ runcmd:
   - systemctl enable --now http-ratelimit.service
   - /usr/local/sbin/mount-nginx-log-volume.sh
   - systemctl enable --now nginx
-  - rm -rf /etc/letsencrypt/live/blocked.nip.io
-  - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io -d 40B01609.nip.io --non-interactive --agree-tos --email brian.cunnie@gmail.com
+  - rm -rf /etc/letsencrypt/live/blocked.nip.io /etc/letsencrypt/live/sslip.io /etc/letsencrypt/live/meet.cunnie.com /etc/letsencrypt/live/ipv4.nono.io
+  - certbot certonly --webroot -w /var/www/blocked -d blocked.nip.io -w /var/www/sslip.io -d 64.176.22.9.nip.io -d 64-176-22-9.nip.io -d 40B01609.nip.io -d 2001-19f0-c800-2315--0.nip.io --non-interactive --agree-tos --email brian.cunnie@gmail.com
+  - certbot certonly --webroot -w /var/www/blocked -d sslip.io --cert-name sslip.io --non-interactive --agree-tos --email brian.cunnie@gmail.com
+  - certbot certonly --webroot -w /var/www/blocked -d meet.cunnie.com --cert-name meet.cunnie.com --non-interactive --agree-tos --email brian.cunnie@gmail.com
+  - certbot certonly --webroot -w /var/www/blocked -d ipv4.nono.io -d ipv6.nono.io --cert-name ipv4.nono.io --non-interactive --agree-tos --email brian.cunnie@gmail.com
   - systemctl reload nginx
   - systemctl enable --now certbot-renew.timer
 
