@@ -194,6 +194,7 @@ write_files:
 
           location / {
               default_type text/plain;
+              add_header Access-Control-Allow-Origin "*" always;
               return 200 "$remote_addr";
           }
       }
